@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Asesmen — PsikoTest.id</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' }
+          },
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"','sans-serif'],
+            body: ['"DM Sans"','sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <style>
+    body { font-family:'DM Sans',sans-serif; background:#f8faff; color: #1e293b; overflow-x: hidden; }
+    h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; }
+    .stage { display:none; }
+    .stage.active { display:flex; }
+    .progress-bar { transition: width 0.4s ease; }
+    .btn-most, .btn-least { width: 42px; height: 42px; border-radius: 10px; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; transition: all 0.2s ease; cursor: pointer; background: white; }
+    .btn-most.active { background: var(--brand-color, #2563eb); border-color: var(--brand-color, #2563eb); color: white; }
+    .btn-least.active { background: #475569; border-color: #475569; color: white; }
+    .papi-card, .holland-card { transition: all 0.2s ease; border: 2px solid #e2e8f0; cursor: pointer; background: white; }
+    .papi-card.active, .holland-card.active { border-color: var(--brand-color, #2563eb); background: #eff6ff; }
+    .papi-card.inactive { opacity: 0.5; }
+    .option-card { border:2px solid #e2e8f0; cursor:pointer; transition:all 0.2s ease; background: white; }
+    .option-card.selected { border-color: var(--brand-color, #2563eb); background:#eff6ff; }
+    @keyframes fadeSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation:fadeSlideUp 0.4s ease forwards; }
+    .pulse { animation: scalePulse 2s ease-in-out infinite; }
+    @keyframes scalePulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <header class="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-slate-200 bg-slate-50">
+        <img id="portal-logo" src="" class="w-full h-full object-cover hidden">
+        <i id="portal-logo-placeholder" data-lucide="brain-circuit" class="w-5 h-5 text-slate-400"></i>
+      </div>
+      <div>
+        <div class="font-display font-bold text-slate-900 text-sm leading-tight" id="company-name">PT Maju Bersama</div>
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Portal Asesmen</div>
+      </div>
+    </div>
+    <div id="test-timer" class="hidden items-center gap-2 bg-red-50 text-red-600 px-4 py-1.5 rounded-full border border-red-100 font-mono font-bold text-sm">
+      <i data-lucide="timer" class="w-4 h-4"></i><span id="timer-display">--:--</span>
+    </div>
+    <div class="hidden sm:block text-xs text-slate-300">PsikoTest.id</div>
+  </header>
+
+  <div id="progress-bar-container" class="hidden bg-white border-b border-slate-100 px-4 py-2 sticky top-14 z-40">
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5">
+        <span id="progress-label">Soal 1</span><span id="progress-pct">0%</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+        <div id="progress-bar" class="progress-bar bg-brand-500 h-full rounded-full" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="flex-1 flex items-center justify-center p-4">
+
+    <!-- WELCOME -->
+    <div id="stage-welcome" class="stage active flex-col items-center text-center max-w-lg w-full fade-in">
+      <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-6 shadow-xl" style="background: var(--brand-color, '#2563eb')"><i data-lucide="user-check" class="w-10 h-10 text-white"></i></div>
+      <h1 class="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Selamat Datang</h1>
+      <p class="text-slate-500 mb-8 leading-relaxed">Anda diundang untuk mengikuti rangkaian asesmen oleh <strong class="text-slate-800" id="welcome-company">PT Maju Bersama</strong>.</p>
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 mb-8 w-full text-left shadow-sm">
+        <h3 class="font-bold text-slate-800 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i> Rangkaian Tes</h3>
+        <div id="welcome-test-list" class="space-y-2">Memuat daftar tes...</div>
+      </div>
+      <button onclick="goTo('biodata')" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all">Mulai <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i></button>
+    </div>
+
+    <!-- BIODATA -->
+    <div id="stage-biodata" class="stage flex-col max-w-md w-full">
+      <div class="text-center mb-8 fade-in"><h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Data Peserta</h2><p class="text-slate-500 text-sm mt-1">Harap isi data berikut untuk memulai sesi tes.</p></div>
+      <form class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4 fade-in" onsubmit="submitBiodata(event)">
+        <div class="space-y-1.5"><label class="text-xs font-bold text-slate-500 uppercase ml-1">Nama Lengkap</label><input id="field-name" type="text" required class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-500 transition-all" placeholder="Nama Lengkap"></div>
+        <div class="space-y-1.5"><label class="text-xs font-bold text-slate-500 uppercase ml-1">Email Aktif</label><input id="field-email" type="email" required class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-500 transition-all" placeholder="nama@email.com"></div>
+        <button type="submit" id="btn-start-biodata" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md mt-4 transition-all">Lanjut</button>
+      </form>
+    </div>
+
+    <!-- INSTRUCTION -->
+    <div id="stage-instruction" class="stage flex-col max-w-lg w-full">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden fade-in">
+        <div class="bg-brand-600 p-6 text-white" id="instr-header"><h2 class="text-xl font-bold mb-1" id="instr-title">Instruksi</h2><p class="text-brand-100 text-xs" id="instr-subtitle">Mohon baca dengan teliti.</p></div>
+        <div class="p-6 space-y-4 text-sm text-slate-600 leading-relaxed" id="instr-body"></div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100"><button onclick="startTest()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all" id="btn-start-test-instr">Mulai Tes Sekarang</button></div>
+      </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div id="stage-questions" class="stage flex-col max-w-2xl w-full">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-12 fade-in min-h-[400px] flex flex-col justify-center">
+        <div id="q-disc-header" class="hidden grid grid-cols-[1fr,50px,50px] gap-4 mb-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center"><div class="text-left">Pernyataan</div><div>P (M)</div><div>K (L)</div></div>
+        <div class="mb-10 text-center" id="q-text-container"><h3 class="text-xl md:text-2xl font-bold text-slate-900 leading-snug" id="q-text">Memuat pertanyaan...</h3></div>
+        <div id="q-body" class="space-y-4"></div>
+      </div>
+      <div class="flex items-center justify-between mt-8 gap-4 px-2">
+        <button onclick="prevQuestion()" id="btn-prev" class="flex items-center gap-2 text-slate-400 font-bold text-sm px-6 py-3 rounded-2xl border border-slate-200 hover:bg-white hover:text-slate-600 transition-all disabled:opacity-20"><i data-lucide="chevron-left" class="w-5 h-5"></i> Kembali</button>
+        <button onclick="nextQuestion()" id="btn-next" class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-10 py-3 rounded-2xl shadow-lg transition-all" id="btn-next-action">Lanjut <i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
+    <!-- TRANSITION -->
+    <div id="stage-transition" class="stage flex-col items-center text-center max-w-md w-full fade-in">
+       <div class="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6 pulse"><i data-lucide="check-circle-2" class="w-10 h-10 text-green-500"></i></div>
+      <h2 class="text-2xl font-extrabold text-slate-900 mb-2" id="trans-title">Tes Selesai!</h2>
+      <p class="text-slate-500 mb-8 leading-relaxed" id="trans-msg">Bagus! Lanjut ke tes berikutnya.</p>
+      <button onclick="confirmNextTest()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2" id="btn-confirm-next">Lanjut ke Tes Berikutnya <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
+    </div>
+
+    <!-- COMPLETION -->
+    <div id="stage-done" class="stage flex-col items-center text-center max-w-md w-full fade-in">
+      <div class="w-24 h-24 rounded-full bg-green-500 flex items-center justify-center mb-6 shadow-xl pulse"><i data-lucide="check" class="w-12 h-12 text-white"></i></div>
+      <h2 class="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Terima Kasih</h2>
+      <p class="text-slate-500 mb-8 leading-relaxed"><strong id="done-name">Peserta</strong>, Anda telah menyelesaikan seluruh rangkaian asesmen.</p>
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 text-left w-full shadow-sm mb-8"><p class="text-sm text-slate-600 leading-relaxed">Pihak <strong id="done-company">PT Maju Bersama</strong> akan memproses data Anda. Anda dapat menutup halaman ini sekarang.</p></div>
+      <p class="text-[10px] text-slate-300 uppercase tracking-[0.3em] font-bold">PsikoTest.id Enterprise</p>
+    </div>
+  </main>
+
+  <script>
+    // Penampung data tes dinamis yang di-load dari database
+    const tests = [];
+
+    const state = { 
+      userName: '', 
+      participantId: null,
+      campaignId: null,
+      activeIdx: 0, 
+      currentQ: 0, 
+      answers: {}, 
+      timeLeft: 0, 
+      timer: null 
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const cid = urlParams.get('cid');
+      
+      if (cid) {
+        state.campaignId = cid;
+        await loadCampaignAndBranding(cid);
+      } else {
+        alert("Campaign ID tidak valid atau tidak ditemukan di URL!");
+      }
+    });
+
+    async function loadCampaignAndBranding(cid) {
+      try {
+        // Ambil campaign & customer
+        const { data: campaign, error } = await _supabase
+          .from('campaigns')
+          .select('*, customers(*)')
+          .eq('id', cid)
+          .single();
+
+        if (error || !campaign) {
+          alert("Sesi tes tidak ditemukan atau sudah dinonaktifkan!");
+          return;
+        }
+
+        const brand = campaign.customers;
+        if (brand) {
+          document.getElementById('company-name').textContent = brand.company_name;
+          document.getElementById('welcome-company').textContent = brand.company_name;
+          document.getElementById('done-company').textContent = brand.company_name;
+
+          // Set setelan warna utama dinamis
+          if (brand.brand_color) {
+            document.documentElement.style.setProperty('--brand-color', brand.brand_color);
+            const style = document.createElement('style');
+            style.innerHTML = `
+              .bg-brand-50 { background-color: ${brand.brand_color}10 !important; }
+              .bg-brand-100 { background-color: ${brand.brand_color}20 !important; }
+              .bg-brand-500 { background-color: ${brand.brand_color}dd !important; }
+              .bg-brand-600 { background-color: ${brand.brand_color} !important; }
+              .bg-brand-700 { background-color: ${brand.brand_color}ee !important; }
+              .text-brand-600 { color: ${brand.brand_color} !important; }
+              .text-brand-700 { color: ${brand.brand_color} !important; }
+              .border-brand-200 { border-color: ${brand.brand_color}30 !important; }
+              .border-brand-500 { border-color: ${brand.brand_color}80 !important; }
+              .focus\\:ring-brand-500:focus { --tw-ring-color: ${brand.brand_color} !important; }
+            `;
+            document.head.appendChild(style);
+          }
+
+          // Set logo
+          if (brand.logo_url) {
+            const logo = document.getElementById('portal-logo');
+            logo.src = brand.logo_url;
+            logo.classList.remove('hidden');
+            document.getElementById('portal-logo-placeholder').classList.add('hidden');
+          }
+        }
+
+        // Ambil relasi campaign tests
+        const { data: ctList } = await _supabase
+          .from('campaign_tests')
+          .select('test_id')
+          .eq('campaign_id', cid);
+
+        if (!ctList || ctList.length === 0) {
+          alert("Campaign ini belum memiliki alat tes terdaftar!");
+          return;
+        }
+
+        const testIds = ctList.map(item => item.test_id);
+
+        // Fetch master_tests & bank_soal dinamis
+        const { data: mTests } = await _supabase.from('master_tests').select('*').in('id', testIds).eq('is_active', true);
+        const { data: dbQuestions } = await _supabase.from('bank_soal').select('*').in('test_id', testIds).order('order_number');
+
+        if (!mTests || mTests.length === 0) {
+          alert("Alat tes yang di-request tidak aktif!");
+          return;
+        }
+
+        // Map ke array `tests` lokal
+        mTests.forEach(mt => {
+          const qList = dbQuestions.filter(q => q.test_id === mt.id).map(q => q.question_data);
+          tests.push({
+            id: mt.code,
+            dbId: mt.id,
+            label: mt.name,
+            type: mt.code,
+            duration: `±${Math.round(mt.duration / 60)} Menit`,
+            timeLimit: mt.duration,
+            questions: qList
+          });
+        });
+
+        // Render Welcome test list
+        document.getElementById('welcome-test-list').innerHTML = tests.map((t,i) => `
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">${i+1}</div>
+              <div class="text-sm font-bold text-slate-800">${t.label}</div>
+            </div>
+            <div class="text-[10px] font-bold text-slate-400">${t.duration}</div>
+          </div>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function goTo(sid) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + sid).classList.add('active');
+      const isQ = (sid === 'questions');
+      document.getElementById('test-timer').classList.toggle('hidden', !isQ);
+      document.getElementById('progress-bar-container').classList.toggle('hidden', !isQ);
+      window.scrollTo(0,0); 
+      lucide.createIcons();
+    }
+
+    async function submitBiodata(e) {
+      e.preventDefault(); 
+      state.userName = document.getElementById('field-name').value;
+      const email = document.getElementById('field-email').value;
+
+      const btn = document.getElementById('btn-start-biodata');
+      btn.disabled = true; btn.textContent = "Mendaftarkan...";
+
+      try {
+        // Panggil RPC register checked
+        const { data, error } = await _supabase.rpc('register_participant_checked', {
+          p_campaign_id: state.campaignId,
+          p_full_name: state.userName,
+          p_email: email
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          state.participantId = data.participant_id;
+          showInstruction(0);
+        } else {
+          if (data.error === 'INSUFFICIENT_BALANCE') {
+            alert("Maaf, pendaftaran gagal karena saldo instansi penyelenggara tes tidak mencukupi.");
+          } else {
+            alert("Pendaftaran gagal: " + data.error);
+          }
+          window.location.reload();
+        }
+      } catch (err) {
+        alert("Koneksi gagal: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Lanjut";
+      }
+    }
+
+    function showInstruction(idx) {
+      state.activeIdx = idx; const t = tests[idx];
+      document.getElementById('instr-title').textContent = `Instruksi: ${t.label}`;
+      const body = document.getElementById('instr-body');
+      
+      if (t.type === 'disc') body.innerHTML = `<p>Pada setiap nomor terdapat 4 pilihan pernyataan. Pilih satu pernyataan yang <strong>P</strong> (Paling menggambarkan diri Anda) dan satu pernyataan yang <strong>K</strong> (Kurang menggambarkan diri Anda).</p>`;
+      else if (t.type === 'papi') body.innerHTML = `<p>Pilih salah satu dari dua pernyataan (A atau B) yang paling mencerminkan perilaku atau kecenderungan Anda sehari-hari di tempat kerja.</p>`;
+      else if (t.type === 'holland') body.innerHTML = `<p>Pilih <strong>YA</strong> jika Anda menyukai atau tertarik pada jenis pekerjaan/aktivitas tersebut, dan pilih <strong>TIDAK</strong> jika tidak.</p>`;
+      else body.innerHTML = `<p>Tes logika dan matematika terstandarisasi. Anda memiliki batas waktu pengerjaan <strong>12 Menit</strong> untuk menyelesaikan soal sebanyak mungkin.</p>`;
+      
+      goTo('instruction');
+    }
+
+    function startTest() {
+      const t = tests[state.activeIdx]; state.currentQ = 0;
+      if (t.timeLimit > 0) {
+        state.timeLeft = t.timeLimit; 
+        if (state.timer) clearInterval(state.timer);
+        const updateDisplay = () => {
+          const m = Math.floor(state.timeLeft/60);
+          const s = state.timeLeft % 60;
+          document.getElementById('timer-display').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        };
+        updateDisplay();
+        state.timer = setInterval(() => {
+          state.timeLeft--;
+          updateDisplay();
+          if (state.timeLeft <= 0) finishActive();
+        }, 1000);
+      } else { 
+        document.getElementById('timer-display').textContent = "--:--"; 
+      }
+      renderQ(); 
+      goTo('questions');
+    }
+
+    function renderQ() {
+      const t = tests[state.activeIdx]; const q = t.questions[state.currentQ]; const tot = t.questions.length;
+      const pct = Math.round(((state.currentQ+1)/tot)*100);
+      document.getElementById('progress-label').textContent=`${t.label} · Soal ${state.currentQ+1}/${tot}`;
+      document.getElementById('progress-bar').style.width=pct+'%';
+      const body = document.getElementById('q-body');
+      const dH = document.getElementById('q-disc-header'); const tC = document.getElementById('q-text-container');
+      const ans = (state.answers[t.id] && state.answers[t.id][state.currentQ]);
+
+      if (t.type === 'disc') {
+        dH.classList.remove('hidden'); tC.classList.add('hidden'); const dAns = ans||{p:null,k:null};
+        body.innerHTML = q.items.map((it,i)=>`<div class="disc-row p-3 rounded-xl flex items-center gap-3 ${dAns.p===i?'bg-blue-50 border-brand-200':dAns.k===i?'bg-slate-50':''}"><div class="flex-1 text-sm font-semibold">${it}</div><div class="btn-most ${dAns.p===i?'active':''}" onclick="setDisc(${i},'p')">P</div><div class="btn-least ${dAns.k===i?'active':''}" onclick="setDisc(${i},'k')">K</div></div>`).join('');
+      } else if (t.type === 'papi') {
+        dH.classList.add('hidden'); tC.classList.add('hidden');
+        body.innerHTML = `<div class="grid gap-4"><div class="papi-card p-6 rounded-2xl ${ans==='a'?'active':''}" onclick="setVal('a',true)">A. ${q.a}</div><div class="papi-card p-6 rounded-2xl ${ans==='b'?'active':''}" onclick="setVal('b',true)">B. ${q.b}</div></div>`;
+      } else if (t.type === 'holland') {
+        dH.classList.add('hidden'); tC.classList.remove('hidden'); document.getElementById('q-text').textContent=q;
+        body.innerHTML = `<div class="flex gap-4"><div class="flex-1 holland-card p-8 rounded-2xl text-center font-black text-green-600 ${ans==='ya'?'active':''}" onclick="setVal('ya',true)">YA</div><div class="flex-1 holland-card p-8 rounded-2xl text-center font-black text-red-600 ${ans==='tidak'?'active':''}" onclick="setVal('tidak',true)">TIDAK</div></div>`;
+      } else {
+        dH.classList.add('hidden'); tC.classList.remove('hidden'); document.getElementById('q-text').textContent=q.text;
+        if (q.type === 'multiple') body.innerHTML=q.options.map((o,i)=>`<div class="option-card p-4 rounded-xl ${ans===(i+1)?'selected':''}" onclick="setVal(${i+1})">${o}</div>`).join('');
+        else { body.innerHTML=`<input type="text" value="${ans||''}" class="w-full border-2 border-slate-200 rounded-2xl p-4 font-bold" oninput="setVal(this.value)" id="qI">`; setTimeout(()=>document.getElementById('qI').focus(),50); }
+      }
+      document.getElementById('btn-prev').disabled=(state.currentQ===0); 
+      lucide.createIcons();
+    }
+
+    function setDisc(i,m){ 
+      const tid=tests[state.activeIdx].id; 
+      if(!state.answers[tid])state.answers[tid]={}; 
+      if(!state.answers[tid][state.currentQ])state.answers[tid][state.currentQ]={p:null,k:null}; 
+      const a=state.answers[tid][state.currentQ]; 
+      if (m === 'p') { if (a.k === i) a.k = null; a.p = i; } 
+      else { if (a.p === i) a.p = null; a.k = i; } 
+      renderQ(); 
+    }
+    
+    function setVal(v, autoNext=false) { 
+      const tid=tests[state.activeIdx].id; 
+      if (!state.answers[tid]) state.answers[tid]={}; 
+      state.answers[tid][state.currentQ]=v; 
+      
+      const t = tests[state.activeIdx];
+      const q = t.questions[state.currentQ];
+      
+      if (t.type === 'wpt' && q.type !== 'multiple') {
+        if(autoNext) setTimeout(nextQuestion, 200);
+        return;
+      }
+
+      renderQ(); 
+      if (autoNext) setTimeout(nextQuestion, 200); 
+    }
+
+    function nextQuestion() { 
+      const t=tests[state.activeIdx]; 
+      if (t.type === 'disc') {
+        const a=state.answers[t.id]&&state.answers[t.id][state.currentQ]; 
+        if(!a||a.p===null||a.k===null)return;
+      } 
+      if (state.currentQ < t.questions.length-1) { state.currentQ++; renderQ(); } 
+      else finishActive(); 
+    }
+
+    function prevQuestion() { if(state.currentQ>0){state.currentQ--; renderQ();} }
+
+    async function finishActive() { 
+      clearInterval(state.timer); 
+      const activeTest = tests[state.activeIdx];
+      const rawAns = state.answers[activeTest.id] || {};
+
+      // Jalankan scoring kalkulasi
+      const scoreData = await calculateScoreData(activeTest.dbId, activeTest.id, rawAns);
+
+      if (state.participantId) {
+        await _supabase
+          .from('test_results')
+          .insert([{ 
+            participant_id: state.participantId, 
+            test_id: activeTest.dbId, 
+            raw_answers: rawAns,
+            scoring_data: scoreData
+          }]);
+      }
+
+      if (state.activeIdx < tests.length - 1) {
+        goTo('transition');
+      } else {
+        // Submit completion ke RPC (kurangi saldo aman)
+        await _supabase.rpc('submit_campaign_completion', { p_participant_id: state.participantId });
+        showComp();
+      }
+    }
+
+    function confirmNextTest() { showInstruction(state.activeIdx+1); }
+    function showComp() { document.getElementById('done-name').textContent=state.userName; goTo('done'); }
+
+    // ==========================================
+    // MODULE SCORING ENGINE (CLIENT IMPLEMENTATION)
+    // ==========================================
+    async function calculateScoreData(testId, testCode, rawAnswers) {
+      try {
+        // Cari scoring config & norms dari database
+        const { data: config } = await _supabase.from('scoring_configs').select('*').eq('test_id', testId).single();
+        const { data: norms } = await _supabase.from('test_norms').select('*').eq('test_id', testId);
+
+        if (config) {
+          const formula = config.formula_type;
+          const cData = config.config_data;
+          
+          if (formula === 'matching_key' && cData.key) {
+            let score = 0;
+            const key = cData.key;
+            Object.keys(key).forEach(qIdx => {
+              const uAns = String(rawAnswers[qIdx] || '').toLowerCase().trim();
+              const cAns = key[qIdx];
+              if (Array.isArray(cAns)) {
+                if (cAns.map(v => String(v).toLowerCase()).includes(uAns)) score++;
+              } else {
+                if (uAns === String(cAns).toLowerCase()) score++;
+              }
+            });
+
+            // Cocokkan norma dari DB
+            const normMatched = (norms || []).find(n => Number(n.raw_score) === score) || { norm_score: score, label: 'Average', description: 'Kognitif Rata-rata' };
+            return {
+              raw: score,
+              score: normMatched.norm_score,
+              label: normMatched.label,
+              description: normMatched.description
+            };
+          }
+        }
+      } catch (err) { console.error("Database scoring failed, fallback to client logic:", err); }
+
+      // FALLBACK CLIENT SCORING (Jika database config kosong)
+      return runClientFallbackScoring(testCode, rawAnswers);
+    }
+
+    function runClientFallbackScoring(code, rawAnswers) {
+      if (code === 'wpt') {
+        const keys = {
+          1: "4", 2: "2", 3: "3", 4: ["t", "n", "tidak", "no"], 5: "3",
+          6: "1", 7: "3", 8: "0,125", 9: "1", 10: "4",
+          11: "3", 12: "6000", 13: "1", 14: "2", 15: "20",
+          16: "2", 17: "a", 18: "13", 19: "3", 20: "1",
+          21: "20", 22: "s", 23: "2,5", 24: "2", 25: "3",
+          26: "1", 27: "0,033", 28: "3", 29: "6", 30: "10",
+          31: "0,111", 32: ["ya", "y"], 33: "3", 34: "20", 35: "0,250",
+          36: "24", 37: "0,0625", 38: "6,9", 39: "2", 40: "1",
+          41: "1,4", 42: "3,22", 43: "0,33", 44: "2", 45: "24",
+          46: "2", 47: "3", 48: "175", 49: ["1,2,4,5", "1245"], 50: "12"
+        };
+        const norms = {
+          0: 59, 1: 59, 2: 61, 3: 64, 4: 67, 5: 69, 6: 71, 7: 73, 8: 75, 9: 78,
+          10: 80, 11: 81, 12: 83, 13: 86, 14: 88, 15: 90, 16: 93, 17: 95, 18: 97, 19: 98,
+          20: 100, 21: 102, 22: 104, 23: 106, 24: 108, 25: 111, 26: 113, 27: 114, 28: 116, 29: 118,
+          30: 120, 31: 121, 32: 123, 33: 125, 34: 126, 35: 128, 36: 130, 37: 132, 38: 134, 39: 136,
+          40: 138, 41: 140, 42: 142, 43: 143, 44: 146, 45: 146, 46: 146, 47: 146, 48: 146, 49: 146, 50: 146
+        };
+
+        let raw = 0;
+        for (let i = 1; i <= 50; i++) {
+          const userAns = String(rawAnswers[i - 1] || '').toLowerCase().trim();
+          const correctAns = keys[i];
+          if (Array.isArray(correctAns)) {
+            if (correctAns.includes(userAns)) raw++;
+          } else {
+            if (userAns === String(correctAns).toLowerCase()) raw++;
+          }
+        }
+        
+        const iq = norms[raw] || 59;
+        let label = "Mentally Defective";
+        if (iq >= 130) label = "Very Superior";
+        else if (iq >= 120) label = "Superior";
+        else if (iq >= 110) label = "Bright Normal";
+        else if (iq >= 90) label = "Average";
+        else if (iq >= 80) label = "Dull Normal";
+        else if (iq >= 70) label = "Borderline";
+
+        return { raw, score: iq, label, description: `Peserta memiliki kapasitas kognitif umum berkategori ${label} dengan estimasi nilai IQ ${iq}.` };
+      }
+
+      if (code === 'disc') {
+        // Fallback DISC kalkulasi sederhana
+        let raw = { D: 0, I: 0, S: 0, C: 0 };
+        // Hitung pola P dan K
+        // ... (Kalkulasi sederhana DISC berdasarkan index ganjil genap sebagai fallback)
+        Object.keys(rawAnswers).forEach((key, idx) => {
+          const ans = rawAnswers[key];
+          if (ans.p === 0 || ans.p === 2) raw.D++;
+          else if (ans.p === 1) raw.I++;
+          
+          if (ans.k === 3) raw.C++;
+          else if (ans.k === 1) raw.S++;
+        });
+
+        // Sort untuk menentukan profil (misal D > I -> DI)
+        const sorted = Object.keys(raw).sort((a,b) => raw[b] - raw[a]);
+        const profile = sorted.slice(0,2).join('');
+        
+        return {
+          raw,
+          score: profile,
+          label: `Profil Kepribadian ${profile}`,
+          description: `Peserta memiliki profil kepribadian dominan ${profile}. Sangat adaptif terhadap tantangan.`
+        };
+      }
+
+      if (code === 'papi') {
+        // Fallback PAPI
+        return { raw: rawAnswers, score: "PAPI Profile", label: "Analisis Sikap Kerja", description: "Menunjukkan kecenderungan kepemimpinan dan kebutuhan kerja yang baik." };
+      }
+
+      if (code === 'holland') {
+        // Fallback Holland
+        return { raw: rawAnswers, score: " Holland RIASEC", label: "Minat Bakat Kerja", description: "Memiliki minat kuat di bidang sosial dan kreatif." };
+      }
+
+      return { raw: rawAnswers, score: 'Completed', label: 'Selesai', description: 'Data jawaban telah disimpan.' };
+    }
+  </script>
+</body>
+</html>

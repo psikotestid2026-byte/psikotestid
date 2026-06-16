@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin Dashboard — PsikoTest.id Enterprise</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
+            accent: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+          },
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            body: ['"DM Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .nav-item.active { background-color: #f0fdf4; color: #16a34a; border-right: 3px solid #16a34a; font-weight: 600; }
+    .nav-item.active i { color: #16a34a; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
+
+  <!-- ===== LOGIN CONTROLLER VIEW ===== -->
+  <div id="auth-container" class="fixed inset-0 bg-slate-900 z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 relative">
+      <div class="text-center mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center mx-auto mb-4 shadow-md">
+          <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+        </div>
+        <h2 class="font-display font-extrabold text-2xl text-slate-900 leading-tight">Super Admin Portal</h2>
+        <p class="text-slate-400 text-xs mt-1.5 uppercase font-bold tracking-wider">PsikoTest.id Enterprise</p>
+      </div>
+
+      <div id="auth-alert" class="hidden mb-4 p-3 bg-red-50 text-red-600 text-sm font-semibold rounded-xl border border-red-100">
+        Email atau password salah!
+      </div>
+
+      <form onsubmit="handleAuth(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email Super Admin</label>
+          <input id="auth-email" type="email" required placeholder="admin@psikotest.id" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Password</label>
+          <input id="auth-password" type="password" required placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        <div id="company-name-field" class="hidden">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nama Platform</label>
+          <input id="auth-company-name" type="text" placeholder="PsikoTest.id HQ" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        
+        <button type="submit" id="btn-auth-submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md">Masuk</button>
+        <button type="button" onclick="enterDemoMode()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition-all border border-slate-300 text-sm mt-2">Demo Mode (Bypass Login)</button>
+      </form>
+
+      <div class="mt-6 text-center text-xs text-slate-400">
+        <span id="auth-toggle-text">Belum punya akun Super Admin?</span>
+        <button onclick="toggleAuthMode()" id="btn-auth-toggle" class="text-brand-600 font-bold hover:underline ml-1">Daftar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex shrink-0">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center mr-2">
+        <i data-lucide="shield" class="w-4 h-4 text-white"></i>
+      </div>
+      <span class="font-display font-bold text-slate-900 text-lg">Super<span class="text-brand-600">Admin</span></span>
+    </div>
+
+    <div class="p-4">
+      <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100 mb-6">
+        <div class="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center border border-brand-100">
+          <i data-lucide="user-check" class="w-5 h-5 text-brand-600"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 font-bold uppercase">Role</div>
+          <div class="text-sm font-extrabold text-slate-900">Platform Owner</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 space-y-1">
+      <button onclick="switchTab('overview')" id="nav-overview" class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-400"></i> Ringkasan Sistem
+      </button>
+      <button onclick="switchTab('customers')" id="nav-customers" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i> Kelola Customer & Saldo
+      </button>
+      <button onclick="switchTab('tests')" id="nav-tests" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="scroll" class="w-4 h-4 text-slate-400"></i> Kelola Alat Tes & Soal
+      </button>
+      <button onclick="switchTab('norms')" id="nav-norms" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-slate-400"></i> Aturan Norma & Scoring
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-slate-100 mt-auto">
+      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- Topbar -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+      <h1 class="font-display font-bold text-xl text-slate-900" id="page-title">Ringkasan Platform</h1>
+      <div class="flex items-center gap-3">
+        <span id="user-email-display" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"></span>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto p-6">
+      
+      <!-- TAB: OVERVIEW -->
+      <div id="tab-overview" class="tab-content active max-w-5xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Total Perusahaan/Customer</h3>
+              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><i data-lucide="users" class="w-4 h-4 text-blue-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-total-customers">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Total Tes Selesai</h3>
+              <div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center"><i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-total-submissions">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Total Campaign Aktif</h3>
+              <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center"><i data-lucide="link" class="w-4 h-4 text-purple-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-total-campaigns">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Verifikasi Top-up Tertunda</h3>
+              <div class="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center"><i data-lucide="hourglass" class="w-4 h-4 text-yellow-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1 text-yellow-600 animate-pulse" id="stat-pending-topups">0</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Pending Topups Panel -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="font-display font-bold text-lg text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="wallet" class="text-yellow-600"></i> Persetujuan Top Up Tertunda</h2>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-100 pb-2 text-slate-400 uppercase tracking-wider font-bold">
+                    <th class="py-2">Perusahaan</th>
+                    <th class="py-2">Nominal</th>
+                    <th class="py-2">Bukti</th>
+                    <th class="py-2 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-pending-topups" class="divide-y divide-slate-50">
+                  <!-- JS Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Platform Activity -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h2 class="font-display font-bold text-lg text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="activity" class="text-brand-600"></i> Log Aktivitas Platform</h2>
+            <div class="space-y-4 max-h-[300px] overflow-y-auto" id="list-activity-logs">
+              <!-- JS Dynamic -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CUSTOMERS -->
+      <div id="tab-customers" class="tab-content max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="font-display font-bold text-lg text-slate-900">Manajemen Perusahaan Customer & Saldo</h2>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                <th class="py-3.5 px-4">Nama Perusahaan / Email</th>
+                <th class="py-3.5 px-4">Saldo Saat Ini</th>
+                <th class="py-3.5 px-4">Tanggal Daftar</th>
+                <th class="py-3.5 px-4 text-right">Aksi Saldo Manual</th>
+              </tr>
+            </thead>
+            <tbody id="table-customers-list" class="divide-y divide-slate-100">
+              <!-- JS Dynamic -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: TESTS -->
+      <div id="tab-tests" class="tab-content max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="font-display font-bold text-lg text-slate-900">Konfigurasi Alat Tes & Bank Soal</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="tests-config-cards">
+          <!-- JS Dynamic -->
+        </div>
+
+        <div id="selected-test-area" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
+            <div>
+              <h3 class="font-display font-bold text-xl text-slate-900" id="selected-test-title">Nama Alat Tes</h3>
+              <p class="text-xs text-slate-400">Penyuntingan parameter master dan butir soal ujian.</p>
+            </div>
+            <button onclick="saveTestParameters()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-5 py-2 rounded-lg text-xs transition-colors">Simpan Parameter Master</button>
+          </div>
+
+          <form id="form-test-params" class="grid sm:grid-cols-3 gap-6 mb-8 border-b border-slate-100 pb-8">
+            <input type="hidden" id="selected-test-id">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Harga Per Peserta (Rp)</label>
+              <input id="selected-test-price" type="number" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Durasi (Detik, 0 jika tanpa batasan)</label>
+              <input id="selected-test-duration" type="number" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Status Aktif</label>
+              <select id="selected-test-active" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Instruksi Tes</label>
+              <textarea id="selected-test-instructions" rows="3" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none"></textarea>
+            </div>
+          </form>
+
+          <h4 class="font-display font-bold text-base text-slate-800 mb-4 flex justify-between items-center">
+            Daftar Butir Soal
+            <button onclick="openQuestionModal()" class="bg-accent-600 hover:bg-accent-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Soal</button>
+          </h4>
+          <div class="space-y-3" id="selected-test-questions-list"></div>
+        </div>
+      </div>
+
+      <!-- TAB: NORMS -->
+      <div id="tab-norms" class="tab-content max-w-5xl mx-auto">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-8">
+          <h2 class="font-display font-bold text-lg text-slate-900 mb-2">Pengaturan Norma & Scoring Konfigurasi</h2>
+          <p class="text-xs text-slate-400 mb-6">Unggah CSV rujukan norma atau atur formula scoring untuk setiap alat tes.</p>
+
+          <div class="grid sm:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pilih Alat Tes</label>
+              <select id="norms-select-test" onchange="loadTestNormsAndConfigs()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                <!-- JS Dynamic -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tipe Formula Kalkulasi</label>
+              <select id="norms-formula-type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                <option value="matching_key">Matching Key (Pencocokan Kunci Jawaban)</option>
+                <option value="disc_matrix">DISC Matrix (Paling/Kurang D-I-S-C)</option>
+                <option value="papi_vector">PAPI Vector (Penjumlahan Dimensi Arah Diagonal)</option>
+                <option value="riasec_score">Holland RIASEC Score (Penjumlahan YA/Kategori)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Aksi Pengaturan</label>
+              <button onclick="saveScoringConfig()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors">Simpan Konfigurasi</button>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-100 pt-6">
+            <h3 class="font-display font-bold text-base text-slate-800 mb-4 flex justify-between items-center">
+              Daftar Rujukan Norma
+              <div class="flex gap-2">
+                <input type="file" id="norms-csv-file" accept=".csv" class="hidden" onchange="importNormsCSV(event)">
+                <button onclick="document.getElementById('norms-csv-file').click()" class="bg-accent-50 text-accent-700 hover:bg-accent-100 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 border border-accent-100"><i data-lucide="upload" class="w-3.5 h-3.5"></i> Impor CSV Norma</button>
+                <button onclick="openAddNormModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Baris Norma</button>
+              </div>
+            </h3>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+              <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                    <th class="py-3 px-4">Skor Mentah (Raw)</th>
+                    <th class="py-3 px-4">Skor Standar / IQ / Tipe</th>
+                    <th class="py-3 px-4">Kategori Label</th>
+                    <th class="py-3 px-4">Deskripsi / Hasil Interpretasi</th>
+                    <th class="py-3 px-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-norms-list" class="divide-y divide-slate-100">
+                  <!-- JS Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL: ADD/EDIT QUESTION -->
+  <div id="modal-question" class="fixed inset-0 bg-slate-900/50 backdrop-blur z-[999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto">
+      <h3 class="font-display font-bold text-xl text-slate-900 mb-4" id="question-modal-title">Tambah Butir Soal</h3>
+      <form onsubmit="saveQuestion(event)" class="space-y-4">
+        <input type="hidden" id="modal-q-id">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nomor Urut</label>
+          <input id="modal-q-order" type="number" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Struktur Data Soal (JSON format)</label>
+          <p class="text-[10px] text-slate-400 mb-2">Contoh DISC: {"items": ["Ramah", "Jujur", ...]} | Contoh WPT: {"text": "MENANGKAP adalah lawan dari...", "options": ["lepas", "ikat"]}</p>
+          <textarea id="modal-q-json" rows="6" required class="w-full border border-slate-200 rounded-xl p-4 text-sm font-mono outline-none"></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeQuestionModal()" class="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50">Batal</button>
+          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-md">Simpan Soal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT NORM -->
+  <div id="modal-norm" class="fixed inset-0 bg-slate-900/50 backdrop-blur z-[999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+      <h3 class="font-display font-bold text-xl text-slate-900 mb-4" id="norm-modal-title">Tambah Rujukan Norma</h3>
+      <form onsubmit="saveNorm(event)" class="space-y-4">
+        <input type="hidden" id="modal-n-id">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Skor Mentah (Raw)</label>
+          <input id="modal-n-raw" type="text" required placeholder="e.g. 10 atau DI atau 12-15" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Skor Norma (Hasil Konversi)</label>
+          <input id="modal-n-norm" type="text" required placeholder="e.g. 100 atau R atau Sanguinis" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Kategori Label</label>
+          <input id="modal-n-label" type="text" placeholder="e.g. Average, Bright Normal" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Penjelasan Interpretasi</label>
+          <textarea id="modal-n-desc" rows="3" placeholder="Deskripsi interpretasi psikologis..." class="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none"></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeNormModal()" class="px-5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50">Batal</button>
+          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-md">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let isRegisterMode = false;
+    let authSession = null;
+    let isDemoMode = false;
+
+    // Global mock data for Demo Mode
+    let mockCustomers = [
+      { id: 'cust-1', company_name: 'PT Maju Bersama', email: 'hrd@majubersama.com', balance: 5000000, created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString() },
+      { id: 'cust-2', company_name: 'Universitas Nusa Bangsa', email: 'admisi@nusabangsa.ac.id', balance: 1200000, created_at: new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString() },
+      { id: 'cust-3', company_name: 'PT Kreatif Digital Solusi', email: 'talent@kreatifdigital.com', balance: 0, created_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString() }
+    ];
+    let mockTopUpRequests = [
+      { id: 'top-1', customer_id: 'cust-3', amount: 2500000, proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500', status: 'pending', created_at: new Date().toISOString() },
+      { id: 'top-2', customer_id: 'cust-2', amount: 1200000, proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500', status: 'verified', created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString() }
+    ];
+    let mockCampaigns = [
+      { id: 'camp-1', customer_id: 'cust-1', title: 'Rekrutmen Management Trainee', is_active: true, created_at: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(), campaign_tests: [{ test_id: 'test-disc' }, { test_id: 'test-wpt' }] },
+      { id: 'camp-2', customer_id: 'cust-2', title: 'Tes Penjurusan Mahasiswa Baru', is_active: true, created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(), campaign_tests: [{ test_id: 'test-disc' }, { test_id: 'test-holland' }] }
+    ];
+    let mockParticipants = [
+      { id: 'part-1', campaign_id: 'camp-1', full_name: 'Budi Santoso', email: 'budi.santoso@email.com', status: 'completed', created_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(), campaigns: { id: 'camp-1', customer_id: 'cust-1', title: 'Rekrutmen Management Trainee' } },
+      { id: 'part-2', campaign_id: 'camp-1', full_name: 'Siti Rahma', email: 'siti.rahma@email.com', status: 'completed', created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(), campaigns: { id: 'camp-1', customer_id: 'cust-1', title: 'Rekrutmen Management Trainee' } },
+      { id: 'part-3', campaign_id: 'camp-2', full_name: 'Andi Wijaya', email: 'andi.wijaya@gmail.com', status: 'running', created_at: new Date().toISOString(), campaigns: { id: 'camp-2', customer_id: 'cust-2', title: 'Tes Penjurusan Mahasiswa Baru' } }
+    ];
+    let mockTransactions = [
+      { id: 'tx-1', customer_id: 'cust-1', amount: -50000, type: 'debit', description: 'Asesmen selesai: Budi Santoso (Rekrutmen Management Trainee)', created_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString() },
+      { id: 'tx-2', customer_id: 'cust-1', amount: -50000, type: 'debit', description: 'Asesmen selesai: Siti Rahma (Rekrutmen Management Trainee)', created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString() },
+      { id: 'tx-3', customer_id: 'cust-2', amount: 1200000, type: 'credit', description: 'Top up saldo berhasil terverifikasi', created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString() }
+    ];
+    let mockMasterTests = [
+      { id: 'test-disc', code: 'disc', name: 'DISC Personality', price: 20000, duration: 600, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-wpt', code: 'wpt', name: 'Wonderlic (WPT)', price: 30000, duration: 720, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-papi', code: 'papi', name: 'PAPI Kostick', price: 40000, duration: 900, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-holland', code: 'holland', name: 'Holland RIASEC', price: 30000, duration: 900, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' }
+    ];
+    let mockTestQuestions = {
+      'test-disc': [
+        { id: 'q-d1', order_number: 1, question_data: { items: ["Mudah bergaul, ramah, mudah setuju", "Mempercayai, percaya pada orang lain", "Petualang, suka mengambil resiko", "Penuh toleransi, menghormati orang lain"] } },
+        { id: 'q-d2', order_number: 2, question_data: { items: ["Yang penting adalah hasil", "Kerjakan dengan benar. Ketepatan sangat penting", "Buat agar menyenangkan", "Kerjakan bersama-sama"] } }
+      ],
+      'test-wpt': [
+        { id: 'q-w1', order_number: 1, question_data: { text: "Bulan lalu pada awal tahun ini adalah:", options: ["Januari", "Maret", "Juli", "Desember", "Oktober"], type: "multiple" } },
+        { id: 'q-w2', order_number: 2, question_data: { text: "MENANGKAP adalah lawan kata dari:", options: ["meletakkan", "membebaskan", "beresiko", "berusaha", "turun tingkat"], type: "multiple" } }
+      ],
+      'test-papi': [
+        { id: 'q-p1', order_number: 1, question_data: { a: "Saya seorang pekerja giat", b: "Saya Bukan Seorang Pemurung" } }
+      ],
+      'test-holland': [
+        { id: 'q-h1', order_number: 1, question_data: "Senang menonton drama" }
+      ]
+    };
+    let mockScoringConfigs = {
+      'test-disc': { id: 'c-d', formula_type: 'disc_matrix', config_data: { matrix_p: {}, matrix_k: {} } },
+      'test-wpt': { id: 'c-w', formula_type: 'matching_key', config_data: { key: { "1": "4" } } }
+    };
+    let mockTestNorms = {
+      'test-disc': [
+        { id: 'n-d1', raw_score: 'D', norm_score: 'Dominance', label: 'High D', description: 'Karakter mandiri, tegas, berorientasi hasil.' }
+      ],
+      'test-wpt': [
+        { id: 'n-w1', raw_score: '20', norm_score: '100', label: 'Average', description: 'Kapasitas intelektual rata-rata.' }
+      ]
+    };
+
+    function enterDemoMode() {
+      isDemoMode = true;
+      authSession = { user: { id: 'demo-super-admin-id', email: 'demo-super@psikotest.id' } };
+      document.getElementById('auth-container').classList.add('hidden');
+      document.getElementById('user-email-display').textContent = authSession.user.email;
+      loadSuperAdminDashboard();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      checkAuth();
+    });
+
+    async function checkAuth() {
+      if (isDemoMode) return;
+      const { data: { session } } = await _supabase.auth.getSession();
+      authSession = session;
+      
+      if (session) {
+        // Cek apakah user adalah super_admin
+        const { data: customer, error } = await _supabase
+          .from('customers')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (customer && customer.role === 'super_admin') {
+          document.getElementById('auth-container').classList.add('hidden');
+          document.getElementById('user-email-display').textContent = session.user.email;
+          loadSuperAdminDashboard();
+        } else {
+          alert("Anda tidak memiliki hak akses sebagai Super Admin!");
+          await _supabase.auth.signOut();
+          document.getElementById('auth-container').classList.remove('hidden');
+        }
+      } else {
+        document.getElementById('auth-container').classList.remove('hidden');
+      }
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-modal-title').textContent = isRegisterMode ? "Daftar Akun Super Admin" : "Super Admin Portal";
+      document.getElementById('company-name-field').classList.toggle('hidden', !isRegisterMode);
+      document.getElementById('btn-auth-submit').textContent = isRegisterMode ? "Daftar" : "Masuk";
+      document.getElementById('auth-toggle-text').textContent = isRegisterMode ? "Sudah punya akun?" : "Belum punya akun Super Admin?";
+      document.getElementById('btn-auth-toggle').textContent = isRegisterMode ? "Masuk" : "Daftar";
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const compName = document.getElementById('auth-company-name').value || "PsikoTest HQ";
+      const alertEl = document.getElementById('auth-alert');
+      alertEl.classList.add('hidden');
+
+      const btn = document.getElementById('btn-auth-submit');
+      btn.disabled = true; btn.textContent = "Loading...";
+
+      if (isRegisterMode) {
+        // Registrasi Super Admin (simpan role=super_admin ke user_metadata agar disinkronisasikan trigger)
+        const { data, error } = await _supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              company_name: compName,
+              role: 'super_admin'
+            }
+          }
+        });
+
+        if (error) {
+          alertEl.textContent = error.message;
+          alertEl.classList.remove('hidden');
+        } else {
+          alert("Registrasi sukses! Silakan login.");
+          toggleAuthMode();
+        }
+      } else {
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alertEl.textContent = error.message;
+          alertEl.classList.remove('hidden');
+        } else {
+          checkAuth();
+        }
+      }
+      btn.disabled = false;
+      btn.textContent = isRegisterMode ? "Daftar" : "Masuk";
+    }
+
+    async function handleLogout() {
+      await _supabase.auth.signOut();
+      window.location.reload();
+    }
+
+    // Tab switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = document.getElementById('nav-' + tabId);
+      if (activeNav) activeNav.classList.add('active');
+
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      const activeTab = document.getElementById('tab-' + tabId);
+      if (activeTab) activeTab.classList.add('active');
+
+      const titles = {
+        'overview': 'Ringkasan Sistem Platform',
+        'customers': 'Manajemen Customer & Top-up',
+        'tests': 'Konfigurasi Alat Tes & Bank Soal',
+        'norms': 'Konfigurasi Norma & Formula Scoring'
+      };
+      document.getElementById('page-title').textContent = titles[tabId];
+      
+      // Reload tab specific data
+      if (tabId === 'customers') loadCustomersTab();
+      if (tabId === 'tests') loadTestsTab();
+      if (tabId === 'norms') loadNormsTab();
+    }
+
+    // ==========================================
+    // DATA LOADERS & ACTIONS
+    // ==========================================
+    async function loadSuperAdminDashboard() {
+      try {
+        let custs, topups, camps, submissions, logs;
+        if (isDemoMode) {
+          custs = mockCustomers;
+          topups = mockTopUpRequests;
+          camps = mockCampaigns;
+          submissions = mockParticipants.filter(p => p.status === 'completed');
+          logs = mockTransactions.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
+        } else {
+          // Load stats
+          const { data: c } = await _supabase.from('customers').select('*');
+          custs = c;
+          const { data: t } = await _supabase.from('top_up_requests').select('*');
+          topups = t;
+          const { data: ca } = await _supabase.from('campaigns').select('*');
+          camps = ca;
+          const { data: s } = await _supabase.from('participants').select('*').eq('status', 'completed');
+          submissions = s;
+          const { data: l } = await _supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(20);
+          logs = l;
+        }
+
+        document.getElementById('stat-total-customers').textContent = custs ? custs.length : 0;
+        document.getElementById('stat-total-submissions').textContent = submissions ? submissions.length : 0;
+        document.getElementById('stat-total-campaigns').textContent = camps ? camps.filter(c => c.is_active).length : 0;
+        
+        const pendingTopups = topups ? topups.filter(t => t.status === 'pending') : [];
+        document.getElementById('stat-pending-topups').textContent = pendingTopups.length;
+
+        // Render Pending Topups table
+        const tablePending = document.getElementById('table-pending-topups');
+        tablePending.innerHTML = pendingTopups.length ? pendingTopups.map(t => {
+          const cust = custs.find(c => c.id === t.customer_id) || { company_name: 'Unknown', email: '' };
+          return `
+            <tr>
+              <td class="py-3">
+                <div class="font-bold text-slate-800">${cust.company_name}</div>
+                <div class="text-[10px] text-slate-400">${cust.email}</div>
+              </td>
+              <td class="py-3 font-semibold text-brand-700">Rp ${Number(t.amount).toLocaleString('id-ID')}</td>
+              <td class="py-3">
+                ${t.proof_url ? `<a href="${t.proof_url}" target="_blank" class="text-accent-600 font-bold hover:underline flex items-center gap-1"><i data-lucide="image" class="w-3.5 h-3.5"></i> Lihat Bukti</a>` : '<span class="text-slate-300">No Proof</span>'}
+              </td>
+              <td class="py-3 text-right">
+                <button onclick="processTopUp('${t.id}', 'verified')" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-2.5 py-1.5 rounded-lg mr-1 text-[10px]">Setujui</button>
+                <button onclick="processTopUp('${t.id}', 'rejected')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px]">Tolak</button>
+              </td>
+            </tr>
+          `;
+        }).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400">Tidak ada pengajuan saldo pending</td></tr>';
+
+        // Render platform activity logs
+        const listLogs = document.getElementById('list-activity-logs');
+        listLogs.innerHTML = logs && logs.length ? logs.map(l => {
+          const cust = custs.find(c => c.id === l.customer_id) || { company_name: 'System' };
+          const isDebit = l.amount < 0;
+          return `
+            <div class="flex items-start gap-3 border-b border-slate-50 pb-3">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}">
+                <i data-lucide="${isDebit ? 'arrow-down-right' : 'arrow-up-left'}" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs font-bold text-slate-800 truncate">${l.description}</div>
+                <div class="text-[10px] text-slate-400">${cust.company_name} · ${new Date(l.created_at).toLocaleString()}</div>
+              </div>
+              <div class="text-xs font-bold shrink-0 ${isDebit ? 'text-red-600' : 'text-green-600'}">
+                ${isDebit ? '' : '+'}${Number(l.amount).toLocaleString('id-ID')}
+              </div>
+            </div>
+          `;
+        }).join('') : '<p class="text-xs text-slate-400 text-center py-6">Belum ada aktivitas finansial</p>';
+
+        lucide.createIcons();
+      } catch (err) { console.error(err); }
+    }
+
+    async function processTopUp(id, status) {
+      if (!confirm(`Apakah Anda yakin ingin memproses top up ini sebagai ${status === 'verified' ? 'SETUJU' : 'TOLAK'}?`)) return;
+      if (isDemoMode) {
+        const topup = mockTopUpRequests.find(t => t.id === id);
+        if (topup) {
+          topup.status = status;
+          if (status === 'verified') {
+            const cust = mockCustomers.find(c => c.id === topup.customer_id);
+            if (cust) {
+              cust.balance = parseFloat(cust.balance) + parseFloat(topup.amount);
+            }
+            mockTransactions.push({
+              id: 'tx-' + Math.random(),
+              customer_id: topup.customer_id,
+              amount: topup.amount,
+              type: 'credit',
+              description: 'Top up saldo berhasil terverifikasi',
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+        alert("Top up berhasil diproses!");
+        loadSuperAdminDashboard();
+        return;
+      }
+      try {
+        const { data, error } = await _supabase.rpc('verify_top_up', { p_request_id: id, p_status: status });
+        if (error) throw error;
+        alert("Top up berhasil diproses!");
+        loadSuperAdminDashboard();
+      } catch (e) {
+        alert("Gagal memproses top up: " + e.message);
+      }
+    }
+
+    // ==========================================
+    // TAB: CUSTOMERS VIEW
+    // ==========================================
+    async function loadCustomersTab() {
+      try {
+        let custs;
+        if (isDemoMode) {
+          custs = mockCustomers.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        } else {
+          const { data: c } = await _supabase.from('customers').select('*').order('created_at', { ascending: false });
+          custs = c;
+        }
+        const list = document.getElementById('table-customers-list');
+        list.innerHTML = custs && custs.length ? custs.map(c => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-4 px-4">
+              <div class="font-bold text-slate-800">${c.company_name}</div>
+              <div class="text-xs text-slate-400">${c.email}</div>
+            </td>
+            <td class="py-4 px-4 font-bold text-slate-900">Rp ${Number(c.balance).toLocaleString('id-ID')}</td>
+            <td class="py-4 px-4 text-xs text-slate-400">${new Date(c.created_at).toLocaleDateString()}</td>
+            <td class="py-4 px-4 text-right">
+              <button onclick="adjustBalanceManual('${c.id}', ${c.balance})" class="bg-accent-50 text-accent-700 hover:bg-accent-100 border border-accent-100 font-bold px-3 py-1.5 rounded-lg text-xs">Atur Saldo Manual</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada customer terdaftar</td></tr>';
+      } catch (e) { console.error(e); }
+    }
+
+    async function adjustBalanceManual(custId, currentBalance) {
+      const amt = prompt(`Masukkan nominal saldo akhir baru untuk customer ini:`, currentBalance);
+      if (amt === null || isNaN(amt)) return;
+      const targetVal = parseFloat(amt);
+      const diff = targetVal - currentBalance;
+      if (isDemoMode) {
+        const cust = mockCustomers.find(c => c.id === custId);
+        if (cust) {
+          cust.balance = targetVal;
+        }
+        mockTransactions.push({
+          id: 'tx-' + Math.random(),
+          customer_id: custId,
+          amount: diff,
+          type: diff >= 0 ? 'credit' : 'debit',
+          description: `Penyesuaian saldo manual oleh Super Admin (dari Rp ${currentBalance.toLocaleString()} ke Rp ${targetVal.toLocaleString()})`,
+          created_at: new Date().toISOString()
+        });
+        alert("Saldo manual berhasil disesuaikan!");
+        loadCustomersTab();
+        return;
+      }
+      try {
+        // Update balance langsung
+        const { error } = await _supabase.from('customers').update({ balance: targetVal }).eq('id', custId);
+        if (error) throw error;
+        
+        // Log transaction ledger
+        await _supabase.from('transactions').insert([{
+          customer_id: custId,
+          amount: diff,
+          type: diff >= 0 ? 'credit' : 'debit',
+          description: `Penyesuaian saldo manual oleh Super Admin (dari Rp ${currentBalance.toLocaleString()} ke Rp ${targetVal.toLocaleString()})`
+        }]);
+
+        alert("Saldo manual berhasil disesuaikan!");
+        loadCustomersTab();
+      } catch (e) {
+        alert("Gagal memperbarui saldo: " + e.message);
+      }
+    }
+
+    // ==========================================
+    // TAB: TESTS & SOAL VIEW
+    // ==========================================
+    let testsList = [];
+    async function loadTestsTab() {
+      try {
+        let tests;
+        if (isDemoMode) {
+          tests = mockMasterTests;
+        } else {
+          const { data: t } = await _supabase.from('master_tests').select('*').order('code');
+          tests = t;
+        }
+        testsList = tests || [];
+        
+        const container = document.getElementById('tests-config-cards');
+        container.innerHTML = testsList.map(t => `
+          <button onclick="selectTest('${t.id}')" class="bg-white hover:bg-slate-50 border border-slate-200 p-5 rounded-2xl text-left shadow-sm transition-all focus:ring-2 focus:ring-brand-500 outline-none">
+            <span class="bg-brand-50 text-brand-700 border border-brand-100 px-2 py-0.5 rounded text-[9px] font-bold uppercase">${t.code}</span>
+            <h3 class="font-display font-extrabold text-slate-900 mt-2">${t.name}</h3>
+            <p class="text-xs text-brand-700 font-bold mt-1">Rp ${Number(t.price).toLocaleString('id-ID')}</p>
+            <p class="text-[10px] text-slate-400 mt-1">${Math.round(t.duration/60)} Menit · ${t.is_active ? 'Aktif' : 'Nonaktif'}</p>
+          </button>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    async function selectTest(id) {
+      const t = testsList.find(item => item.id === id);
+      if (!t) return;
+      
+      document.getElementById('selected-test-id').value = t.id;
+      document.getElementById('selected-test-title').textContent = t.name;
+      document.getElementById('selected-test-price').value = t.price;
+      document.getElementById('selected-test-duration').value = t.duration;
+      document.getElementById('selected-test-active').value = String(t.is_active);
+      document.getElementById('selected-test-instructions').value = t.instructions;
+
+      document.getElementById('selected-test-area').classList.remove('hidden');
+      loadTestQuestions(t.id);
+    }
+
+    async function saveTestParameters() {
+      const id = document.getElementById('selected-test-id').value;
+      const price = parseFloat(document.getElementById('selected-test-price').value);
+      const duration = parseInt(document.getElementById('selected-test-duration').value);
+      const is_active = document.getElementById('selected-test-active').value === 'true';
+      const instructions = document.getElementById('selected-test-instructions').value;
+
+      if (isDemoMode) {
+        const test = mockMasterTests.find(item => item.id === id);
+        if (test) {
+          test.price = price;
+          test.duration = duration;
+          test.is_active = is_active;
+          test.instructions = instructions;
+        }
+        alert("Parameter master tes berhasil disimpan!");
+        loadTestsTab();
+        return;
+      }
+      try {
+        const { error } = await _supabase
+          .from('master_tests')
+          .update({ price, duration, is_active, instructions })
+          .eq('id', id);
+
+        if (error) throw error;
+        alert("Parameter master tes berhasil disimpan!");
+        loadTestsTab();
+      } catch (e) { alert("Gagal menyimpan: " + e.message); }
+    }
+
+    async function loadTestQuestions(testId) {
+      try {
+        let questions;
+        if (isDemoMode) {
+          const test = mockMasterTests.find(t => t.id === testId);
+          const code = test ? test.code : testId;
+          questions = mockTestQuestions[code] || mockTestQuestions[testId] || [];
+        } else {
+          const { data: q } = await _supabase
+            .from('bank_soal')
+            .select('*')
+            .eq('test_id', testId)
+            .order('order_number');
+          questions = q;
+        }
+
+        const list = document.getElementById('selected-test-questions-list');
+        list.innerHTML = questions && questions.length ? questions.map(q => `
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-start gap-4">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">Soal ${q.order_number}</span>
+              </div>
+              <pre class="text-xs font-mono bg-white border border-slate-100 p-3 rounded-lg overflow-x-auto text-slate-700 whitespace-pre-wrap">${JSON.stringify(q.question_data, null, 2)}</pre>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="editQuestion('${q.id}', ${q.order_number}, '${escapeJsonStr(JSON.stringify(q.question_data))}')" class="text-accent-600 hover:text-accent-800 text-xs font-bold">Edit</button>
+              <button onclick="deleteQuestion('${q.id}', '${testId}')" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+            </div>
+          </div>
+        `).join('') : '<p class="text-sm text-slate-400 text-center py-6">Belum ada butir soal untuk alat tes ini</p>';
+      } catch (e) { console.error(e); }
+    }
+
+    function escapeJsonStr(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    // MODAL SOAL
+    function openQuestionModal(id = '', order = '', jsonStr = '') {
+      document.getElementById('modal-q-id').value = id;
+      document.getElementById('modal-q-order').value = order || (document.getElementById('selected-test-questions-list').children.length + 1);
+      document.getElementById('modal-q-json').value = jsonStr ? JSON.stringify(JSON.parse(jsonStr), null, 2) : '';
+      document.getElementById('question-modal-title').textContent = id ? "Edit Butir Soal" : "Tambah Butir Soal";
+      document.getElementById('modal-question').classList.remove('hidden');
+    }
+
+    function closeQuestionModal() {
+      document.getElementById('modal-question').classList.add('hidden');
+    }
+
+    function editQuestion(id, order, jsonStr) {
+      openQuestionModal(id, order, jsonStr);
+    }
+
+    async function saveQuestion(e) {
+      e.preventDefault();
+      const testId = document.getElementById('selected-test-id').value;
+      const qId = document.getElementById('modal-q-id').value;
+      const order = parseInt(document.getElementById('modal-q-order').value);
+      const jsonStr = document.getElementById('modal-q-json').value;
+
+      let questionData;
+      try { questionData = JSON.parse(jsonStr); } 
+      catch (err) { alert("Format JSON tidak valid! Periksa kurung dan koma."); return; }
+
+      if (isDemoMode) {
+        const test = mockMasterTests.find(t => t.id === testId);
+        const code = test ? test.code : testId;
+        if (!mockTestQuestions[code]) mockTestQuestions[code] = [];
+        const qList = mockTestQuestions[code];
+        
+        if (qId) {
+          const q = qList.find(item => item.id === qId);
+          if (q) {
+            q.order_number = order;
+            q.question_data = questionData;
+          }
+        } else {
+          qList.push({
+            id: 'q-' + Math.random(),
+            test_id: testId,
+            order_number: order,
+            question_data: questionData
+          });
+        }
+        closeQuestionModal();
+        loadTestQuestions(testId);
+        return;
+      }
+
+      try {
+        if (qId) {
+          const { error } = await _supabase.from('bank_soal').update({ order_number: order, question_data: questionData }).eq('id', qId);
+          if (error) throw error;
+        } else {
+          const { error } = await _supabase.from('bank_soal').insert([{ test_id: testId, order_number: order, question_data: questionData }]);
+          if (error) throw error;
+        }
+        closeQuestionModal();
+        loadTestQuestions(testId);
+      } catch (e) { alert("Gagal menyimpan soal: " + e.message); }
+    }
+
+    async function deleteQuestion(id, testId) {
+      if (!confirm("Apakah Anda yakin ingin menghapus soal ini?")) return;
+      if (isDemoMode) {
+        const test = mockMasterTests.find(t => t.id === testId);
+        const code = test ? test.code : testId;
+        if (mockTestQuestions[code]) {
+          mockTestQuestions[code] = mockTestQuestions[code].filter(q => q.id !== id);
+        }
+        loadTestQuestions(testId);
+        return;
+      }
+      try {
+        const { error } = await _supabase.from('bank_soal').delete().eq('id', id);
+        if (error) throw error;
+        loadTestQuestions(testId);
+      } catch (e) { alert("Gagal menghapus: " + e.message); }
+    }
+
+    // ==========================================
+    // TAB: NORMS & SCORING VIEW
+    // ==========================================
+    let normsTestList = [];
+    async function loadNormsTab() {
+      try {
+        let tests;
+        if (isDemoMode) {
+          tests = mockMasterTests;
+        } else {
+          const { data: t } = await _supabase.from('master_tests').select('*').order('code');
+          tests = t;
+        }
+        normsTestList = tests || [];
+        
+        const select = document.getElementById('norms-select-test');
+        select.innerHTML = normsTestList.map(t => `<option value="${t.id}">${t.name} (${t.code.toUpperCase()})</option>`).join('');
+        
+        loadTestNormsAndConfigs();
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadTestNormsAndConfigs() {
+      const testId = document.getElementById('norms-select-test').value;
+      if (!testId) return;
+
+      try {
+        let config, norms;
+        if (isDemoMode) {
+          const test = mockMasterTests.find(t => t.id === testId);
+          const code = test ? test.code : testId;
+          config = mockScoringConfigs[code] || mockScoringConfigs[testId];
+          norms = mockTestNorms[code] || mockTestNorms[testId] || [];
+        } else {
+          // Load config formula
+          const { data: c } = await _supabase.from('scoring_configs').eq('test_id', testId).single();
+          config = c;
+          // Load norms
+          const { data: n } = await _supabase.from('test_norms').eq('test_id', testId).order('raw_score');
+          norms = n;
+        }
+
+        if (config) {
+          document.getElementById('norms-formula-type').value = config.formula_type;
+        } else {
+          // Default
+          document.getElementById('norms-formula-type').value = 'matching_key';
+        }
+
+        const list = document.getElementById('table-norms-list');
+        list.innerHTML = norms && norms.length ? norms.map(n => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4 font-bold text-slate-800">${n.raw_score}</td>
+            <td class="py-3 px-4 font-semibold text-brand-700">${n.norm_score}</td>
+            <td class="py-3 px-4 text-xs font-semibold text-slate-500">${n.label || '-'}</td>
+            <td class="py-3 px-4 text-xs text-slate-400 truncate max-w-[200px]">${n.description || '-'}</td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="editNorm('${n.id}', '${n.raw_score}', '${n.norm_score}', '${n.label || ''}', '${escapeJsonStr(n.description || '')}')" class="text-accent-600 hover:text-accent-800 text-xs font-bold mr-2">Edit</button>
+              <button onclick="deleteNorm('${n.id}')" class="text-red-600 hover:text-red-800 text-xs font-bold">Hapus</button>
+            </td>
+          </tr>
+        `).join('') : '<tr><td colspan="5" class="p-6 text-center text-slate-400">Belum ada data norma rujukan untuk tes ini. Silakan tambahkan atau impor CSV.</td></tr>';
+      } catch (e) { console.error(e); }
+    }
+
+    async function saveScoringConfig() {
+      const testId = document.getElementById('norms-select-test').value;
+      const formulaType = document.getElementById('norms-formula-type').value;
+
+      if (isDemoMode) {
+        const test = mockMasterTests.find(t => t.id === testId);
+        const code = test ? test.code : testId;
+        const defaultConfigData = {
+          matching_key: { key: { "1": "1" } },
+          disc_matrix: { matrix_p: {}, matrix_k: {} },
+          papi_vector: { matrix: {} },
+          riasec_score: { mapping: {} }
+        }[formulaType];
+
+        mockScoringConfigs[code] = {
+          id: 'c-' + Math.random(),
+          formula_type: formulaType,
+          config_data: defaultConfigData
+        };
+        alert("Konfigurasi formula scoring disimpan!");
+        return;
+      }
+
+      try {
+        const { data: existing } = await _supabase.from('scoring_configs').select('id').eq('test_id', testId).single();
+        // default config data
+        const defaultConfigData = {
+          matching_key: { key: { "1": "1" } },
+          disc_matrix: { matrix_p: {}, matrix_k: {} },
+          papi_vector: { matrix: {} },
+          riasec_score: { mapping: {} }
+        }[formulaType];
+
+        if (existing) {
+          await _supabase.from('scoring_configs').update({ formula_type: formulaType }).eq('test_id', testId);
+        } else {
+          await _supabase.from('scoring_configs').insert([{ test_id: testId, formula_type: formulaType, config_data: defaultConfigData }]);
+        }
+        alert("Konfigurasi formula scoring disimpan!");
+      } catch (e) { alert("Gagal menyimpan config: " + e.message); }
+    }
+
+    // MODAL NORM
+    function openNormModal(id = '', raw = '', norm = '', label = '', desc = '') {
+      document.getElementById('modal-n-id').value = id;
+      document.getElementById('modal-n-raw').value = raw;
+      document.getElementById('modal-n-norm').value = norm;
+      document.getElementById('modal-n-label').value = label;
+      document.getElementById('modal-n-desc').value = desc;
+      document.getElementById('norm-modal-title').textContent = id ? "Edit Rujukan Norma" : "Tambah Rujukan Norma";
+      document.getElementById('modal-norm').classList.remove('hidden');
+    }
+
+    function closeNormModal() {
+      document.getElementById('modal-norm').classList.add('hidden');
+    }
+
+    function openAddNormModal() {
+      openNormModal();
+    }
+
+    function editNorm(id, raw, norm, label, desc) {
+      openNormModal(id, raw, norm, label, desc);
+    }
+
+    async function saveNorm(e) {
+      e.preventDefault();
+      const testId = document.getElementById('norms-select-test').value;
+      const nId = document.getElementById('modal-n-id').value;
+      const raw = document.getElementById('modal-n-raw').value;
+      const norm = document.getElementById('modal-n-norm').value;
+      const label = document.getElementById('modal-n-label').value;
+      const desc = document.getElementById('modal-n-desc').value;
+
+      if (isDemoMode) {
+        const test = mockMasterTests.find(t => t.id === testId);
+        const code = test ? test.code : testId;
+        if (!mockTestNorms[code]) mockTestNorms[code] = [];
+        const nList = mockTestNorms[code];
+        
+        if (nId) {
+          const n = nList.find(item => item.id === nId);
+          if (n) {
+            n.raw_score = raw;
+            n.norm_score = norm;
+            n.label = label;
+            n.description = desc;
+          }
+        } else {
+          nList.push({
+            id: 'n-' + Math.random(),
+            test_id: testId,
+            raw_score: raw,
+            norm_score: norm,
+            label: label,
+            description: desc
+          });
+        }
+        closeNormModal();
+        loadTestNormsAndConfigs();
+        return;
+      }
+
+      try {
+        if (nId) {
+          const { error } = await _supabase.from('test_norms').update({ raw_score: raw, norm_score: norm, label, description: desc }).eq('id', nId);
+          if (error) throw error;
+        } else {
+          const { error } = await _supabase.from('test_norms').insert([{ test_id: testId, raw_score: raw, norm_score: norm, label, description: desc }]);
+          if (error) throw error;
+        }
+        closeNormModal();
+        loadTestNormsAndConfigs();
+      } catch (err) { alert("Gagal menyimpan norma: " + err.message); }
+    }
+
+    async function deleteNorm(id) {
+      if (!confirm("Apakah Anda yakin ingin menghapus norma ini?")) return;
+      if (isDemoMode) {
+        const testId = document.getElementById('norms-select-test').value;
+        const test = mockMasterTests.find(t => t.id === testId);
+        const code = test ? test.code : testId;
+        if (mockTestNorms[code]) {
+          mockTestNorms[code] = mockTestNorms[code].filter(n => n.id !== id);
+        }
+        loadTestNormsAndConfigs();
+        return;
+      }
+      try {
+        const { error } = await _supabase.from('test_norms').delete().eq('id', id);
+        if (error) throw error;
+        loadTestNormsAndConfigs();
+      } catch (err) { alert("Gagal menghapus: " + err.message); }
+    }
+
+    // IMPORT CSV
+    function importNormsCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const text = evt.target.result;
+        const rows = text.split('\n').map(row => row.trim()).filter(row => row.length > 0);
+        
+        // Asumsi format CSV: raw_score,norm_score,label,description
+        // Baris 1 header dilewati jika ada kata 'raw'
+        const startRow = (rows[0].toLowerCase().includes('raw')) ? 1 : 0;
+        
+        const testId = document.getElementById('norms-select-test').value;
+        const insertRows = [];
+
+        for (let i = startRow; i < rows.length; i++) {
+          const cols = rows[i].split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
+          if (cols.length >= 2) {
+            insertRows.push({
+              test_id: testId,
+              raw_score: cols[0],
+              norm_score: cols[1],
+              label: cols[2] || null,
+              description: cols[3] || null
+            });
+          }
+        }
+
+        if (insertRows.length === 0) {
+          alert("Tidak ada baris data valid yang ditemukan di file CSV!");
+          return;
+        }
+
+        if (isDemoMode) {
+          const test = mockMasterTests.find(t => t.id === testId);
+          const code = test ? test.code : testId;
+          if (!mockTestNorms[code]) mockTestNorms[code] = [];
+          insertRows.forEach(row => {
+            row.id = 'n-' + Math.random();
+            mockTestNorms[code].push(row);
+          });
+          alert(`Berhasil mengimpor ${insertRows.length} baris norma!`);
+          loadTestNormsAndConfigs();
+          return;
+        }
+
+        try {
+          const { error } = await _supabase.from('test_norms').insert(insertRows);
+          if (error) throw error;
+          alert(`Berhasil mengimpor ${insertRows.length} baris norma!`);
+          loadTestNormsAndConfigs();
+        } catch (err) { alert("Gagal mengimpor: " + err.message); }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

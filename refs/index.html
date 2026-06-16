@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PsikoTest.id — Platform Asesmen Psikologi B2B Terpercaya</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          },
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            body: ['"DM Sans"', 'sans-serif'],
+          },
+          keyframes: {
+            fadeUp: { '0%': { opacity: 0, transform: 'translateY(24px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+            pulse2: { '0%,100%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.04)' } },
+          },
+          animation: {
+            fadeUp: 'fadeUp 0.6s ease forwards',
+            shimmer: 'shimmer 2.5s linear infinite',
+            pulse2: 'pulse2 2s ease-in-out infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #f8faff; color: #0f172a; }
+    h1,h2,h3,h4,h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* Glassmorphism nav */
+    .glass-nav { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(219,234,254,0.6); }
+
+    /* Hero gradient mesh */
+    .hero-mesh {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 40%, #3b82f6 70%, #60a5fa 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero-mesh::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 70% 40%, rgba(147,197,253,0.25) 0%, transparent 65%),
+                  radial-gradient(ellipse 50% 80% at 10% 80%, rgba(30,58,138,0.4) 0%, transparent 70%);
+    }
+    .hero-mesh::after {
+      content: ''; position: absolute; top: -60px; right: -60px; width: 340px; height: 340px;
+      border-radius: 50%; background: rgba(96,165,250,0.18); filter: blur(60px);
+    }
+
+    /* Badge shimmer */
+    .badge-promo {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b);
+      background-size: 200% auto;
+      animation: shimmer 2.5s linear infinite;
+    }
+
+    /* FAQ accordion */
+    .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease; }
+    .faq-content.open { max-height: 400px; }
+    .faq-icon { transition: transform 0.3s ease; }
+    .faq-item.open .faq-icon { transform: rotate(180deg); }
+
+    /* CTA button */
+    .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); transition: all 0.2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Pricing card */
+    .pricing-card { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1.5px solid #bfdbfe; transition: all 0.25s ease; }
+    .pricing-card:hover { border-color: #3b82f6; box-shadow: 0 12px 36px rgba(37,99,235,0.13); transform: translateY(-4px); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 9px; }
+
+    .stagger-1 { animation-delay: 0.1s; } .stagger-2 { animation-delay: 0.2s; } .stagger-3 { animation-delay: 0.3s; }
+    .opacity-0-init { opacity: 0; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ===== NAVBAR ===== -->
+<nav class="glass-nav fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+    <!-- Logo -->
+    <a href="#" class="flex items-center gap-2 shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center">
+        <i data-lucide="brain" class="w-4 h-4 text-white"></i>
+      </div>
+      <span class="font-display font-800 text-brand-800 text-lg leading-tight tracking-tight">PsikoTest<span class="text-brand-500">.id</span></span>
+    </a>
+
+    <!-- Nav links desktop -->
+    <div class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+      <a href="#cara-kerja" class="hover:text-brand-600 transition-colors">Cara Kerja</a>
+      <a href="#fitur" class="hover:text-brand-600 transition-colors">Fitur Platform</a>
+      <a href="#cara-kerja" class="hover:text-brand-600 transition-colors">Cara Kerja</a>
+    </div>
+
+    <!-- Auth Buttons -->
+    <div class="flex items-center gap-3">
+      <a href="admin.html" class="hidden sm:flex text-brand-600 font-semibold text-sm hover:text-brand-800 transition-colors">Masuk</a>
+      <a href="admin.html" class="btn-primary text-white font-semibold text-sm px-4 py-2 rounded-full border border-brand-200 transition-all shadow-md">
+        Daftar Admin
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO BANNER ===== -->
+<section class="hero-mesh pt-28 pb-20 px-4">
+  <div class="max-w-6xl mx-auto relative z-10 text-center">
+    <!-- Promo badge -->
+    <div class="inline-flex items-center gap-2 badge-promo text-white text-xs font-bold px-3 py-1.5 rounded-full mb-5 shadow-md">
+      <i data-lucide="building" class="w-3.5 h-3.5"></i>
+      SOLUSI UNTUK HR, SEKOLAH & KLIEN KORPORAT
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
+        Kelola Asesmen Psikologi Tim Anda dalam <span class="text-brand-200">Satu Dashboard</span>
+      </h1>
+      <p class="text-brand-100 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+        Platform B2B SaaS untuk menyelenggarakan psikotes massal, rekrutmen, dan penjurusan sekolah. Generate link, kirim ke peserta, dan dapatkan laporan PDF secara otomatis.
+      </p>
+      
+      <div class="flex flex-wrap justify-center gap-3 mb-12">
+        <a href="admin.html" class="btn-primary text-white font-semibold px-8 py-3.5 rounded-xl flex items-center gap-2 text-base shadow-lg">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          Coba Dashboard Gratis
+        </a>
+        <a href="#cara-kerja" class="bg-white/15 hover:bg-white/25 text-white border border-white/30 font-semibold px-8 py-3.5 rounded-xl flex items-center gap-2 text-base transition-all">
+          <i data-lucide="play-circle" class="w-5 h-5"></i>
+          Lihat Cara Kerja
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+      <div class="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-white mb-1">500+</div>
+        <div class="text-brand-200 text-sm font-medium">Perusahaan & Sekolah</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-white mb-1">10+</div>
+        <div class="text-brand-200 text-sm font-medium">Alat Tes Terstandar</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-white mb-1">100K+</div>
+        <div class="text-brand-200 text-sm font-medium">Laporan Dihasilkan</div>
+      </div>
+      <div class="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-white mb-1">100%</div>
+        <div class="text-brand-200 text-sm font-medium">Data Terenkripsi & Aman</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TRUST BAR ===== -->
+<section class="bg-white border-b border-slate-100 py-6 px-4">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-center text-slate-400 text-xs font-semibold tracking-widest uppercase mb-4">Dipercaya oleh institusi terkemuka</p>
+    <div class="flex flex-wrap justify-center gap-x-12 gap-y-6 text-slate-300">
+      <!-- Placeholder logos using lucide icons -->
+      <div class="flex items-center gap-2"><i data-lucide="hexagon" class="w-8 h-8"></i><span class="font-display font-bold text-lg">TechCorp</span></div>
+      <div class="flex items-center gap-2"><i data-lucide="triangle" class="w-8 h-8"></i><span class="font-display font-bold text-lg">EduGlobal</span></div>
+      <div class="flex items-center gap-2"><i data-lucide="circle-dot" class="w-8 h-8"></i><span class="font-display font-bold text-lg">Bank Nusa</span></div>
+      <div class="flex items-center gap-2"><i data-lucide="box" class="w-8 h-8"></i><span class="font-display font-bold text-lg">Retailesia</span></div>
+      <div class="flex items-center gap-2"><i data-lucide="aperture" class="w-8 h-8"></i><span class="font-display font-bold text-lg">MediaPlus</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section id="cara-kerja" class="py-20 px-4 bg-slate-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <span class="text-brand-600 text-sm font-semibold tracking-widest uppercase">Alur Kerja Simpel</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">Bagaimana Platform Ini Bekerja?</h2>
+      <p class="text-slate-500 max-w-xl mx-auto text-base">Tidak perlu repot dengan kertas dan skoring manual. Semua otomatis, akurat, dan bisa diakses darimana saja.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8 relative">
+      <!-- Connecting line for desktop -->
+      <div class="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-brand-200 via-brand-400 to-brand-200 z-0"></div>
+
+      <!-- Step 1 -->
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-6 border border-slate-100 rotate-3 transition-transform hover:rotate-0">
+          <i data-lucide="coins" class="w-10 h-10 text-brand-500"></i>
+        </div>
+        <div class="bg-brand-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mb-3">1</div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Top Up Saldo</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Isi saldo akun Anda sesuai budget. Saldo ini bersifat universal dan bisa digunakan untuk membeli alat tes apa saja tanpa masa kadaluarsa.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-6 border border-slate-100 -rotate-3 transition-transform hover:rotate-0">
+          <i data-lucide="link" class="w-10 h-10 text-brand-500"></i>
+        </div>
+        <div class="bg-brand-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mb-3">2</div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Kirim Link ke Peserta</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Pilih alat tes (DISC, WPT, dll) di dashboard, lalu dapatkan link unik untuk dibagikan ke peserta atau kandidat Anda.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-6 border border-slate-100 rotate-3 transition-transform hover:rotate-0">
+          <i data-lucide="file-check" class="w-10 h-10 text-brand-500"></i>
+        </div>
+        <div class="bg-brand-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mb-3">3</div>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Terima Hasil Otomatis</h3>
+        <p class="text-slate-500 text-sm leading-relaxed">Peserta mengerjakan tes, dan laporannya (PDF) akan langsung muncul di dashboard Admin secara real-time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section id="fitur" class="py-20 px-4 bg-white">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <div>
+        <span class="text-brand-600 text-sm font-semibold tracking-widest uppercase">Fitur Unggulan</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-6">Dirancang Khusus untuk HR & Institusi</h2>
+        <p class="text-slate-500 text-lg mb-8 leading-relaxed">Tinggalkan metode skoring manual yang memakan waktu. Gunakan platform kami untuk mempercepat proses seleksi dan asesmen.</p>
+        
+        <div class="space-y-6">
+          <div class="flex gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+              <i data-lucide="palette" class="w-6 h-6 text-brand-600"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-slate-900 mb-1">Custom Branding (White-label)</h4>
+              <p class="text-slate-500 text-sm leading-relaxed">Pasang logo perusahaan Anda sendiri. Peserta akan melihat portal tes yang profesional dengan identitas brand Anda.</p>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
+              <i data-lucide="bar-chart-3" class="w-6 h-6 text-green-600"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-slate-900 mb-1">Laporan Komprehensif (PDF)</h4>
+              <p class="text-slate-500 text-sm leading-relaxed">Dapatkan hasil tes yang sudah diskoring otomatis lengkap dengan grafik, interpretasi psikologis, dan saran pengembangan.</p>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
+              <i data-lucide="users" class="w-6 h-6 text-purple-600"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-slate-900 mb-1">Manajemen Kandidat</h4>
+              <p class="text-slate-500 text-sm leading-relaxed">Pantau progres peserta secara real-time. Ketahui siapa yang belum memulai, sedang mengerjakan, atau sudah selesai.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div class="absolute inset-0 bg-gradient-to-tr from-brand-100 to-brand-50 rounded-3xl transform rotate-3 scale-105"></div>
+        <div class="relative bg-white border border-slate-100 rounded-3xl p-2 shadow-2xl">
+          <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Dashboard Preview" class="rounded-2xl w-full h-auto object-cover" />
+          <!-- Floating badge -->
+          <div class="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-4 animate-fadeUp">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <i data-lucide="check" class="w-6 h-6 text-green-600"></i>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500 font-medium">Laporan Budi S.</div>
+              <div class="text-slate-900 font-bold">Skoring Selesai</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== UNTUK SIAPA ===== -->
+<section id="untuk-siapa" class="bg-slate-50 py-20 px-4 border-t border-slate-100">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <span class="text-brand-600 text-sm font-semibold tracking-widest uppercase">Target Pengguna</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">Siapa yang Membutuhkan Platform Ini?</h2>
+      <p class="text-slate-500 max-w-xl mx-auto text-base">Sistem asesmen yang fleksibel, dirancang untuk berbagai kebutuhan organisasi dan profesional.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <!-- HR & Perusahaan -->
+      <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow text-center">
+        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <i data-lucide="briefcase" class="w-8 h-8 text-brand-600"></i>
+        </div>
+        <h3 class="font-display font-bold text-slate-900 text-xl mb-3">HRD & Rekrutmen</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">Saring ribuan kandidat dengan cepat, ketahui potensi leadership, dan pastikan kecocokan budaya kerja sebelum tahap wawancara.</p>
+      </div>
+
+      <!-- Sekolah & Kampus -->
+      <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow text-center transform md:-translate-y-4">
+        <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <i data-lucide="graduation-cap" class="w-8 h-8 text-green-600"></i>
+        </div>
+        <h3 class="font-display font-bold text-slate-900 text-xl mb-3">Sekolah & Universitas</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">Bantu siswa menentukan jurusan yang tepat lewat tes minat bakat, penjurusan IPA/IPS, atau kesiapan karier mahasiswa tingkat akhir.</p>
+      </div>
+
+      <!-- Psikolog & Coach -->
+      <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow text-center">
+        <div class="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <i data-lucide="brain-circuit" class="w-8 h-8 text-purple-600"></i>
+        </div>
+        <h3 class="font-display font-bold text-slate-900 text-xl mb-3">Psikolog & Coach</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-6">Digitalisasikan alat tes Anda. Berikan laporan PDF yang instan dan terlihat sangat profesional kepada klien konseling atau coaching Anda.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA BANNER ===== -->
+<section class="hero-mesh py-16 px-4">
+  <div class="max-w-4xl mx-auto text-center relative z-10">
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">Siap Memodernisasi Proses Asesmen Anda?</h2>
+    <p class="text-brand-100 text-lg mb-8 max-w-2xl mx-auto">Bergabung dengan ratusan perusahaan dan institusi pendidikan yang telah mempercayakan asesmen psikologinya pada PsikoTest.id.</p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="admin.html" class="bg-white text-brand-700 font-bold px-8 py-4 rounded-xl text-base hover:bg-brand-50 transition-all shadow-xl flex items-center gap-2">
+        Buat Akun Admin Sekarang
+      </a>
+    </div>
+    <p class="mt-6 text-brand-200 text-sm">Daftar sekarang untuk mencoba gratis!</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="bg-slate-900 text-slate-400 py-12 px-4">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      <div class="col-span-2 lg:col-span-1">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
+            <i data-lucide="brain" class="w-4 h-4 text-white"></i>
+          </div>
+          <span class="font-display font-bold text-white text-base">PsikoTest<span class="text-brand-400">.id</span></span>
+        </div>
+        <p class="text-sm leading-relaxed text-slate-500 mb-6">Platform B2B SaaS Asesmen Psikologi. Kelola rekrutmen dan pemetaan talenta lebih cerdas dan otomatis.</p>
+        <div class="flex gap-3">
+          <a href="#" class="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-brand-700 transition-colors"><i data-lucide="linkedin" class="w-4 h-4"></i></a>
+          <a href="#" class="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-brand-700 transition-colors"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="font-semibold text-white text-sm mb-4">Produk & Layanan</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition-colors">Platform Rekrutmen</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Asesmen Sekolah</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Katalog Alat Tes</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Daftar Akun Admin</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-semibold text-white text-sm mb-4">Sumber Daya</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition-colors">Panduan Admin</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Validitas Psikometri</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Blog HR & Karier</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-semibold text-white text-sm mb-4">Hubungi Kami</h4>
+        <ul class="space-y-3 text-sm">
+          <li class="flex items-center gap-2">
+            <i data-lucide="mail" class="w-4 h-4 text-brand-400"></i>
+            <a href="mailto:b2b@psikotest.id" class="hover:text-white transition-colors">b2b@psikotest.id</a>
+          </li>
+          <li class="flex items-center gap-2">
+            <i data-lucide="phone" class="w-4 h-4 text-brand-400"></i>
+            <span class="text-slate-400">0812-3456-7890</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+      <span>© 2026 PsikoTest.id Enterprise — Hak Cipta Dilindungi.</span>
+      <div class="flex items-center gap-4">
+        <a href="super.html" class="hover:text-slate-400 transition-colors">Portal Super Admin</a>
+        <span>Syarat & Ketentuan</span>
+        <span>Kebijakan Privasi</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Init Lucide icons
+  lucide.createIcons();
+</script>
+</body>
+</html>

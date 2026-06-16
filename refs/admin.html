@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — PsikoTest.id Enterprise</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+          },
+          fontFamily: {
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            body: ['"DM Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .nav-item.active { background-color: #eff6ff; color: #2563eb; border-right: 3px solid #2563eb; font-weight: 600; }
+    .nav-item.active i { color: #2563eb; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
+
+  <!-- ===== AUTH ENFORCED CONTROLLER VIEW ===== -->
+  <div id="auth-container" class="fixed inset-0 bg-slate-900 z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100">
+      <div class="text-center mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center mx-auto mb-4 shadow-md">
+          <i data-lucide="brain" class="w-6 h-6 text-white"></i>
+        </div>
+        <h2 class="font-display font-extrabold text-2xl text-slate-900 leading-tight" id="auth-modal-title">Masuk ke Dashboard Admin</h2>
+        <p class="text-slate-400 text-xs mt-1.5 uppercase font-bold tracking-wider">PsikoTest.id Enterprise</p>
+      </div>
+
+      <div id="auth-alert" class="hidden mb-4 p-3 bg-red-50 text-red-600 text-sm font-semibold rounded-xl border border-red-100">
+        Email atau password salah!
+      </div>
+
+      <form onsubmit="handleAuth(event)" class="space-y-4">
+        <div id="company-name-field" class="hidden">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nama Perusahaan / Institusi</label>
+          <input id="auth-company-name" type="text" placeholder="PT Maju Bersama" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email Corporate</label>
+          <input id="auth-email" type="email" required placeholder="hrd@perusahaan.com" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Password</label>
+          <input id="auth-password" type="password" required placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+        </div>
+        
+        <button type="submit" id="btn-auth-submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md">Masuk</button>
+        <button type="button" onclick="enterDemoMode()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition-all border border-slate-300 text-sm mt-2">Demo Mode (Bypass Login)</button>
+      </form>
+
+      <div class="mt-6 text-center text-xs text-slate-400">
+        <span id="auth-toggle-text">Belum punya akun Admin?</span>
+        <button onclick="toggleAuthMode()" id="btn-auth-toggle" class="text-brand-600 font-bold hover:underline ml-1">Daftar Akun Baru</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex shrink-0">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center mr-2">
+        <i data-lucide="brain" class="w-4 h-4 text-white"></i>
+      </div>
+      <span class="font-display font-bold text-slate-900 text-lg">PsikoTest<span class="text-brand-500">.id</span></span>
+    </div>
+
+    <div class="p-4">
+      <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100 mb-6">
+        <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center border border-slate-300">
+          <img id="sidebar-logo" src="" class="w-full h-full object-cover hidden">
+          <i id="sidebar-logo-placeholder" data-lucide="building" class="w-5 h-5 text-slate-400"></i>
+        </div>
+        <div class="min-w-0">
+          <div id="sidebar-company-name" class="text-sm font-bold text-slate-900 truncate">Memuat...</div>
+          <div class="text-xs text-slate-500">Corporate Account</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 space-y-1">
+      <button onclick="switchTab('overview')" id="nav-overview" class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-400"></i> Ringkasan
+      </button>
+      <button onclick="switchTab('campaigns')" id="nav-campaigns" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="link" class="w-4 h-4 text-slate-400"></i> Buat Link Tes
+      </button>
+      <button onclick="switchTab('participants')" id="nav-participants" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="users" class="w-4 h-4 text-slate-400"></i> Data Peserta
+      </button>
+      <button onclick="switchTab('billing')" id="nav-billing" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="credit-card" class="w-4 h-4 text-slate-400"></i> Riwayat Saldo
+      </button>
+      <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left">
+        <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Pengaturan Branding
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-slate-100 mt-auto">
+      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden">
+    <!-- Topbar -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+      <h1 class="font-display font-bold text-xl text-slate-900" id="page-title">Ringkasan Dashboard</h1>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100">
+          <i data-lucide="coins" class="w-4 h-4 text-brand-600"></i>
+          <span class="text-sm font-semibold text-brand-700">Saldo: <span id="topbar-balance" class="font-extrabold text-brand-900">Rp 0</span></span>
+        </div>
+        <button onclick="switchTab('billing')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Top Up
+        </button>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto p-6">
+      
+      <!-- TAB: OVERVIEW -->
+      <div id="tab-overview" class="tab-content active max-w-5xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Sisa Saldo Akun</h3>
+              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4 text-blue-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-balance">Rp 0</div>
+            <p class="text-xs text-slate-400">Dapat digunakan untuk semua tes</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Total Peserta Selesai</h3>
+              <div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center"><i data-lucide="users" class="w-4 h-4 text-green-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-participants">0</div>
+            <p class="text-xs text-slate-400">Telah terdata di sistem</p>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-slate-500">Sesi Campaign Aktif</h3>
+              <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center"><i data-lucide="link" class="w-4 h-4 text-purple-600"></i></div>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 mb-1" id="stat-campaigns">0</div>
+            <p class="text-xs text-slate-400">Sesi rekrutmen berjalan</p>
+          </div>
+        </div>
+
+        <h2 class="font-display font-bold text-lg text-slate-900 mb-4">Peserta Selesai Terbaru</h2>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Nama Peserta</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Alat Tes Diambil</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Waktu Selesai</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="recent-participants-table">
+              <tr><td colspan="4" class="p-8 text-center text-slate-400">Memuat data...</td></tr>
+            </tbody>
+          </table>
+          <div class="p-3 bg-slate-50 border-t border-slate-200 text-center">
+            <button onclick="switchTab('participants')" class="text-sm text-brand-600 font-semibold hover:underline">Lihat Semua Peserta</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CAMPAIGNS -->
+      <div id="tab-campaigns" class="tab-content max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-8">
+          <h2 class="font-display font-bold text-lg text-slate-900 mb-1">Generate Link Tes Baru</h2>
+          <p class="text-sm text-slate-500 mb-6">Buat sesi rekrutmen atau asesmen dengan memilih kombinasi alat tes.</p>
+
+          <form class="space-y-5" onsubmit="generateCampaignLink(event)">
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Nama Sesi / Posisi</label>
+                <input id="campaign-title" type="text" placeholder="Contoh: Rekrutmen IT Support" required class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Gunakan Template Sesi</label>
+                <select id="campaign-template-select" onchange="applyCampaignTemplate()" class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                  <option value="">-- Pilih Template --</option>
+                  <option value="rekrutmen">Template Rekrutmen (DISC, WPT, PAPI)</option>
+                  <option value="penjurusan">Template Penjurusan Sekolah (DISC, Holland)</option>
+                  <option value="leadership">Template Leadership (DISC, PAPI)</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Pilih Kombinasi Alat Tes</label>
+              <div class="grid sm:grid-cols-2 gap-3" id="test-selection-container">
+                <!-- Master Tests Checkbox List loaded dynamically -->
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button type="submit" id="btn-generate" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all">
+                Generate Link Sekarang
+              </button>
+              <button type="button" onclick="saveAsTemplate()" class="border border-slate-300 text-slate-600 px-4 py-3 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">Simpan Sebagai Template</button>
+            </div>
+          </form>
+
+          <div id="generated-link-area" class="mt-6 p-4 border border-green-200 bg-green-50 rounded-xl hidden">
+            <h3 class="text-xs font-bold text-green-700 uppercase mb-2">Link Berhasil Dibuat:</h3>
+            <div class="flex items-center gap-2">
+              <input type="text" readonly class="w-full bg-white border border-green-200 rounded-lg px-4 py-2 text-sm font-mono text-green-800">
+              <button onclick="copyToClipboard(document.querySelector('#generated-link-area input').value)" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-colors">Salin</button>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="font-display font-bold text-lg text-slate-900 mb-4">Daftar Link Aktif</h2>
+        <div class="space-y-3" id="active-campaigns-list"></div>
+      </div>
+
+      <!-- TAB: PARTICIPANTS -->
+      <div id="tab-participants" class="tab-content max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="font-display font-bold text-lg text-slate-900">Semua Data Peserta</h2>
+          <button onclick="exportParticipantsCSV()" class="bg-accent-50 text-accent-700 border border-accent-100 hover:bg-accent-100 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i> Ekspor CSV
+          </button>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Nama Peserta</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Sesi Campaign</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Tanggal</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase text-right">Laporan</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="full-participants-table">
+              <tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data peserta</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: BILLING -->
+      <div id="tab-billing" class="tab-content max-w-4xl mx-auto">
+        <div class="grid sm:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm sm:col-span-2">
+            <h3 class="font-display font-bold text-lg text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="text-brand-600"></i> Ajukan Top Up Saldo</h3>
+            <form onsubmit="handleTopUpRequest(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nominal Transfer (Rp)</label>
+                <input id="topup-amount" type="number" required placeholder="e.g. 500000" class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Unggah Bukti Transfer</label>
+                <input id="topup-proof-file" type="file" accept="image/*" required class="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm">
+              </div>
+              <button type="submit" id="btn-submit-topup" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm shadow-md transition-all">Kirim Bukti Pembayaran</button>
+            </form>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Rujukan Transfer Bank</h4>
+              <p class="text-lg font-extrabold text-slate-900 mb-4">Bank Mandiri</p>
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 font-mono text-sm mb-4">
+                <div class="text-slate-400 text-[10px] font-bold uppercase">No Rekening:</div>
+                <div class="text-slate-800 font-bold text-base mt-0.5">124-000-987-6543</div>
+                <div class="text-slate-400 text-[10px] font-bold uppercase mt-2">Atas Nama:</div>
+                <div class="text-slate-800 font-bold text-xs mt-0.5">PT PsikoTest Solusi Indonesia</div>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-relaxed">Proses verifikasi top up saldo biasanya diselesaikan oleh Super Admin dalam waktu kurang dari 10 menit setelah bukti pembayaran diunggah.</p>
+          </div>
+        </div>
+
+        <h3 class="font-display font-bold text-lg text-slate-900 mb-4">Riwayat Pengajuan Top Up</h3>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                <th class="py-3 px-4">Tanggal Pengajuan</th>
+                <th class="py-3 px-4">Nominal</th>
+                <th class="py-3 px-4">Bukti Upload</th>
+                <th class="py-3 px-4 text-right">Status Verifikasi</th>
+              </tr>
+            </thead>
+            <tbody id="table-billing-history" class="divide-y divide-slate-100 text-slate-600">
+              <tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada riwayat top-up</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: SETTINGS -->
+      <div id="tab-settings" class="tab-content max-w-3xl mx-auto">
+        <div class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+          <h2 class="font-display font-bold text-xl text-slate-900 mb-2">Pengaturan Branding Perusahaan</h2>
+          <p class="text-sm text-slate-500 mb-8">Kustomisasi logo dan tema warna utama agar portal ujian peserta menampilkan identitas profesional perusahaan Anda.</p>
+          
+          <form class="space-y-6" onsubmit="saveBrandingSettings(event)">
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2">Nama Instansi / Perusahaan</label>
+              <input id="input-company-name" type="text" required placeholder="Masukkan nama perusahaan" class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="grid sm:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Unggah Logo Baru</label>
+                <div class="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                  <div class="w-12 h-12 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    <img id="branding-logo-preview" src="" class="w-full h-full object-cover hidden">
+                    <i id="branding-logo-placeholder" data-lucide="image" class="w-6 h-6 text-slate-300"></i>
+                  </div>
+                  <input id="input-logo-file" type="file" accept="image/*" class="w-full text-xs">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Warna Utama Tema Ujian</label>
+                <div class="flex items-center gap-3">
+                  <input id="input-brand-color" type="color" value="#2563eb" class="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer">
+                  <span class="text-xs text-slate-400 font-mono">Pilih warna yang akan diterapkan otomatis pada portal pengerjaan peserta.</span>
+                </div>
+              </div>
+            </div>
+            <div class="pt-6 border-t border-slate-100 flex justify-end">
+              <button type="submit" id="btn-save-branding" class="bg-brand-600 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-brand-700 transition-all">Simpan Konfigurasi Branding</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL: REPORT DETAIL -->
+  <div id="modal-report" class="fixed inset-0 bg-slate-900/50 backdrop-blur z-[999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
+      <!-- Modal Header -->
+      <div class="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+        <div>
+          <h3 class="font-display font-extrabold text-xl" id="report-modal-title">Laporan Hasil Asesmen</h3>
+          <p class="text-xs text-slate-400" id="report-modal-subtitle">Detail analisis & interpretasi psikologis peserta.</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i> Cetak Laporan</button>
+          <button onclick="closeReportModal()" class="text-slate-400 hover:text-white font-bold p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Printable Area) -->
+      <div class="flex-1 overflow-y-auto p-8" id="report-print-area">
+        <div class="max-w-3xl mx-auto space-y-8">
+          <!-- Biodata Header -->
+          <div class="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-wrap gap-6 items-center justify-between">
+            <div class="space-y-1">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kandidat Peserta</div>
+              <h2 class="font-display font-extrabold text-2xl text-slate-900" id="rep-name">Budi Santoso</h2>
+              <p class="text-sm text-slate-500" id="rep-email">budi@email.com</p>
+            </div>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-slate-600">
+              <div>Sesi Campaign: <strong class="text-slate-800" id="rep-campaign">Rekrutmen Staff</strong></div>
+              <div>Tanggal Tes: <strong class="text-slate-800" id="rep-date">30 Mei 2026</strong></div>
+              <div>Perusahaan: <strong class="text-slate-800" id="rep-company">PT Maju Bersama</strong></div>
+              <div>Status: <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold" id="rep-status">Lengkap</span></div>
+            </div>
+          </div>
+
+          <!-- Laporan Dynamic content loaded via JS per test -->
+          <div class="space-y-6" id="report-test-content-area"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let authSession = null;
+    let currentCustomer = null;
+    let masterTests = [];
+    let participantsData = [];
+    let activeCampaigns = [];
+    let isDemoMode = false;
+
+    // Global mock data for Demo Mode in admin.html
+    let mockCustomer = {
+      id: 'cust-demo',
+      company_name: 'PT Maju Bersama (Demo)',
+      email: 'hrd@majubersama.com',
+      logo_url: '',
+      brand_color: '#2563eb',
+      balance: 7500000
+    };
+    let mockMasterTests = [
+      { id: 'test-disc', code: 'disc', name: 'DISC Personality', price: 20000, duration: 600, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-wpt', code: 'wpt', name: 'Wonderlic (WPT)', price: 30000, duration: 720, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-papi', code: 'papi', name: 'PAPI Kostick', price: 40000, duration: 900, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' },
+      { id: 'test-holland', code: 'holland', name: 'Holland RIASEC', price: 30000, duration: 900, is_active: true, instructions: 'Jawablah setiap pertanyaan dengan jujur.' }
+    ];
+    let mockCampaigns = [
+      { id: 'camp-1', customer_id: 'cust-demo', title: 'Rekrutmen Management Trainee', is_active: true, created_at: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(), campaign_tests: [{ test_id: 'test-disc' }, { test_id: 'test-wpt' }] },
+      { id: 'camp-2', customer_id: 'cust-demo', title: 'Developer Test', is_active: false, created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(), campaign_tests: [{ test_id: 'test-papi' }] }
+    ];
+    let mockParticipants = [
+      { id: 'part-1', campaign_id: 'camp-1', full_name: 'Budi Santoso', email: 'budi.santoso@email.com', status: 'completed', created_at: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(), campaigns: { id: 'camp-1', customer_id: 'cust-demo', title: 'Rekrutmen Management Trainee' } },
+      { id: 'part-2', campaign_id: 'camp-1', full_name: 'Siti Rahma', email: 'siti.rahma@email.com', status: 'completed', created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(), campaigns: { id: 'camp-1', customer_id: 'cust-demo', title: 'Rekrutmen Management Trainee' } }
+    ];
+    let mockTestResults = [
+      { id: 'res-1', participant_id: 'part-1', test_id: 'test-disc', raw_answers: {}, scoring_data: { score: 'DI', label: 'Kepribadian DI', description: 'Kandidat memiliki pengaruh dan ketegasan tinggi. Cocok sebagai pemimpin.' } },
+      { id: 'res-2', participant_id: 'part-1', test_id: 'test-wpt', raw_answers: {}, scoring_data: { score: '115', label: 'Bright Normal', description: 'Kapasitas kognitif umum berada pada tingkat Bright Normal.' } },
+      { id: 'res-3', participant_id: 'part-2', test_id: 'test-disc', raw_answers: {}, scoring_data: { score: 'SC', label: 'Kepribadian SC', description: 'Tenang, stabil, teliti, dan menyukai keteraturan.' } }
+    ];
+    let mockTopUpRequests = [
+      { id: 'top-1', customer_id: 'cust-demo', amount: 5000000, proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500', status: 'verified', created_at: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString() },
+      { id: 'top-2', customer_id: 'cust-demo', amount: 2500000, proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500', status: 'pending', created_at: new Date().toISOString() }
+    ];
+
+    function enterDemoMode() {
+      isDemoMode = true;
+      authSession = { user: { id: 'demo-customer-id', email: 'demo-hrd@majubersama.com' } };
+      currentCustomer = mockCustomer;
+      document.getElementById('auth-container').classList.add('hidden');
+      setupCustomerBranding();
+      loadDashboardData();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      checkAuth();
+    });
+
+    async function checkAuth() {
+      if (isDemoMode) return;
+      const { data: { session } } = await _supabase.auth.getSession();
+      authSession = session;
+      
+      if (session) {
+        // Cek profile customer
+        const { data: cust } = await _supabase
+          .from('customers')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (cust) {
+          currentCustomer = cust;
+          document.getElementById('auth-container').classList.add('hidden');
+          setupCustomerBranding();
+          loadDashboardData();
+        } else {
+          // Kasus aneh user auth ada tapi profile belum masuk
+          alert("Gagal memuat profil akun Anda. Silakan coba kembali.");
+          await _supabase.auth.signOut();
+          window.location.reload();
+        }
+      } else {
+        document.getElementById('auth-container').classList.remove('hidden');
+      }
+    }
+
+    let isRegisterMode = false;
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-modal-title').textContent = isRegisterMode ? "Daftar Akun Corporate" : "Masuk ke Dashboard Admin";
+      document.getElementById('company-name-field').classList.toggle('hidden', !isRegisterMode);
+      document.getElementById('btn-auth-submit').textContent = isRegisterMode ? "Daftar Akun" : "Masuk";
+      document.getElementById('auth-toggle-text').textContent = isRegisterMode ? "Sudah punya akun?" : "Belum punya akun Admin?";
+      document.getElementById('btn-auth-toggle').textContent = isRegisterMode ? "Masuk" : "Daftar Akun Baru";
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const companyName = document.getElementById('auth-company-name').value;
+      const alertEl = document.getElementById('auth-alert');
+      alertEl.classList.add('hidden');
+
+      const btn = document.getElementById('btn-auth-submit');
+      btn.disabled = true; btn.textContent = "Loading...";
+
+      try {
+        if (isRegisterMode) {
+          const { data, error } = await _supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                company_name: companyName,
+                role: 'customer'
+              }
+            }
+          });
+          if (error) throw error;
+          alert("Registrasi berhasil! Silakan periksa email konfirmasi Anda atau login langsung.");
+          toggleAuthMode();
+        } else {
+          const { error } = await _supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          window.location.reload();
+        }
+      } catch (err) {
+        alertEl.textContent = err.message;
+        alertEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isRegisterMode ? "Daftar Akun" : "Masuk";
+      }
+    }
+
+    async function handleLogout() {
+      await _supabase.auth.signOut();
+      window.location.reload();
+    }
+
+    function setupCustomerBranding() {
+      if (!currentCustomer) return;
+      document.getElementById('sidebar-company-name').textContent = currentCustomer.company_name;
+      document.getElementById('input-company-name').value = currentCustomer.company_name;
+      
+      const themeColor = currentCustomer.brand_color || '#2563eb';
+      document.getElementById('input-brand-color').value = themeColor;
+      
+      // Update sidebar logo
+      const placeholder = document.getElementById('sidebar-logo-placeholder');
+      const logoImg = document.getElementById('sidebar-logo');
+      const previewImg = document.getElementById('branding-logo-preview');
+      const previewPlaceholder = document.getElementById('branding-logo-placeholder');
+
+      if (currentCustomer.logo_url) {
+        logoImg.src = currentCustomer.logo_url;
+        logoImg.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+
+        previewImg.src = currentCustomer.logo_url;
+        previewImg.classList.remove('hidden');
+        previewPlaceholder.classList.add('hidden');
+      } else {
+        logoImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        previewImg.classList.add('hidden');
+        previewPlaceholder.classList.remove('hidden');
+      }
+    }
+
+    async function loadDashboardData() {
+      try {
+        let cust, tests, campaigns, parts, testResults = [];
+        if (isDemoMode) {
+          cust = mockCustomer;
+          tests = mockMasterTests;
+          campaigns = mockCampaigns;
+          parts = mockParticipants;
+          testResults = mockTestResults;
+        } else {
+          // Ambil data terbaru customer (saldo, dsb)
+          const { data: cu } = await _supabase.from('customers').select('*').eq('id', authSession.user.id).single();
+          cust = cu;
+          // Fetch master_tests
+          const { data: t } = await _supabase.from('master_tests').select('*').eq('is_active', true).order('name');
+          tests = t;
+          // Fetch campaigns
+          const { data: ca } = await _supabase.from('campaigns').select('*, campaign_tests(*)').eq('customer_id', authSession.user.id).order('created_at', { ascending: false });
+          campaigns = ca;
+          // Fetch participants
+          const { data: p } = await _supabase.from('participants').select('*, campaigns(*)').order('created_at', { ascending: false });
+          parts = p;
+        }
+
+        currentCustomer = cust;
+        setupCustomerBranding();
+
+        // Update saldo widgets
+        const balStr = 'Rp ' + Number(currentCustomer.balance).toLocaleString('id-ID');
+        document.getElementById('topbar-balance').textContent = balStr;
+        document.getElementById('stat-balance').textContent = balStr;
+
+        masterTests = tests || [];
+        
+        // Render Master Tests Checkboxes di Campaign creation
+        const container = document.getElementById('test-selection-container');
+        container.innerHTML = masterTests.map(t => `
+          <label class="flex items-center p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+            <input type="checkbox" value="${t.id}" data-code="${t.code}" class="w-4 h-4 text-brand-600 rounded">
+            <div class="ml-3">
+              <span class="block text-sm font-extrabold text-slate-800">${t.name}</span>
+              <span class="block text-[10px] text-brand-600 font-bold uppercase tracking-wider">Rp ${Number(t.price).toLocaleString('id-ID')} / Peserta</span>
+            </div>
+          </label>
+        `).join('');
+
+        activeCampaigns = campaigns || [];
+        document.getElementById('stat-campaigns').textContent = activeCampaigns.filter(c => c.is_active).length;
+
+        // Filter participants yang campaign-nya milik customer ini
+        participantsData = isDemoMode ? parts : (parts ? parts.filter(p => p.campaigns && p.campaigns.customer_id === authSession.user.id) : []);
+        document.getElementById('stat-participants').textContent = participantsData.filter(p => p.status === 'completed').length;
+
+        if (!isDemoMode) {
+          // Fetch test_results untuk para participant
+          const partIds = participantsData.map(p => p.id);
+          if (partIds.length > 0) {
+            const { data: results } = await _supabase.from('test_results').select('*').in('participant_id', partIds);
+            testResults = results || [];
+          }
+        }
+
+        // Mapping detail untuk rendering table
+        const mappedParticipants = participantsData.map(p => {
+          const camp = activeCampaigns.find(c => c.id === p.campaign_id) || { title: 'Unknown Sesi' };
+          const pResults = testResults.filter(r => r.participant_id === p.id);
+          
+          return {
+            ...p,
+            campaign_title: camp.title,
+            results: pResults
+          };
+        });
+
+        // Render Recent Participants (Overview)
+        const recentTable = document.getElementById('recent-participants-table');
+        const completedParts = mappedParticipants.filter(p => p.status === 'completed');
+        
+        const renderTableRows = (data) => data.map(p => {
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-4 px-4">
+                <div class="text-sm font-bold text-slate-900">${p.full_name}</div>
+                <div class="text-[10px] text-slate-400 font-medium">${p.email}</div>
+              </td>
+              <td class="py-4 px-4">
+                <div class="flex flex-wrap gap-1">
+                  ${p.results.map(r => `<span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[9px] font-bold border border-brand-100 uppercase">${r.scoring_data ? r.scoring_data.score || r.scoring_data.iq || '' : ''} ${masterTests.find(mt=>mt.id===r.test_id)?.code.toUpperCase() || ''}</span>`).join('')}
+                </div>
+              </td>
+              <td class="py-4 px-4 text-xs font-semibold text-slate-500">${new Date(p.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'numeric' })}</td>
+              <td class="py-4 px-4">
+                <span class="${p.status==='completed'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'} px-2 py-0.5 rounded text-[10px] font-bold uppercase">${p.status}</span>
+              </td>
+              <td class="py-4 px-4 text-right">
+                <button onclick="openReportModal('${p.id}')" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ml-auto">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Detail
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        recentTable.innerHTML = completedParts.length ? renderTableRows(completedParts.slice(0, 5)) : '<tr><td colspan="4" class="p-8 text-center text-slate-400">Belum ada peserta yang selesai ujian</td></tr>';
+        
+        // Render Full Participants
+        const fullTable = document.getElementById('full-participants-table');
+        fullTable.innerHTML = mappedParticipants.length ? renderTableRows(mappedParticipants) : '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data peserta</td></tr>';
+
+        // Render Active Campaigns List
+        const list = document.getElementById('active-campaigns-list');
+        list.innerHTML = activeCampaigns.length ? activeCampaigns.map(c => {
+          const testsStr = c.campaign_tests.map(ct => {
+            const mt = masterTests.find(t => t.id === ct.test_id);
+            return mt ? mt.code.toUpperCase() : '';
+          }).filter(code => code !== '').join(', ');
+          
+          const link = window.location.origin + window.location.pathname.replace('admin.html', 'portal.html') + '?cid=' + c.id;
+          return `
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl flex flex-wrap justify-between items-center shadow-sm gap-4">
+              <div>
+                <div class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                  ${c.title}
+                  <span class="${c.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} px-2 py-0.5 rounded text-[9px] font-extrabold uppercase">${c.is_active ? 'Aktif' : 'Nonaktif'}</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">Alat Tes: <span class="text-brand-600 font-bold">${testsStr}</span></div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Dibuat: ${new Date(c.created_at).toLocaleDateString()}</div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="copyToClipboard('${link}')" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors">Salin Link Ujian</button>
+                <button onclick="toggleCampaignStatus('${c.id}', ${c.is_active})" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors">
+                  ${c.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('') : '<div class="p-8 text-center text-slate-400">Belum ada campaign dibuat</div>';
+
+        lucide.createIcons();
+      } catch (err) { console.error(err); }
+    }
+
+    async function toggleCampaignStatus(id, currentStatus) {
+      if (isDemoMode) {
+        const camp = mockCampaigns.find(c => c.id === id);
+        if (camp) {
+          camp.is_active = !currentStatus;
+        }
+        loadDashboardData();
+        return;
+      }
+      try {
+        const { error } = await _supabase.from('campaigns').update({ is_active: !currentStatus }).eq('id', id);
+        if (error) throw error;
+        loadDashboardData();
+      } catch (e) { alert("Gagal memperbarui status campaign: " + e.message); }
+    }
+
+    function applyCampaignTemplate() {
+      const template = document.getElementById('campaign-template-select').value;
+      const checkboxes = document.querySelectorAll('#test-selection-container input[type="checkbox"]');
+      
+      // Reset
+      checkboxes.forEach(cb => cb.checked = false);
+
+      const mapping = {
+        'rekrutmen': ['disc', 'wpt', 'papi'],
+        'penjurusan': ['disc', 'holland'],
+        'leadership': ['disc', 'papi']
+      };
+
+      if (mapping[template]) {
+        checkboxes.forEach(cb => {
+          const code = cb.getAttribute('data-code');
+          if (mapping[template].includes(code)) {
+            cb.checked = true;
+          }
+        });
+      }
+    }
+
+    async function generateCampaignLink(e) {
+      e.preventDefault();
+      const title = document.getElementById('campaign-title').value;
+      const checkboxes = document.querySelectorAll('#test-selection-container input[type="checkbox"]:checked');
+      const testListIds = Array.from(checkboxes).map(cb => cb.value);
+
+      if (testListIds.length === 0) {
+        alert("Pilih minimal satu alat tes untuk campaign ini!");
+        return;
+      }
+
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = true; btn.textContent = "Generating...";
+
+      if (isDemoMode) {
+        const campTests = testListIds.map(tId => ({ test_id: tId }));
+        const newCamp = {
+          id: 'camp-' + Math.random(),
+          customer_id: 'cust-demo',
+          title: title,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          campaign_tests: campTests
+        };
+        mockCampaigns.unshift(newCamp);
+        const link = window.location.origin + window.location.pathname.replace('admin.html', 'portal.html') + '?cid=' + newCamp.id;
+        document.querySelector('#generated-link-area input').value = link;
+        document.getElementById('generated-link-area').classList.remove('hidden');
+        
+        loadDashboardData();
+        btn.disabled = false;
+        btn.textContent = "Generate Link Sekarang";
+        return;
+      }
+
+      try {
+        // Insert Campaign
+        const { data: campaign, error: campErr } = await _supabase
+          .from('campaigns')
+          .insert([{ title, customer_id: authSession.user.id, is_active: true }])
+          .select()
+          .single();
+
+        if (campErr) throw campErr;
+
+        // Insert Campaign Tests relations
+        const relationRows = testListIds.map(testId => ({
+          campaign_id: campaign.id,
+          test_id: testId
+        }));
+        const { error: relErr } = await _supabase.from('campaign_tests').insert(relationRows);
+        if (relErr) throw relErr;
+
+        const link = window.location.origin + window.location.pathname.replace('admin.html', 'portal.html') + '?cid=' + campaign.id;
+        document.querySelector('#generated-link-area input').value = link;
+        document.getElementById('generated-link-area').classList.remove('hidden');
+        
+        loadDashboardData();
+      } catch (err) {
+        alert("Gagal membuat campaign: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate Link Sekarang";
+      }
+    }
+
+    async function saveBrandingSettings(e) {
+      e.preventDefault();
+      const companyName = document.getElementById('input-company-name').value;
+      const brandColor = document.getElementById('input-brand-color').value;
+      const logoFile = document.getElementById('input-logo-file').files[0];
+      const btn = document.getElementById('btn-save-branding');
+
+      btn.disabled = true; btn.textContent = "Menyimpan...";
+
+      if (isDemoMode) {
+        mockCustomer.company_name = companyName;
+        mockCustomer.brand_color = brandColor;
+        alert("Branding settings saved successfully (Demo Mode)!");
+        setupCustomerBranding();
+        btn.disabled = false;
+        btn.textContent = "Simpan Konfigurasi Branding";
+        return;
+      }
+
+      try {
+        let logoUrl = currentCustomer.logo_url;
+
+        if (logoFile) {
+          const fileExt = logoFile.name.split('.').pop();
+          const fileName = `${authSession.user.id}-${Math.random()}.${fileExt}`;
+          const filePath = `logos/${fileName}`;
+          
+          const { error: uploadErr } = await _supabase.storage
+            .from('logos')
+            .upload(filePath, logoFile);
+
+          if (uploadErr) throw uploadErr;
+
+          const { data: urlData } = _supabase.storage.from('logos').getPublicUrl(filePath);
+          logoUrl = urlData.publicUrl;
+        }
+
+        const { error } = await _supabase
+          .from('customers')
+          .update({ company_name: companyName, brand_color: brandColor, logo_url: logoUrl })
+          .eq('id', authSession.user.id);
+
+        if (error) throw error;
+
+        alert("Pengaturan branding berhasil disimpan!");
+        window.location.reload();
+      } catch (err) {
+        alert("Gagal menyimpan: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Simpan Konfigurasi Branding";
+      }
+    }
+
+    // ==========================================
+    // TAB: BILLING & TOP UP
+    // ==========================================
+    async function switchTab(tabId) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = document.getElementById('nav-' + tabId);
+      if (activeNav) activeNav.classList.add('active');
+
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      const activeTab = document.getElementById('tab-' + tabId);
+      if (activeTab) activeTab.classList.add('active');
+
+      const titles = {
+        'overview': 'Ringkasan Dashboard',
+        'campaigns': 'Buat Link Sesi Tes',
+        'participants': 'Data Lengkap Peserta',
+        'billing': 'Riwayat Saldo & Top Up',
+        'settings': 'Pengaturan Branding'
+      };
+      document.getElementById('page-title').textContent = titles[tabId];
+
+      if (tabId === 'billing') loadBillingHistory();
+    }
+
+    async function handleTopUpRequest(e) {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('topup-amount').value);
+      const proofFile = document.getElementById('topup-proof-file').files[0];
+      const btn = document.getElementById('btn-submit-topup');
+
+      btn.disabled = true; btn.textContent = "Mengunggah...";
+
+      if (isDemoMode) {
+        mockTopUpRequests.unshift({
+          id: 'top-' + Math.random(),
+          customer_id: 'cust-demo',
+          amount: amount,
+          proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500',
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+        alert("Pengajuan top up berhasil dikirim!");
+        document.getElementById('topup-amount').value = '';
+        document.getElementById('topup-proof-file').value = '';
+        loadBillingHistory();
+        btn.disabled = false;
+        btn.textContent = "Kirim Bukti Pembayaran";
+        return;
+      }
+
+      try {
+        let proofUrl = null;
+        if (proofFile) {
+          const fileExt = proofFile.name.split('.').pop();
+          const fileName = `${authSession.user.id}-${Math.random()}.${fileExt}`;
+          const filePath = `proofs/${fileName}`;
+
+          const { error: uploadErr } = await _supabase.storage
+            .from('proofs')
+            .upload(filePath, proofFile);
+
+          if (uploadErr) throw uploadErr;
+
+          const { data: urlData } = _supabase.storage.from('proofs').getPublicUrl(filePath);
+          proofUrl = urlData.publicUrl;
+        }
+
+        const { error } = await _supabase.from('top_up_requests').insert([{
+          customer_id: authSession.user.id,
+          amount,
+          proof_url: proofUrl,
+          status: 'pending'
+        }]);
+
+        if (error) throw error;
+        alert("Pengajuan top up berhasil dikirim!");
+        document.getElementById('topup-amount').value = '';
+        document.getElementById('topup-proof-file').value = '';
+        loadBillingHistory();
+      } catch (err) {
+        alert("Gagal: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Kirim Bukti Pembayaran";
+      }
+    }
+
+    async function loadBillingHistory() {
+      try {
+        let requests;
+        if (isDemoMode) {
+          requests = mockTopUpRequests;
+        } else {
+          const { data: r } = await _supabase
+            .from('top_up_requests')
+            .select('*')
+            .eq('customer_id', authSession.user.id)
+            .order('created_at', { ascending: false });
+          requests = r;
+        }
+
+        const tbody = document.getElementById('table-billing-history');
+        tbody.innerHTML = requests && requests.length ? requests.map(r => {
+          let badge = `<span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">PENDING</span>`;
+          if (r.status === 'verified') badge = `<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">BERHASIL</span>`;
+          if (r.status === 'rejected') badge = `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[9px] font-bold uppercase">DITOLAK</span>`;
+
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-3 px-4">${new Date(r.created_at).toLocaleString()}</td>
+              <td class="py-3 px-4 font-bold">Rp ${Number(r.amount).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4">
+                ${r.proof_url ? `<a href="${r.proof_url}" target="_blank" class="text-brand-600 hover:underline">Lihat Bukti</a>` : '-'}
+              </td>
+              <td class="py-3 px-4 text-right">${badge}</td>
+            </tr>
+          `;
+        }).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400">Belum ada transaksi top-up</td></tr>';
+      } catch (e) { console.error(e); }
+    }
+
+    function exportParticipantsCSV() {
+      if (participantsData.length === 0) {
+        alert("Tidak ada data peserta untuk diekspor!");
+        return;
+      }
+      let csv = 'Nama Peserta,Email,Sesi Campaign,Tanggal Pengerjaan,Status\n';
+      participantsData.forEach(p => {
+        const dateStr = new Date(p.created_at).toLocaleDateString('id-ID');
+        csv += `"${p.full_name}","${p.email}","${p.campaign_title || ''}","${dateStr}","${p.status}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `data_peserta_${currentCustomer.company_name.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => { alert("Link disalin!"); });
+    }
+
+    // ==========================================
+    // MODAL: REPORT GENERATION
+    // ==========================================
+    async function openReportModal(participantId) {
+      const p = participantsData.find(item => item.id === participantId);
+      if (!p) return;
+
+      document.getElementById('rep-name').textContent = p.full_name;
+      document.getElementById('rep-email').textContent = p.email;
+      document.getElementById('rep-campaign').textContent = p.campaign_title;
+      document.getElementById('rep-date').textContent = new Date(p.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+      document.getElementById('rep-company').textContent = currentCustomer.company_name;
+      
+      const statusEl = document.getElementById('rep-status');
+      statusEl.textContent = p.status === 'completed' ? 'LENGKAP' : 'SEDANG UJIAN';
+      statusEl.className = p.status === 'completed' ? 'bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold' : 'bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-[10px] font-bold';
+
+      // Load results
+      let results;
+      if (isDemoMode) {
+        results = mockTestResults.filter(r => r.participant_id === p.id);
+      } else {
+        const { data: res } = await _supabase.from('test_results').select('*').eq('participant_id', p.id);
+        results = res;
+      }
+      
+      const contentArea = document.getElementById('report-test-content-area');
+      
+      if (!results || results.length === 0) {
+        contentArea.innerHTML = '<div class="text-center py-12 text-slate-400 border-2 border-dashed border-slate-100 rounded-3xl">Peserta belum menyelesaikan tes atau tidak ada data hasil.</div>';
+      } else {
+        contentArea.innerHTML = results.map(r => {
+          const mt = masterTests.find(t => t.id === r.test_id) || { name: 'Alat Tes', code: 'TEST' };
+          const s = r.scoring_data || { score: 'N/A', label: 'Belum di-kalkulasi', description: 'Interpretasi tidak ditemukan.' };
+          
+          let scoreSection = '';
+          
+          if (mt.code === 'wpt') {
+            scoreSection = `
+              <div class="grid sm:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div class="text-center border-r border-slate-200/50">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">IQ Score</div>
+                  <div class="text-4xl font-extrabold text-brand-600 mt-2">${s.score || s.iq || 'N/A'}</div>
+                </div>
+                <div class="text-center border-r border-slate-200/50">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Kategori Kognitif</div>
+                  <div class="text-base font-extrabold text-slate-800 mt-3">${s.label || 'N/A'}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase">Skor Mentah (Raw)</div>
+                  <div class="text-4xl font-extrabold text-slate-500 mt-2">${s.raw || 'N/A'}</div>
+                </div>
+              </div>
+            `;
+          } else if (mt.code === 'disc') {
+            // DISC scores
+            const raw = s.raw || { D:0, I:0, S:0, C:0 };
+            const maxVal = Math.max(1, raw.D, raw.I, raw.S, raw.C);
+            const getPct = (val) => Math.round((val / maxVal) * 100);
+            
+            scoreSection = `
+              <div class="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 class="text-xs font-bold text-slate-400 uppercase">Skor Profil DISC: <strong class="text-brand-600">${s.score || ''} - ${s.label || ''}</strong></h4>
+                <div class="grid sm:grid-cols-4 gap-4">
+                  ${['D', 'I', 'S', 'C'].map(trait => `
+                    <div>
+                      <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                        <span>Dimensi ${trait}</span>
+                        <span>${raw[trait] || 0}</span>
+                      </div>
+                      <div class="w-full bg-slate-200 rounded-full h-2">
+                        <div class="bg-brand-600 h-full rounded-full" style="width:${getPct(raw[trait])}%"></div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          } else {
+            // General representation
+            scoreSection = `
+              <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-2">Hasil Ujian:</div>
+                <div class="text-sm font-extrabold text-slate-800">Skor: ${s.score || 'N/A'} (Kategori: ${s.label || 'N/A'})</div>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+              <div class="flex items-center gap-3 border-b border-slate-100 pb-4 shrink-0">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600"><i data-lucide="award" class="w-5 h-5"></i></div>
+                <div>
+                  <h3 class="font-display font-extrabold text-slate-900 text-lg">${mt.name}</h3>
+                  <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Hasil Tes Analisis</p>
+                </div>
+              </div>
+              
+              ${scoreSection}
+
+              <div class="space-y-2">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Interpretasi Psikologis:</h4>
+                <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${s.description || 'Penjelasan interpretasi tidak ditemukan atau sedang di-kalkulasi.'}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('modal-report').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeReportModal() {
+      document.getElementById('modal-report').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
