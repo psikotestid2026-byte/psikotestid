@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { mutate } from 'swr';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { updateCustomerBranding } from '@/app/(client)/clients/actions';
@@ -24,9 +25,9 @@ export function SettingsTab({ data }: SettingsTabProps) {
         brand_color: formData.get('brand_color') as string,
       });
       await mutate('/api/client/data');
-      alert('Pengaturan berhasil disimpan!');
+      toast.success('Pengaturan berhasil disimpan!');
     } catch (err: any) {
-      alert('Gagal menyimpan pengaturan: ' + err.message);
+      toast.error('Gagal menyimpan pengaturan: ' + err.message);
     } finally {
       setLoading(false);
     }

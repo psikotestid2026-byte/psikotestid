@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" className={`${plusJakartaSans.variable} ${dmSans.variable}`}>
       <body className="min-h-screen font-body antialiased text-slate-800 bg-slate-50">
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

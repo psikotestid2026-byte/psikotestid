@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { mutate } from 'swr';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { createOrder } from '@/app/(client)/clients/actions';
 
 interface BillingTabProps {
@@ -12,27 +14,26 @@ interface BillingTabProps {
 
 export function BillingTab({ data }: BillingTabProps) {
   const [loading, setLoading] = useState(false);
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+  const [buyQty, setBuyQty] = useState(10);
 
-  const handleBuy = async () => {
+  const handleBuy = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!data.customer?.id || !data.tests?.length) {
-      alert('Data tidak lengkap');
+      toast.error('Data tidak lengkap');
       return;
     }
     
-    // For demo: buy 10 quota of the first test
-    const qtyStr = window.prompt(`Beli kuota untuk ${data.tests[0].name}. Masukkan jumlah:`, "10");
-    if (!qtyStr) return;
-    
-    const qty = parseInt(qtyStr, 10);
-    if (isNaN(qty) || qty <= 0) return;
+    if (isNaN(buyQty) || buyQty <= 0) return;
 
     setLoading(true);
     try {
-      await createOrder(data.customer.id, data.tests[0].id, qty);
+      await createOrder(data.customer.id, data.tests[0].id, buyQty);
       await mutate('/api/client/data');
-      alert('Berhasil membuat order tagihan!');
+      toast.success('Berhasil membuat order tagihan!');
+      setIsBuyModalOpen(false);
     } catch (err: any) {
-      alert('Gagal membuat order: ' + err.message);
+      toast.error('Gagal membuat order: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export function BillingTab({ data }: BillingTabProps) {
     <div className="max-w-5xl mx-auto animate-fadeUp">
       <div className="flex justify-between items-center mb-6">
         <h2 className="font-display font-bold text-lg text-slate-900">Tagihan & Beli Kuota</h2>
-        <Button onClick={handleBuy} disabled={loading}>Beli Kuota Baru</Button>
+        <Button onClick={() => setIsBuyModalOpen(true)} disabled={loading}>Beli Kuota Baru</Button>
       </div>
       <Card noPadding className="overflow-hidden">
         <Table headers={["Invoice", "Tanggal", "Total Harga", "Status", "Aksi"]} isEmpty={data.orders.length === 0}>
@@ -56,13 +57,42 @@ export function BillingTab({ data }: BillingTabProps) {
               </td>
               <td className="py-4 px-4 text-right">
                 {o.status === 'PENDING' && (
-                  <Button variant="outline" size="sm" onClick={() => alert('Fitur Cara Bayar (Xendit) akan segera hadir!')}>Cara Bayar</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast.info('Fitur Cara Bayar (Xendit) akan segera hadir!')}>Cara Bayar</Button>
                 )}
               </td>
             </tr>
           ))}
         </Table>
       </Card>
+
+      <Modal isOpen={isBuyModalOpen} onClose={() => setIsBuyModalOpen(false)} title="Beli Kuota Tes">
+        <form onSubmit={handleBuy} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Pilih Alat Tes</label>
+            <input 
+              type="text" 
+              disabled
+              value={data.tests?.[0]?.name || 'Loading...'}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 text-slate-500" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Jumlah Kuota</label>
+            <input 
+              type="number" 
+              required
+              min="1"
+              value={buyQty}
+              onChange={(e) => setBuyQty(parseInt(e.target.value) || 0)}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
+            />
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button type="button" variant="outline" onClick={() => setIsBuyModalOpen(false)}>Batal</Button>
+            <Button type="submit" disabled={loading || buyQty <= 0}>{loading ? 'Memproses...' : 'Buat Tagihan'}</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

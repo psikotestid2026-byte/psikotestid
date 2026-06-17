@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { BrainCircuit, Timer } from 'lucide-react';
 import { WelcomeStage } from '@/components/assessment/WelcomeStage';
 import { BiodataStage } from '@/components/assessment/BiodataStage';
@@ -60,7 +61,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       setParticipantId(pid);
       setStage('instruction');
     } catch (err: any) {
-      alert('Gagal mendaftar: ' + err.message);
+      toast.error('Gagal mendaftar: ' + err.message);
     }
   };
 
@@ -105,7 +106,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         setStage('done');
       }
     } catch (err: any) {
-      alert('Terjadi kesalahan saat menyimpan jawaban: ' + err.message);
+      toast.error('Terjadi kesalahan saat menyimpan jawaban: ' + err.message);
     }
   };
 

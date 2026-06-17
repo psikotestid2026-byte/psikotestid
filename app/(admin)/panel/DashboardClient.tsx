@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import useSWR from 'swr';
+import { toast } from 'sonner';
 import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { OverviewTab } from '@/components/admin/OverviewTab';
 import { CustomersTab } from '@/components/admin/CustomersTab';
 import { TestsTab } from '@/components/admin/TestsTab';
@@ -15,6 +18,8 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function DashboardClient({ initialData }: { initialData: any }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [approveOrderId, setApproveOrderId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
   
   // Use SWR for client-side hydration & polling, seeded with initialData from SSR
   const { data, mutate } = useSWR('/api/admin/data', fetcher, {
@@ -22,10 +27,18 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
     refreshInterval: 15000, // Poll every 15s to keep dashboard live
   });
 
-  const handleApproveOrder = async (orderId: number) => {
-    if (confirm('Approve order ini? Saldo kuota pelanggan akan langsung ditambahkan.')) {
-      await approveOrder(orderId);
-      mutate(); // Revalidate SWR data
+  const handleApproveOrder = async () => {
+    if (!approveOrderId) return;
+    setLoading(true);
+    try {
+      await approveOrder(approveOrderId);
+      await mutate(); // Revalidate SWR data
+      toast.success('Pesanan berhasil disetujui!');
+      setApproveOrderId(null);
+    } catch (err: any) {
+      toast.error('Gagal menyetujui pesanan: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,12 +77,22 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
         <TopBar title={menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'} />
         
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {activeTab === 'overview' && <OverviewTab data={data} onApproveOrder={handleApproveOrder} />}
+          {activeTab === 'overview' && <OverviewTab data={data} onApproveOrder={(id) => setApproveOrderId(id)} />}
           {activeTab === 'customers' && <CustomersTab data={data} />}
           {activeTab === 'tests' && <TestsTab data={data} />}
           {activeTab === 'norms' && <NormsTab />}
         </div>
       </main>
+
+      <Modal isOpen={approveOrderId !== null} onClose={() => setApproveOrderId(null)} title="Konfirmasi Persetujuan">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">Approve order ini? Saldo kuota tes perusahaan akan otomatis ditambahkan setelah disetujui.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setApproveOrderId(null)}>Batal</Button>
+            <Button onClick={handleApproveOrder} disabled={loading}>{loading ? 'Memproses...' : 'Setujui Pesanan'}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { mutate } from 'swr';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { Copy, FileDown } from 'lucide-react';
 import { createCampaign, closeCampaign } from '@/app/(client)/clients/actions';
 
@@ -13,31 +15,38 @@ interface CampaignsTabProps {
 
 export function CampaignsTab({ data }: CampaignsTabProps) {
   const [loading, setLoading] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [closeId, setCloseId] = useState<number | null>(null);
 
-  const handleCreate = async () => {
-    const title = window.prompt('Masukkan Nama Campaign Baru:');
-    if (!title || !data.customer?.id) return;
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!campaignTitle || !data.customer?.id) return;
     
     setLoading(true);
     try {
-      await createCampaign(data.customer.id, title);
+      await createCampaign(data.customer.id, campaignTitle);
       await mutate('/api/client/data');
+      toast.success('Campaign berhasil dibuat!');
+      setIsCreateOpen(false);
+      setCampaignTitle('');
     } catch (err: any) {
-      alert('Gagal membuat campaign: ' + err.message);
+      toast.error('Gagal membuat campaign: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = async (campaignId: number) => {
-    if (!window.confirm('Yakin ingin menutup campaign ini?')) return;
-    
+  const handleClose = async () => {
+    if (!closeId) return;
     setLoading(true);
     try {
-      await closeCampaign(campaignId);
+      await closeCampaign(closeId);
       await mutate('/api/client/data');
+      toast.success('Campaign berhasil ditutup!');
+      setCloseId(null);
     } catch (err: any) {
-      alert('Gagal menutup campaign: ' + err.message);
+      toast.error('Gagal menutup campaign: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +56,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
     <div className="max-w-5xl mx-auto animate-fadeUp">
       <div className="flex justify-between items-center mb-6">
         <h2 className="font-display font-bold text-lg text-slate-900">Campaign Asesmen</h2>
-        <Button onClick={handleCreate} disabled={loading}>Buat Campaign Baru</Button>
+        <Button onClick={() => setIsCreateOpen(true)} disabled={loading}>Buat Campaign Baru</Button>
       </div>
       <Card noPadding className="overflow-hidden">
         <Table headers={["Nama Campaign", "Link Ujian", "Status", "Aksi"]} isEmpty={data.campaigns.length === 0}>
@@ -69,13 +78,43 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
               </td>
               <td className="py-4 px-4 text-right">
                 {c.is_active && (
-                  <Button variant="outline" size="sm" onClick={() => handleClose(c.id)} disabled={loading}>Tutup</Button>
+                  <Button variant="outline" size="sm" onClick={() => setCloseId(c.id)} disabled={loading}>Tutup</Button>
                 )}
               </td>
             </tr>
           ))}
         </Table>
       </Card>
+
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Buat Campaign Baru">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Nama Campaign</label>
+            <input 
+              type="text" 
+              required
+              value={campaignTitle}
+              onChange={(e) => setCampaignTitle(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
+              placeholder="Contoh: Rekrutmen Staff IT 2026"
+            />
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Batal</Button>
+            <Button type="submit" disabled={loading || !campaignTitle}>{loading ? 'Menyimpan...' : 'Simpan'}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={closeId !== null} onClose={() => setCloseId(null)} title="Tutup Campaign">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">Yakin ingin menutup campaign ini? Kandidat tidak akan bisa mengakses link tes lagi.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setCloseId(null)}>Batal</Button>
+            <Button onClick={handleClose} disabled={loading}>{loading ? 'Menutup...' : 'Ya, Tutup'}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
