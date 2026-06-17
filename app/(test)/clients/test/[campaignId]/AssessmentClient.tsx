@@ -7,6 +7,7 @@ import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
 import { QuestionStage } from '@/components/assessment/QuestionStage';
 import { TransitionStage, DoneStage } from '@/components/assessment/CompletionStage';
+import { submitBiodata, submitTestResult, markTestCompleted } from '../actions';
 
 export default function AssessmentClient({ initialData }: { initialData: any }) {
   const { campaign, customer, tests } = initialData;
@@ -54,8 +55,13 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
 
   const handleBiodataSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setParticipantId(Date.now());
-    setStage('instruction');
+    try {
+      const pid = await submitBiodata(campaign.id, userName, email);
+      setParticipantId(pid);
+      setStage('instruction');
+    } catch (err: any) {
+      alert('Gagal mendaftar: ' + err.message);
+    }
   };
 
   const startTest = () => {
@@ -86,8 +92,21 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   };
 
   const finishActiveTest = async () => {
-    if (activeIdx < tests.length - 1) setStage('transition');
-    else setStage('done');
+    const t = tests[activeIdx];
+    try {
+      if (participantId) {
+        await submitTestResult(participantId, t.id, answers[t.id] || {});
+      }
+      
+      if (activeIdx < tests.length - 1) {
+        setStage('transition');
+      } else {
+        if (participantId) await markTestCompleted(participantId);
+        setStage('done');
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan saat menyimpan jawaban: ' + err.message);
+    }
   };
 
   const confirmNextTest = () => {
