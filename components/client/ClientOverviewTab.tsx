@@ -7,7 +7,7 @@ interface ClientOverviewTabProps {
 
 export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
   return (
-    <div className="max-w-5xl mx-auto animate-fadeUp">
+    <div className="w-full animate-fadeUp">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <div className="flex items-center justify-between mb-4">

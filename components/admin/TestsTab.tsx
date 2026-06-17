@@ -6,7 +6,7 @@ interface TestsTabProps {
 
 export function TestsTab({ data }: TestsTabProps) {
   return (
-    <div className="max-w-5xl mx-auto animate-fadeUp">
+    <div className="w-full animate-fadeUp">
       <h2 className="font-display font-bold text-lg text-slate-900 mb-6">Alat Tes & Bank Soal</h2>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {data.tests.map((t: any) => (

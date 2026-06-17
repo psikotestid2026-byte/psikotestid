@@ -53,7 +53,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto animate-fadeUp">
+    <div className="w-full animate-fadeUp">
       <div className="flex justify-between items-center mb-6">
         <h2 className="font-display font-bold text-lg text-slate-900">Campaign Asesmen</h2>
         <Button onClick={() => setIsCreateOpen(true)} disabled={loading}>Buat Campaign Baru</Button>

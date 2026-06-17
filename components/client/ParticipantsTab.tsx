@@ -10,7 +10,7 @@ interface ParticipantsTabProps {
 
 export function ParticipantsTab({ data }: ParticipantsTabProps) {
   return (
-    <div className="max-w-5xl mx-auto animate-fadeUp">
+    <div className="w-full animate-fadeUp">
       <h2 className="font-display font-bold text-lg text-slate-900 mb-6">Hasil Kandidat</h2>
       <Card noPadding className="overflow-hidden">
         <Table headers={["Nama Kandidat", "Email", "Status", "Aksi"]} isEmpty={data.participants.length === 0}>

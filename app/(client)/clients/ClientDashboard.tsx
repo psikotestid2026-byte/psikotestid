@@ -31,7 +31,7 @@ export default function ClientDashboard({ initialData }: { initialData: any }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-body flex">
+    <div className="min-h-screen w-full bg-slate-50 font-body flex">
       <Sidebar 
         title={
           <div className="flex items-center gap-2">

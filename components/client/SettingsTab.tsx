@@ -34,7 +34,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto animate-fadeUp">
+    <div className="w-full animate-fadeUp">
       <h2 className="font-display font-bold text-lg text-slate-900 mb-6">Pengaturan Branding</h2>
       <Card>
         <form className="space-y-6" onSubmit={handleSubmit}>
