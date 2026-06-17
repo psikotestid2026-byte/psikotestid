@@ -2,11 +2,11 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
 import { UserCircle2, Loader2, ArrowRight } from "lucide-react";
 
-export default function ParticipantLogin() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,6 +25,23 @@ export default function ParticipantLogin() {
   };
 
   return (
+    <button
+      onClick={handleLogin}
+      disabled={isLoading}
+      className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all disabled:opacity-70 group"
+    >
+      {isLoading ? (
+        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+      ) : (
+        <ArrowRight className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" />
+      )}
+      {isLoading ? "Menyiapkan tes..." : "Mulai Asesmen (Login Google)"}
+    </button>
+  );
+}
+
+export default function ParticipantLogin() {
+  return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 text-center border border-emerald-100/50">
@@ -39,18 +56,9 @@ export default function ParticipantLogin() {
             Silakan masuk untuk memulai sesi asesmen Anda hari ini. Fokus dan berikan yang terbaik.
           </p>
 
-          <button
-            onClick={handleLogin}
-            disabled={isLoading}
-            className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all disabled:opacity-70 group"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-              <ArrowRight className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" />
-            )}
-            {isLoading ? "Menyiapkan tes..." : "Mulai Asesmen (Login Google)"}
-          </button>
+          <Suspense fallback={<div className="flex justify-center py-3.5"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>}>
+            <LoginContent />
+          </Suspense>
         </div>
       </div>
       

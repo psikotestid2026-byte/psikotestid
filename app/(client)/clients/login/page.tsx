@@ -2,11 +2,11 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
 import { Building2, LogIn, Loader2 } from "lucide-react";
 
-export default function ClientLogin() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,6 +25,27 @@ export default function ClientLogin() {
   };
 
   return (
+    <div className="mt-8">
+      <div className="mt-6">
+        <button
+          onClick={handleLogin}
+          disabled={isLoading}
+          className="w-full flex justify-center items-center py-3 px-4 border border-slate-300 rounded-xl shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
+        >
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin mr-2 text-indigo-600" />
+          ) : (
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 mr-2" alt="Google" />
+          )}
+          {isLoading ? "Memproses..." : "Masuk dengan Google"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function ClientLogin() {
+  return (
     <div className="min-h-screen bg-slate-50 flex">
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
@@ -40,22 +61,9 @@ export default function ClientLogin() {
             </p>
           </div>
 
-          <div className="mt-8">
-            <div className="mt-6">
-              <button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-slate-300 rounded-xl shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin mr-2 text-indigo-600" />
-                ) : (
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5 mr-2" alt="Google" />
-                )}
-                {isLoading ? "Memproses..." : "Masuk dengan Google"}
-              </button>
-            </div>
-          </div>
+          <Suspense fallback={<div className="mt-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-indigo-600" /></div>}>
+            <LoginContent />
+          </Suspense>
         </div>
       </div>
       <div className="hidden lg:block relative w-0 flex-1">
