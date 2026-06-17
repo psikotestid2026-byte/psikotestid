@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll } from 'lucide-react';
+import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll, UserCog } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { Modal } from '@/components/ui/Modal';
@@ -12,6 +13,7 @@ import { OverviewTab } from '@/components/admin/OverviewTab';
 import { CustomersTab } from '@/components/admin/CustomersTab';
 import { TestsTab } from '@/components/admin/TestsTab';
 import { NormsTab } from '@/components/admin/NormsTab';
+import { AdminsTab } from '@/components/admin/AdminsTab';
 import { approveOrder } from './actions';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -46,7 +48,8 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
     { id: 'overview', label: 'Ringkasan Sistem', icon: <LayoutDashboard /> },
     { id: 'customers', label: 'Perusahaan / Klien', icon: <Building2 /> },
     { id: 'tests', label: 'Master Alat Tes', icon: <FileSpreadsheet /> },
-    { id: 'norms', label: 'Norma & Skoring', icon: <Scroll /> }
+    { id: 'norms', label: 'Norma & Skoring', icon: <Scroll /> },
+    { id: 'admins', label: 'Manajemen Admin', icon: <UserCog /> }
   ];
 
   return (
@@ -70,7 +73,7 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
         items={menuItems}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onLogout={() => window.location.href = '/'}
+        onLogout={() => signOut({ callbackUrl: '/panel/login' })}
       />
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
@@ -81,6 +84,7 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
           {activeTab === 'customers' && <CustomersTab data={data} />}
           {activeTab === 'tests' && <TestsTab data={data} />}
           {activeTab === 'norms' && <NormsTab />}
+          {activeTab === 'admins' && <AdminsTab data={data} />}
         </div>
       </main>
 

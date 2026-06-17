@@ -228,3 +228,12 @@ export const notification_logs = pgTable('notification_logs', {
     ref_idx: index('idx_notification_logs_ref').on(table.reference_code),
   };
 });
+
+export const admins = pgTable('admins', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 255 }).notNull(),
+  role: varchar('role', { length: 50 }).default('SUPERADMIN'),
+  status: varchar('status', { length: 20 }).default('ACTIVE'),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});

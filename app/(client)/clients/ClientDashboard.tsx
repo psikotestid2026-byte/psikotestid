@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
 import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
@@ -57,7 +58,7 @@ export default function ClientDashboard({ initialData }: { initialData: any }) {
         items={menuItems}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onLogout={() => window.location.href = '/'}
+        onLogout={() => signOut({ callbackUrl: '/clients/login' })}
       />
 
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">

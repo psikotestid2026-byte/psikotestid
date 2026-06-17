@@ -3,16 +3,17 @@
 import { sql } from '@/lib/neon';
 
 export async function getSuperAdminData() {
-  const [customers, tests, campaigns, topups, submissions, logs] = await Promise.all([
+  const [customers, tests, campaigns, topups, submissions, logs, admins] = await Promise.all([
     sql`SELECT id, company_name, email, created_at FROM customers ORDER BY created_at DESC`,
     sql`SELECT * FROM master_tests`,
     sql`SELECT id FROM campaigns`,
     sql`SELECT * FROM test_orders WHERE status = 'PENDING' ORDER BY created_at DESC`,
     sql`SELECT id FROM test_results`,
-    sql`SELECT * FROM quota_transactions ORDER BY created_at DESC LIMIT 50`
+    sql`SELECT * FROM quota_transactions ORDER BY created_at DESC LIMIT 50`,
+    sql`SELECT * FROM admins ORDER BY created_at DESC`
   ]);
 
-  return { customers, tests, campaigns, topups, submissions, logs };
+  return { customers, tests, campaigns, topups, submissions, logs, admins };
 }
 
 export async function approveOrder(orderId: number) {
@@ -38,4 +39,23 @@ export async function approveOrder(orderId: number) {
       `;
     }
   }
+}
+
+export async function createAdmin(data: { name: string; email: string; role: string; status: string }) {
+  await sql`
+    INSERT INTO admins (name, email, role, status)
+    VALUES (${data.name}, ${data.email}, ${data.role}, ${data.status})
+  `;
+}
+
+export async function updateAdmin(id: number, data: { name: string; email: string; role: string; status: string }) {
+  await sql`
+    UPDATE admins 
+    SET name = ${data.name}, email = ${data.email}, role = ${data.role}, status = ${data.status}
+    WHERE id = ${id}
+  `;
+}
+
+export async function deleteAdmin(id: number) {
+  await sql`DELETE FROM admins WHERE id = ${id}`;
 }

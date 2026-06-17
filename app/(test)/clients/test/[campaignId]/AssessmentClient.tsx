@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import { BrainCircuit, Timer } from 'lucide-react';
 import { WelcomeStage } from '@/components/assessment/WelcomeStage';
@@ -145,7 +146,10 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             <Timer className="w-4 h-4" /><span>{formatTime(timeLeft)}</span>
           </div>
         )}
-        <div className="hidden sm:block text-xs text-slate-300 font-bold">PsikoTest.id</div>
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:block text-xs text-slate-300 font-bold">PsikoTest.id</div>
+          <button onClick={() => signOut({ callbackUrl: '/clients/test/login' })} className="text-xs text-red-500 font-bold hover:underline">Logout</button>
+        </div>
       </header>
 
       {stage === 'questions' && (
