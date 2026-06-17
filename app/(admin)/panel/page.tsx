@@ -1,10 +1,10 @@
 import { getSuperAdminData } from './actions';
-import DashboardClient from './DashboardClient';
+import OverviewClient from './OverviewClient';
 
 export default async function SuperAdminPage() {
   const initialData = await getSuperAdminData();
   
   return (
-    <DashboardClient initialData={initialData} />
+    <OverviewClient initialData={initialData} />
   );
 }

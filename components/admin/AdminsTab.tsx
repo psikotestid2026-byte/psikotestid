@@ -93,10 +93,10 @@ export function AdminsTab({ data }: { data: any }) {
               <td className="py-3 px-4 text-slate-800 font-medium">{admin.name}</td>
               <td className="py-3 px-4 text-slate-500">{admin.email}</td>
               <td className="py-3 px-4">
-                <Badge variant={admin.role === 'SUPERADMIN' ? 'error' : 'warning'}>{admin.role}</Badge>
+                <Badge variant={admin.role === 'SUPERADMIN' ? 'danger' : 'warning'}>{admin.role}</Badge>
               </td>
               <td className="py-3 px-4">
-                <Badge variant={admin.status === 'ACTIVE' ? 'success' : 'neutral'}>{admin.status}</Badge>
+                <Badge variant={admin.status === 'ACTIVE' ? 'success' : 'default'}>{admin.status}</Badge>
               </td>
               <td className="py-3 px-4">
                 <div className="flex gap-2 justify-end">
