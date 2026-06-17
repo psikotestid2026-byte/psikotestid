@@ -79,7 +79,7 @@ export function CustomersTab({ data, onAdjustQuota, loading = false }: Customers
               <select 
                 required
                 value={selectedTest}
-                onChange={(e) => setSelectedTest(e.target.value)}
+                onChange={(e) => setSelectedTest(e.target.value ? Number(e.target.value) : '')}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               >
                 <option value="" disabled>-- Pilih Tes --</option>
@@ -94,7 +94,7 @@ export function CustomersTab({ data, onAdjustQuota, loading = false }: Customers
                 type="number" 
                 required
                 value={diffAmount}
-                onChange={(e) => setDiffAmount(e.target.value)}
+                onChange={(e) => setDiffAmount(e.target.value ? Number(e.target.value) : '')}
                 placeholder="Contoh: 10 atau -5"
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
