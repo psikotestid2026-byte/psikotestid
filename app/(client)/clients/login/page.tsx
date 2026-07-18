@@ -54,7 +54,7 @@ export default function ClientLogin() {
               <Building2 className="w-6 h-6" />
             </div>
             <h2 className="mt-6 text-3xl font-extrabold text-slate-900">
-              Portal Klien HR
+              Portal Klien
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               Kelola asesmen dan laporan kandidat Anda dengan mudah.
