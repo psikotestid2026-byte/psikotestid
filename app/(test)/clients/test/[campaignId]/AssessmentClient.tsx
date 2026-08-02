@@ -81,8 +81,12 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     });
   };
 
+  const currentTest = tests[activeIdx];
+  const totalQuestions = currentTest?.questions?.length || 1;
+  const brandColor = customer?.brand_color || '#2563eb';
+
   const nextQuestion = () => {
-    if (currentQ < 9) {
+    if (currentQ < totalQuestions - 1) {
       setCurrentQ(prev => prev + 1);
     } else {
       finishActiveTest();
@@ -122,9 +126,6 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const currentTest = tests[activeIdx];
-  const brandColor = customer?.brand_color || '#2563eb';
-
   return (
     <div className="min-h-screen flex flex-col font-body bg-slate-50 text-slate-800">
       <header className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-sm">
@@ -156,11 +157,11 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         <div className="bg-white border-b border-slate-100 px-4 py-2 sticky top-14 z-40">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5">
-              <span>{currentTest?.name} · Soal {currentQ + 1}/10</span>
-              <span>{Math.round(((currentQ + 1) / 10) * 100)}%</span>
+              <span>{currentTest?.name} · Soal {currentQ + 1}/{totalQuestions}</span>
+              <span>{Math.round(((currentQ + 1) / totalQuestions) * 100)}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-brand-500 h-full rounded-full transition-all duration-300" style={{ width: `${((currentQ + 1) / 10) * 100}%`, backgroundColor: brandColor }}></div>
+              <div className="bg-brand-500 h-full rounded-full transition-all duration-300" style={{ width: `${((currentQ + 1) / totalQuestions) * 100}%`, backgroundColor: brandColor }}></div>
             </div>
           </div>
         </div>

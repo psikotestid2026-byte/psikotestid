@@ -14,8 +14,8 @@ export const authOptions: AuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "/login", // This is just a fallback, middleware will redirect based on portal
-    error: "/login",
+    signIn: "/clients/login",
+    error: "/clients/login",
   },
   callbacks: {
     async signIn({ account, profile }) {
@@ -28,8 +28,6 @@ export const authOptions: AuthOptions = {
           const admins = await sql`SELECT id, role, status FROM admins WHERE email = ${email} LIMIT 1`;
           if (admins.length > 0) {
             if (admins[0].status !== 'ACTIVE') return false;
-            (profile as any).role = admins[0].role;
-            (profile as any).db_id = admins[0].id;
             return true;
           }
 
@@ -37,20 +35,23 @@ export const authOptions: AuthOptions = {
           const customers = await sql`SELECT id, role, status FROM customers WHERE email = ${email} LIMIT 1`;
           if (customers.length > 0) {
             if (customers[0].status !== 'ACTIVE') return false;
-            (profile as any).role = customers[0].role;
-            (profile as any).db_id = customers[0].id;
             return true;
           }
 
           // Check participants table
           const participants = await sql`SELECT id, status FROM participants WHERE email = ${email} LIMIT 1`;
           if (participants.length > 0) {
-            (profile as any).role = 'PARTICIPANT';
-            (profile as any).db_id = participants[0].id;
             return true;
           }
 
-          return false;
+          // Auto-create as new customer if not found in any table
+          const companyName = profile?.name || email.split('@')[0];
+          await sql`
+            INSERT INTO customers (email, company_name, role, status)
+            VALUES (${email}, ${companyName}, 'CUSTOMER', 'ACTIVE')
+            ON CONFLICT (email) DO NOTHING
+          `;
+          return true;
         } catch (error) {
           console.error("Auth Error:", error);
           return false;
@@ -58,10 +59,32 @@ export const authOptions: AuthOptions = {
       }
       return false;
     },
-    async jwt({ token, profile }) {
-      if (profile) {
-        token.role = (profile as any).role;
-        token.db_id = (profile as any).db_id;
+    async jwt({ token }) {
+      if (token?.email) {
+        try {
+          const admins = await sql`SELECT id, role FROM admins WHERE email = ${token.email} LIMIT 1`;
+          if (admins.length > 0) {
+            token.role = admins[0].role;
+            token.db_id = admins[0].id;
+            return token;
+          }
+
+          const customers = await sql`SELECT id, role FROM customers WHERE email = ${token.email} LIMIT 1`;
+          if (customers.length > 0) {
+            token.role = customers[0].role;
+            token.db_id = customers[0].id;
+            return token;
+          }
+
+          const participants = await sql`SELECT id FROM participants WHERE email = ${token.email} LIMIT 1`;
+          if (participants.length > 0) {
+            token.role = 'PARTICIPANT';
+            token.db_id = participants[0].id;
+            return token;
+          }
+        } catch (err) {
+          console.error("JWT Error:", err);
+        }
       }
       return token;
     },
@@ -77,3 +100,4 @@ export const authOptions: AuthOptions = {
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+

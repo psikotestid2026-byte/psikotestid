@@ -8,10 +8,23 @@ export async function getClientData(customerId: number) {
     sql`SELECT * FROM customer_test_quotas WHERE customer_id = ${customerId}`,
     sql`SELECT * FROM campaigns WHERE customer_id = ${customerId} ORDER BY created_at DESC`,
     sql`
-      SELECT p.*, c.title as campaign_title 
+      SELECT p.*, c.title as campaign_title,
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', tr.id,
+                   'test_id', tr.test_id,
+                   'scoring_data', tr.scoring_data,
+                   'raw_answers', tr.raw_answers,
+                   'created_at', tr.created_at
+                 )
+               ) FILTER (WHERE tr.id IS NOT NULL), '[]'
+             ) as test_results
       FROM participants p 
       JOIN campaigns c ON p.campaign_id = c.id 
+      LEFT JOIN test_results tr ON tr.participant_id = p.id
       WHERE c.customer_id = ${customerId} 
+      GROUP BY p.id, c.title
       ORDER BY p.created_at DESC
     `,
     sql`SELECT * FROM master_tests WHERE is_active = TRUE ORDER BY name`,

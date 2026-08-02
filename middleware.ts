@@ -24,7 +24,7 @@ export default withAuth(
 
     // Client Portal Protection (Note: must check after /clients/test)
     if (path.startsWith('/clients') && !path.startsWith('/clients/test') && !path.startsWith('/clients/login')) {
-      if (!token || role !== 'CUSTOMER') {
+      if (!token || (role !== 'CUSTOMER' && role !== 'SUPERADMIN' && role !== 'ADMIN')) {
         return NextResponse.redirect(new URL('/clients/login', req.url));
       }
     }

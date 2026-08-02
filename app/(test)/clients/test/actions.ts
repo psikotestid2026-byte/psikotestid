@@ -40,12 +40,20 @@ export async function submitTestResult(participantId: number, testId: number, an
     WHERE customer_id = ${customerId} AND test_id = ${testId}
   `;
 
+  // Calculate scoring data if test is DISC
+  const testInfo = await sql`SELECT code FROM master_tests WHERE id = ${testId}`;
+  let scoringData = null;
+  if (testInfo[0] && testInfo[0].code.toLowerCase() === 'disc') {
+    const { calculateDiscScore } = await import('@/lib/scoring/disc');
+    scoringData = calculateDiscScore(answers);
+  }
+
   // Insert result (upsert in case of retry)
   await sql`
-    INSERT INTO test_results (participant_id, test_id, raw_answers)
-    VALUES (${participantId}, ${testId}, ${answers})
+    INSERT INTO test_results (participant_id, test_id, raw_answers, scoring_data)
+    VALUES (${participantId}, ${testId}, ${answers}, ${scoringData ? JSON.stringify(scoringData) : null}::jsonb)
     ON CONFLICT (participant_id, test_id)
-    DO UPDATE SET raw_answers = ${answers}
+    DO UPDATE SET raw_answers = ${answers}, scoring_data = ${scoringData ? JSON.stringify(scoringData) : null}::jsonb
   `;
 }
 

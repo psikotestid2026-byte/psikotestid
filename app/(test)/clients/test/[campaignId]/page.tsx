@@ -1,9 +1,12 @@
 import { sql } from '@/lib/neon';
 import AssessmentClient from './AssessmentClient';
 
-export default async function AssessmentPage({ params }: { params: { campaignId: string } }) {
+export default async function AssessmentPage({ params }: { params: Promise<{ campaignId: string }> | { campaignId: string } }) {
+  const resolvedParams = await params;
+  const campaignId = resolvedParams.campaignId;
+
   // Fetch campaign and test info based on campaignId
-  const campaignData = await sql`SELECT * FROM campaigns WHERE id = ${params.campaignId}`;
+  const campaignData = await sql`SELECT * FROM campaigns WHERE id = ${campaignId}`;
   const campaign = campaignData[0] || null;
 
   let customer = null;
@@ -16,7 +19,20 @@ export default async function AssessmentPage({ params }: { params: { campaignId:
     const testRelData = await sql`SELECT test_id FROM campaign_tests WHERE campaign_id = ${campaign.id}`;
     if (testRelData.length > 0) {
       const testIds = testRelData.map(r => r.test_id);
-      tests = await sql`SELECT * FROM master_tests WHERE id = ANY(${testIds}) ORDER BY id ASC`;
+      const rawTests = await sql`SELECT * FROM master_tests WHERE id = ANY(${testIds}) ORDER BY id ASC`;
+
+      // Fetch questions for each test
+      tests = await Promise.all(
+        rawTests.map(async (test: any) => {
+          const questions = await sql`
+            SELECT id, test_id, question_type, question_data, order_number 
+            FROM question_banks 
+            WHERE test_id = ${test.id} 
+            ORDER BY order_number ASC
+          `;
+          return { ...test, questions };
+        })
+      );
     }
   }
 
@@ -24,3 +40,4 @@ export default async function AssessmentPage({ params }: { params: { campaignId:
 
   return <AssessmentClient initialData={initialData} />;
 }
+
