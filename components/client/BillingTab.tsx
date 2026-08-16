@@ -30,6 +30,10 @@ import {
   FileCheck,
   AlertTriangle,
   Send,
+  Brain,
+  ShoppingBag,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 interface BillingTabProps {
@@ -40,6 +44,10 @@ interface BillingTabProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) {
+  const { data: clientData, mutate: mutateClientData } = useSWR('/api/client/data', fetcher, {
+    fallbackData: data,
+  });
+
   const { data: orderData, mutate: mutateOrders } = useSWR('/api/client/orders', fetcher, {
     refreshInterval: 10000,
   });
@@ -47,8 +55,10 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
   const { data: methodsData } = useSWR('/api/client/payment-methods', fetcher);
   const dbPaymentMethods = methodsData?.data || [];
 
-  const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
-  const orders = orderData?.data?.orders || data?.orders || [];
+  const walletBalance = orderData?.data?.balance ?? Number(clientData?.customer?.balance || 0);
+  const orders = orderData?.data?.orders || clientData?.orders || [];
+  const masterTests = clientData?.tests || [];
+  const quotas = clientData?.quotas || [];
 
   // Modals & Active Order States
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(openTopUpOnMount);
@@ -56,6 +66,11 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
   const [customAmount, setCustomAmount] = useState<string>('500000');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('MANUAL_BCA');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Purchase Quota Modal States
+  const [selectedPurchaseTest, setSelectedPurchaseTest] = useState<any | null>(null);
+  const [purchaseQuantity, setPurchaseQuantity] = useState<number>(10);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // Active Inline Instruction Order State
   const [activeInstructionOrder, setActiveInstructionOrder] = useState<any | null>(null);
@@ -145,11 +160,43 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
       setIsTopUpModalOpen(false);
       setActiveInstructionOrder(result.data);
       mutateOrders();
-      mutate('/api/client/data');
+      mutateClientData();
     } catch (err) {
       toast.error('Terjadi kesalahan jaringan.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePurchaseQuotaWithWallet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPurchaseTest || purchaseQuantity <= 0) return;
+
+    setIsPurchasing(true);
+    try {
+      const res = await fetch('/api/client/orders/purchase-quota', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          test_id: selectedPurchaseTest.id,
+          quantity: purchaseQuantity,
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal memproses pembelian kuota.');
+        return;
+      }
+
+      toast.success(result.message || 'Pembelian kuota tes berhasil!');
+      setSelectedPurchaseTest(null);
+      mutateOrders();
+      mutateClientData();
+    } catch (err) {
+      toast.error('Terjadi kesalahan saat memproses transaksi.');
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -250,7 +297,6 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/50">
             {/* Left Column: Expiry & Dynamic Bank Details */}
             <div className="space-y-4">
-              {/* Expiry Countdown Box */}
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between text-xs text-amber-900 shadow-sm">
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-amber-600 shrink-0" />
@@ -261,7 +307,6 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                 </span>
               </div>
 
-              {/* Exact Nominal Box */}
               <div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-sm space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">Total Nominal yang Harus Ditransfer (Presisi):</span>
                 <div className="text-3xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center gap-3">
@@ -279,7 +324,6 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                 </p>
               </div>
 
-              {/* Destination Bank Account Card */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <span className="text-xs font-bold text-slate-500">Bank Tujuan Transfer:</span>
@@ -317,7 +361,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
               </div>
             </div>
 
-            {/* Right Column: Vercel Blob Payment Proof Uploader with Explicit Confirmation Warning */}
+            {/* Right Column: Vercel Blob Payment Proof Uploader */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -336,13 +380,12 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                   )}
                 </div>
 
-                {/* Explicit Warning Alert */}
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1 mb-3">
                   <strong className="flex items-center gap-1.5 text-amber-800 font-bold">
                     <AlertTriangle className="w-4 h-4 text-amber-600" /> PENTING — PERATURAN KONFIRMASI:
                   </strong>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Transaksi <strong>TIDAK AKAN dicek/diproses</strong> Superadmin sampai Anda menekan tombol <strong>"KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG"</strong> di bawah. Anda dapat memperbarui foto bukti kapan saja.
+                    Transaksi <strong>TIDAK AKAN dicek/diproses</strong> Superadmin sampai Anda menekan tombol <strong>"KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG"</strong> di bawah.
                   </p>
                 </div>
 
@@ -412,7 +455,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
       )}
 
       {/* Header Saldo Wallet Summary Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold text-indigo-300 mb-1">
             <Wallet className="w-3.5 h-3.5 text-indigo-400" /> Saldo Wallet Corporate HR
@@ -421,7 +464,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
             Rp {walletBalance.toLocaleString('id-ID')}
           </div>
           <p className="text-xs text-indigo-200/80 leading-relaxed max-w-xl">
-            Saldo wallet dapat digunakan kapan saja untuk beli kuota tes secara serba instan tanpa potongan biaya payment gateway.
+            Saldo wallet digunakan untuk membeli kuota tes instan di katalog resmi bawah tanpa potongan fee.
           </p>
         </div>
 
@@ -432,6 +475,82 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           >
             <PlusCircle className="w-4 h-4" /> Top-Up Saldo Wallet
           </Button>
+        </div>
+      </div>
+
+      {/* SECTION BARU: KATALOG ALAT TES & HARGA RESMI PLATFORM */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+              Katalog Resmi
+            </span>
+            <h2 className="text-lg font-bold text-slate-900 mt-1 flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-indigo-600" /> Katalog Alat Tes Psikologi & Harga Kuota
+            </h2>
+          </div>
+          <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
+            Tersedia {masterTests.length} Instrumen Tes
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {masterTests.map((t: any) => {
+            const currentQuotaObj = quotas.find((q: any) => q.test_id === t.id);
+            const currentQuota = currentQuotaObj?.quota || 0;
+            const priceNum = Number(t.price || 15000);
+
+            return (
+              <div
+                key={t.id}
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-mono font-bold text-[10px] rounded-lg border border-indigo-200">
+                      {t.code.toUpperCase()}
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-full uppercase">
+                      {t.category || 'ASMEN'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                    {t.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                    {t.description || 'Instrumen asesmen psikotes terintegrasi standar industri HR.'}
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Harga Resmi:</span>
+                    <span className="font-mono font-extrabold text-indigo-900 text-sm">
+                      Rp {priceNum.toLocaleString('id-ID')} <span className="text-[10px] text-slate-400 font-normal">/ tes / orang</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                    <span className="text-slate-600">Sisa Kuota Anda:</span>
+                    <span className="font-mono font-extrabold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-lg">
+                      {currentQuota} Kuota
+                    </span>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setSelectedPurchaseTest(t);
+                      setPurchaseQuantity(10);
+                    }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" /> Beli Kuota Tes Ini
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -454,9 +573,13 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                     <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[10px]">
                       Top-Up Saldo Wallet
                     </span>
+                  ) : o.order_type === 'BALANCE_PURCHASE' ? (
+                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-full font-bold text-[10px]">
+                      Beli Kuota Saldo Wallet
+                    </span>
                   ) : (
                     <span className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-bold text-[10px]">
-                      Beli Kuota Langsung
+                      Beli Kuota Direct
                     </span>
                   )}
                 </td>
@@ -471,7 +594,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                   Rp {Number(o.total_amount).toLocaleString('id-ID')}
                 </td>
                 <td className="py-3.5 px-4 text-xs text-slate-600 font-medium">
-                  {o.payment_method_name || 'Transfer Bank BCA (Manual)'}
+                  {o.payment_method_name || 'Saldo Wallet / Transfer BCA'}
                 </td>
                 <td className="py-3.5 px-4">
                   {o.status === 'PAID' ? (
@@ -493,7 +616,9 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                       <ImageIcon className="w-3.5 h-3.5" /> Ter-unggah
                     </a>
                   ) : (
-                    <span className="text-[11px] text-slate-400">Belum diunggah</span>
+                    <span className="text-[11px] text-slate-400">
+                      {o.order_type === 'BALANCE_PURCHASE' ? 'Potong Saldo' : 'Belum diunggah'}
+                    </span>
                   )}
                 </td>
                 <td className="py-3.5 px-4 text-right">
@@ -526,10 +651,9 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         </Card>
       </div>
 
-      {/* Modal 1: Top-Up Saldo Form dengan Scrollbar Scrollable & Distinct Payment Methods dari DB */}
+      {/* Modal 1: Top-Up Saldo Form */}
       <Modal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} title="Top-Up Saldo Wallet Corporate">
         <form onSubmit={handleCreateTopUpOrder} className="space-y-5">
-          {/* Preset Currency Selection */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Top-Up Saldo</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3">
@@ -578,12 +702,10 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
             <p className="text-[11px] text-slate-500 mt-1">Minimal top-up saldo wallet adalah Rp 50.000.</p>
           </div>
 
-          {/* Dynamic Unique Payment Method Selector with Scrollable Container to prevent Cut-Off */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Metode Pembayaran</label>
             <div className="space-y-2 max-h-52 overflow-y-auto pr-1 border border-slate-200/80 rounded-2xl p-1.5 bg-slate-50/50">
               {dbPaymentMethods.length === 0 ? (
-                /* Fallback if DB list loading */
                 <label className="flex items-center justify-between p-3 rounded-2xl border border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-500/20 cursor-pointer">
                   <div className="flex items-center space-x-3">
                     <input type="radio" checked readOnly className="w-4 h-4 text-indigo-600" />
@@ -650,6 +772,86 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           </div>
         </form>
       </Modal>
+
+      {/* Modal 2: Beli Kuota Tes via Saldo Wallet Instant */}
+      {selectedPurchaseTest && (
+        <Modal
+          isOpen={!!selectedPurchaseTest}
+          onClose={() => setSelectedPurchaseTest(null)}
+          title={`Beli Kuota Tes: ${selectedPurchaseTest.name}`}
+        >
+          <form onSubmit={handlePurchaseQuotaWithWallet} className="space-y-4">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Nama Alat Tes:</span>
+                <strong className="text-slate-900">{selectedPurchaseTest.name} ({selectedPurchaseTest.code.toUpperCase()})</strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Harga per Peserta:</span>
+                <strong className="text-indigo-900 font-mono">Rp {Number(selectedPurchaseTest.price).toLocaleString('id-ID')}</strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-600 border-t border-slate-200 pt-2">
+                <span>Saldo Wallet Anda:</span>
+                <strong className="text-emerald-700 font-mono text-sm">Rp {walletBalance.toLocaleString('id-ID')}</strong>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Jumlah Kuota yang Ingin Dibeli</label>
+              <input
+                type="number"
+                required
+                min="1"
+                max="10000"
+                value={purchaseQuantity}
+                onChange={(e) => setPurchaseQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full p-2.5 text-xs text-slate-900 border border-slate-300 rounded-xl font-mono font-bold"
+              />
+            </div>
+
+            {/* Subtotal Calculation Box */}
+            <div className="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200 space-y-1">
+              <span className="text-xs text-indigo-900 font-medium block">Total Pembayaran Saldo Wallet:</span>
+              <div className="text-2xl font-extrabold font-mono text-indigo-900">
+                Rp {(Number(selectedPurchaseTest.price) * purchaseQuantity).toLocaleString('id-ID')}
+              </div>
+              {walletBalance < Number(selectedPurchaseTest.price) * purchaseQuantity && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  ⚠️ Saldo wallet Anda kurang Rp {((Number(selectedPurchaseTest.price) * purchaseQuantity) - walletBalance).toLocaleString('id-ID')}. Lakukan Top-Up Saldo terlebih dahulu.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <Button type="button" variant="outline" onClick={() => setSelectedPurchaseTest(null)}>
+                Batal
+              </Button>
+              {walletBalance >= Number(selectedPurchaseTest.price) * purchaseQuantity ? (
+                <Button
+                  type="submit"
+                  disabled={isPurchasing}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                >
+                  {isPurchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
+                  {isPurchasing ? 'Memproses...' : 'Konfirmasi Pembelian via Saldo Wallet'}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPurchaseTest(null);
+                    setIsTopUpModalOpen(true);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                >
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Top-Up Saldo Wallet Dulu
+                </Button>
+              )}
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

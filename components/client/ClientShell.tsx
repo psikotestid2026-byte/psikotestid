@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -19,6 +19,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export function ClientShell({ initialData, children }: ClientShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const { data } = useSWR('/api/client/data', fetcher, {
     fallbackData: initialData,
@@ -36,16 +37,22 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
     { href: '/clients', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: '/clients/campaigns', label: 'Sesi Tes (Campaign)', icon: <LinkIcon className="w-4 h-4" /> },
     { href: '/clients/participants', label: 'Hasil Kandidat', icon: <Users className="w-4 h-4" /> },
-    { href: '/clients/billing', label: 'Beli Kuota Tes', icon: <CreditCard className="w-4 h-4" /> },
+    { href: '/clients/billing', label: 'Beli Kuota & Katalog', icon: <CreditCard className="w-4 h-4" /> },
     { href: '/clients/settings', label: 'Branding Portal', icon: <Settings className="w-4 h-4" /> },
   ];
 
   const getPageTitle = () => {
     if (pathname === '/clients/campaigns') return 'Sesi Tes (Campaign)';
     if (pathname === '/clients/participants') return 'Hasil Kandidat & Laporan';
-    if (pathname === '/clients/billing') return 'Beli Kuota & Top-Up Wallet';
+    if (pathname === '/clients/billing') return 'Katalog Tes & Beli Kuota Wallet';
     if (pathname === '/clients/settings') return 'Branding Portal Corporate';
     return 'Dashboard Overview';
+  };
+
+  const handleNavigate = (href: string) => {
+    startTransition(() => {
+      router.push(href);
+    });
   };
 
   return (
@@ -83,7 +90,7 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
           </div>
         </div>
 
-        {/* Multi-Routes Menu Links */}
+        {/* Multi-Routes Menu Links with Instant Transitions */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/clients' && pathname.startsWith(item.href));
@@ -91,6 +98,11 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigate(item.href);
+                }}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                   isActive
                     ? 'bg-indigo-600 text-white shadow-md'
@@ -146,8 +158,10 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
           }
         />
 
-        {/* Children Page Slot */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">{children}</div>
+        {/* Children Page Slot with Instant Transition Container */}
+        <div className={`flex-1 overflow-y-auto p-6 md:p-8 transition-opacity duration-150 ${isPending ? 'opacity-70' : 'opacity-100'}`}>
+          {children}
+        </div>
       </main>
     </div>
   );
