@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     }
 
     const customer = await sql`
-      SELECT id, company_name FROM customers WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, company_name, contact_name, phone_number FROM customers WHERE email = ${session.user.email} LIMIT 1
     `;
 
     if (customer.length === 0) {
@@ -83,6 +83,18 @@ export async function POST(req: Request) {
 
     const customerId = customer[0].id;
     const companyName = customer[0].company_name || session.user.name || session.user.email;
+    const contactName = customer[0].contact_name || 'HR Admin';
+    const rawPhone = customer[0].phone_number || '';
+    const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
+    const waNumber = cleanPhoneDigits.startsWith('0')
+      ? '62' + cleanPhoneDigits.slice(1)
+      : cleanPhoneDigits.startsWith('62')
+      ? cleanPhoneDigits
+      : cleanPhoneDigits
+      ? '62' + cleanPhoneDigits
+      : '';
+    const whatsappLink = waNumber ? `https://wa.me/${waNumber}` : '#';
+
     const body = await req.json();
     const { amount, order_type, test_id, quantity } = body;
 
@@ -153,6 +165,9 @@ export async function POST(req: Request) {
       invoice_code: invoiceCode,
       company_name: companyName,
       customer_email: session.user.email,
+      contact_name: contactName,
+      phone_number: rawPhone || '-',
+      whatsapp_link: whatsappLink,
       order_type: order_type === 'TOPUP_BALANCE' ? 'Top-Up Saldo Wallet' : 'Beli Kuota Tes',
       subtotal: subtotal.toLocaleString('id-ID'),
       unique_code: uniqueCode.toString(),

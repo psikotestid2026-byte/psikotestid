@@ -318,6 +318,18 @@ export default function TemplatesAdminPage() {
               <p className="text-[11px] text-slate-500 mt-0.5">Alamat Email Kontak HR Client.</p>
             </div>
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{contact_name}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Nama PIC / Kontak HR Client.</p>
+            </div>
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{phone_number}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Nomor Telepon HP Kontak HR Client.</p>
+            </div>
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{whatsapp_link}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Tautan Direct Link Chat WhatsApp HR (https://wa.me/628...).</p>
+            </div>
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
               <code className="text-indigo-700 font-bold font-mono text-xs">{'{total_amount}'}</code>
               <p className="text-[11px] text-slate-500 mt-0.5">Nominal presisi transfer yang diformat Rupiah.</p>
             </div>

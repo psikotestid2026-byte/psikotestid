@@ -22,6 +22,10 @@ import {
   Upload,
   Image as ImageIcon,
   ExternalLink,
+  ChevronRight,
+  QrCode,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
 
 interface BillingTabProps {
@@ -37,15 +41,15 @@ export function BillingTab({ data }: BillingTabProps) {
 
   const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
   const orders = orderData?.data?.orders || data?.orders || [];
-  const walletHistory = orderData?.data?.walletHistory || [];
 
   // Modals & Active Order States
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number>(500000);
   const [customAmount, setCustomAmount] = useState<string>('500000');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('MANUAL_BCA');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Active Checkout Order Modal
+  // Active Inline Instruction Order State
   const [activeInstructionOrder, setActiveInstructionOrder] = useState<any | null>(null);
 
   // File Upload State for Payment Proof (Vercel Blob)
@@ -189,6 +193,162 @@ export function BillingTab({ data }: BillingTabProps) {
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
+      {/* SECTION INLINE: Detail Instruksi Pembayaran Bank BCA & Upload Bukti Transfer (Menghilangkan Modal Cut-Off) */}
+      {activeInstructionOrder && (
+        <div className="bg-white rounded-3xl border-2 border-indigo-500 shadow-xl overflow-hidden animate-fadeIn">
+          {/* Header Banner */}
+          <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
+                <Building2 className="w-5 h-5 text-indigo-300" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/30 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                  Tagihan PENDING — Menunggu Transfer
+                </span>
+                <h3 className="text-lg font-extrabold tracking-tight mt-0.5">
+                  Instruksi Transfer Bank BCA (Manual)
+                </h3>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveInstructionOrder(null)}
+              className="p-2 hover:bg-white/10 rounded-xl text-slate-300 hover:text-white transition-all flex items-center gap-1 text-xs font-bold shrink-0"
+            >
+              <X className="w-4 h-4" /> Tutup Petunjuk
+            </button>
+          </div>
+
+          {/* Body Content Inline Grid */}
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/50">
+            {/* Left Column: Expiry & Bank Details */}
+            <div className="space-y-4">
+              {/* Expiry Countdown Box */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between text-xs text-amber-900 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="font-semibold">Batas Waktu Transfer (24 Jam):</span>
+                </div>
+                <span className="font-mono font-extrabold text-sm text-amber-700 bg-amber-100 px-3 py-1 rounded-xl border border-amber-300">
+                  {countdownStr}
+                </span>
+              </div>
+
+              {/* Exact Nominal Box */}
+              <div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-sm space-y-1">
+                <span className="text-xs text-slate-500 font-medium block">Total Nominal yang Harus Ditransfer (Presisi):</span>
+                <div className="text-3xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center gap-3">
+                  Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}
+                  <button
+                    onClick={() => copyToClipboard(activeInstructionOrder.total_amount.toString(), 'Nominal transfer')}
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-xl text-xs text-indigo-700 font-bold flex items-center gap-1.5 transition-all border border-indigo-200"
+                    title="Salin Nominal Presisi"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Salin Nominal
+                  </button>
+                </div>
+                <p className="text-xs text-amber-800 font-semibold bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-3 leading-relaxed">
+                  ⚠️ Transfer HARUS persis sama hingga 3 digit terakhir untuk otomatisasi verifikasi Superadmin.
+                </p>
+              </div>
+
+              {/* Destination Bank Account Card */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <span className="text-xs font-bold text-slate-500">Bank Tujuan Transfer:</span>
+                  <span className="text-xs font-extrabold text-indigo-900 font-mono">BCA (Bank Central Asia)</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-slate-500 block">Nomor Rekening:</span>
+                    <span className="text-lg font-extrabold text-slate-900 font-mono tracking-wider">1234567890</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard('1234567890', 'Nomor rekening BCA')}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Salin Rekening
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
+                  <span className="text-slate-500">Atas Nama Rekening:</span>
+                  <strong className="text-slate-800 font-bold">PT PsikoTest Solusi Indonesia</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Vercel Blob Payment Proof Uploader */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer (Vercel Blob)
+                  </h4>
+                  {activeInstructionOrder.proof_url && (
+                    <a
+                      href={activeInstructionOrder.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Bukti Ter-unggah
+                    </a>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                  Unggah struk atau bukti transfer Anda di bawah ini. Notifikasi beserta foto bukti akan terkirim otomatis ke Telegram Superadmin untuk segera diverifikasi.
+                </p>
+
+                <div className="space-y-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded-xl"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleUploadPaymentProof}
+                    disabled={isUploadingProof || !selectedFile}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 disabled:opacity-40 transition-all shadow-md"
+                  >
+                    {isUploadingProof ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isUploadingProof ? 'Mengunggah Bukti...' : 'Kirim Bukti Transfer ke Superadmin'}
+                  </button>
+                </div>
+
+                {previewUrl && (
+                  <div className="mt-4 p-3 bg-indigo-50/60 border border-indigo-200 rounded-2xl flex items-center gap-3">
+                    <img src={previewUrl} alt="Preview Bukti Transfer" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />
+                    <div className="text-xs overflow-hidden">
+                      <span className="font-bold text-slate-900 block truncate">Struk Transfer Tersimpan</span>
+                      <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Vercel Blob Storage Ready
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end">
+                <Button
+                  onClick={() => setActiveInstructionOrder(null)}
+                  variant="outline"
+                  className="text-xs font-bold text-slate-700"
+                >
+                  Selesai / Sembunyikan Petunjuk
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Saldo Wallet Summary Card */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
         <div className="space-y-1">
@@ -279,7 +439,7 @@ export function BillingTab({ data }: BillingTabProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
+                      onClick={() => {
                         setActiveInstructionOrder({
                           ...o,
                           bank_details: {
@@ -287,11 +447,12 @@ export function BillingTab({ data }: BillingTabProps) {
                             account_number: '1234567890',
                             account_name: 'PT PsikoTest Solusi Indonesia',
                           },
-                        })
-                      }
+                        });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       className="text-xs font-bold text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
                     >
-                      Bayar / Unggah Bukti
+                      Petunjuk / Unggah Bukti
                     </Button>
                   ) : (
                     <span className="text-[11px] text-slate-400 italic">Selesai</span>
@@ -303,31 +464,39 @@ export function BillingTab({ data }: BillingTabProps) {
         </Card>
       </div>
 
-      {/* Modal 1: Top-Up Saldo Form */}
+      {/* Modal 1: Top-Up Saldo Form dengan Selector Metode Pembayaran & Preset Rupiah Rapi */}
       <Modal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} title="Top-Up Saldo Wallet Corporate">
-        <form onSubmit={handleCreateTopUpOrder} className="space-y-4">
+        <form onSubmit={handleCreateTopUpOrder} className="space-y-5">
+          {/* Preset Currency Selection */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Top-Up Saldo</label>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[100000, 250000, 500000, 1000000, 2500000, 5000000].map((val) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-3">
+              {[
+                { label: 'Rp 100.000', value: 100000 },
+                { label: 'Rp 250.000', value: 250000 },
+                { label: 'Rp 500.000', value: 500000 },
+                { label: 'Rp 1.000.000', value: 1000000 },
+                { label: 'Rp 2.500.000', value: 2500000 },
+                { label: 'Rp 5.000.000', value: 5000000 },
+              ].map((item) => (
                 <button
-                  key={val}
+                  key={item.value}
                   type="button"
-                  onClick={() => handleSelectPreset(val)}
-                  className={`py-2 px-3 text-xs font-mono font-bold rounded-xl border transition-all ${
-                    selectedPreset === val && customAmount === val.toString()
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                  onClick={() => handleSelectPreset(item.value)}
+                  className={`py-2.5 px-3 text-xs font-mono font-bold rounded-xl border transition-all ${
+                    selectedPreset === item.value && customAmount === item.value.toString()
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                      : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  Rp {(val / 1000).toLocaleString('id-ID')}rb
+                  {item.label}
                 </button>
               ))}
             </div>
 
             <label className="block text-xs font-semibold text-slate-600 mb-1">Nominal Kustom (Rp)</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-slate-400">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs font-bold text-slate-400">
                 Rp
               </span>
               <input
@@ -340,21 +509,71 @@ export function BillingTab({ data }: BillingTabProps) {
                   setCustomAmount(e.target.value);
                   setSelectedPreset(0);
                 }}
-                className="pl-9 w-full py-2.5 text-xs text-slate-900 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-indigo-500"
+                className="pl-10 w-full py-2.5 text-xs text-slate-900 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-indigo-500"
                 placeholder="50000"
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-1">Minimal top-up saldo wallet adalah Rp 50.000.</p>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span>Metode Pembayaran:</span>
-              <strong className="text-slate-900">Transfer Bank BCA (Manual)</strong>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Notifikasi Otomatis:</span>
-              <strong className="text-indigo-700">Bot Telegram Realtime</strong>
+          {/* Payment Method Selector */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Metode Pembayaran</label>
+            <div className="space-y-2">
+              {/* Option 1: Manual BCA Transfer (Active) */}
+              <label
+                className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
+                  selectedPaymentMethod === 'MANUAL_BCA'
+                    ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20'
+                    : 'bg-white border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value="MANUAL_BCA"
+                    checked={selectedPaymentMethod === 'MANUAL_BCA'}
+                    onChange={() => setSelectedPaymentMethod('MANUAL_BCA')}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">Transfer Bank BCA (Manual)</span>
+                    <span className="text-[11px] text-slate-500 block">Verifikasi instan via Telegram Superadmin & Vercel Blob</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                  Aktif
+                </span>
+              </label>
+
+              {/* Option 2: Virtual Account (Disabled) */}
+              <div className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-slate-50/70 opacity-60 cursor-not-allowed">
+                <div className="flex items-center space-x-3">
+                  <input type="radio" disabled className="w-4 h-4 text-slate-300" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">BCA / Mandiri Virtual Account (VA)</span>
+                    <span className="text-[11px] text-slate-400 block">Biaya admin VA Xendit automatik</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                  Segera Hadir
+                </span>
+              </div>
+
+              {/* Option 3: QRIS (Disabled) */}
+              <div className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-slate-50/70 opacity-60 cursor-not-allowed">
+                <div className="flex items-center space-x-3">
+                  <input type="radio" disabled className="w-4 h-4 text-slate-300" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">QRIS (GoPay, OVO, Dana, ShopeePay)</span>
+                    <span className="text-[11px] text-slate-400 block">Scan QR langsung dari m-Banking</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                  Segera Hadir
+                </span>
+              </div>
             </div>
           </div>
 
@@ -369,146 +588,6 @@ export function BillingTab({ data }: BillingTabProps) {
           </div>
         </form>
       </Modal>
-
-      {/* Modal 2: Detail Instruksi Pembayaran BCA Manual & Upload Bukti Transfer (Vercel Blob) */}
-      {activeInstructionOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 bg-indigo-950 text-white flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30">
-                  Tagihan Belum Lunas
-                </span>
-                <h3 className="text-base font-bold mt-1 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-indigo-400" /> Instruksi Transfer Bank BCA
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveInstructionOrder(null)}
-                className="text-slate-400 hover:text-white text-sm font-bold p-1 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto space-y-5 flex-1">
-              {/* Expiry Countdown Box */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center justify-between text-xs text-amber-900">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Selesaikan pembayaran sebelum:</span>
-                </div>
-                <span className="font-mono font-extrabold text-sm text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300">
-                  {countdownStr}
-                </span>
-              </div>
-
-              {/* Exact Nominal Badge Box */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center space-y-1">
-                <span className="text-xs text-slate-500 font-medium">Total yang harus ditransfer (Presisi):</span>
-                <div className="text-2xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center justify-center gap-2">
-                  Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}
-                  <button
-                    onClick={() => copyToClipboard(activeInstructionOrder.total_amount.toString(), 'Nominal transfer')}
-                    className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-all"
-                    title="Salin Nominal"
-                  >
-                    <Copy className="w-4 h-4 text-indigo-600" />
-                  </button>
-                </div>
-                <p className="text-[11px] text-amber-700 font-semibold bg-amber-100/60 p-1.5 rounded-lg border border-amber-200 mt-2">
-                  ⚠️ Transfer HARUS sama persis hingga 3 digit terakhir untuk mempercepat verifikasi.
-                </p>
-              </div>
-
-              {/* Destination Bank Account Card */}
-              <div className="border border-slate-200 rounded-2xl p-4 space-y-3 bg-white">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-slate-500">Bank Tujuan Transfer:</span>
-                  <span className="text-xs font-extrabold text-indigo-900 font-mono">BCA (Bank Central Asia)</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-slate-500 block">Nomor Rekening:</span>
-                    <span className="text-base font-extrabold text-slate-900 font-mono">1234567890</span>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard('1234567890', 'Nomor rekening BCA')}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl flex items-center gap-1 transition-all"
-                  >
-                    <Copy className="w-3.5 h-3.5" /> Salin Rekening
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                  <span className="text-slate-500">Atas Nama Rekening:</span>
-                  <strong className="text-slate-800">PT PsikoTest Solusi Indonesia</strong>
-                </div>
-              </div>
-
-              {/* Upload Payment Proof Section (Vercel Blob) */}
-              <div className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer (Vercel Blob)
-                  </h4>
-                  {activeInstructionOrder.proof_url && (
-                    <a
-                      href={activeInstructionOrder.proof_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Lihat Foto Ter-unggah
-                    </a>
-                  )}
-                </div>
-
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Unggah struk atau tangkapan layar bukti transfer Anda. Notifikasi beserta foto bukti akan dikirimkan langsung ke Telegram Superadmin untuk segera diverifikasi.
-                </p>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleUploadPaymentProof}
-                    disabled={isUploadingProof || !selectedFile}
-                    className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-40 transition-all shadow-sm"
-                  >
-                    {isUploadingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {isUploadingProof ? 'Mengunggah...' : 'Kirim Bukti'}
-                  </button>
-                </div>
-
-                {previewUrl && (
-                  <div className="mt-2 p-2 bg-white border border-indigo-200 rounded-xl flex items-center gap-3">
-                    <img src={previewUrl} alt="Preview Bukti Transfer" className="w-16 h-16 object-cover rounded-lg border border-slate-200" />
-                    <div className="text-xs overflow-hidden">
-                      <span className="font-bold text-slate-800 block truncate">Bukti Transfer Siap/Ter-unggah</span>
-                      <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Tersimpan di Vercel Blob
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-              <Button onClick={() => setActiveInstructionOrder(null)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6">
-                Saya Mengerti & Tutup
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -35,7 +35,9 @@ export async function POST(req: Request) {
         o.invoice_code,
         o.total_amount,
         c.company_name,
-        c.email
+        c.email,
+        c.contact_name,
+        c.phone_number
       FROM test_orders o
       JOIN customers c ON o.customer_id = c.id
       WHERE o.id = ${orderId} AND c.email = ${session.user.email}
@@ -47,6 +49,17 @@ export async function POST(req: Request) {
     }
 
     const order = orderRows[0];
+    const contactName = order.contact_name || 'HR Admin';
+    const rawPhone = order.phone_number || '';
+    const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
+    const waNumber = cleanPhoneDigits.startsWith('0')
+      ? '62' + cleanPhoneDigits.slice(1)
+      : cleanPhoneDigits.startsWith('62')
+      ? cleanPhoneDigits
+      : cleanPhoneDigits
+      ? '62' + cleanPhoneDigits
+      : '';
+    const whatsappLink = waNumber ? `https://wa.me/${waNumber}` : '#';
 
     // Upload to Vercel Blob
     const ext = file.name.split('.').pop() || 'jpg';
@@ -64,13 +77,16 @@ export async function POST(req: Request) {
       WHERE id = ${orderId}
     `;
 
-    // Trigger Dynamic Telegram Notification with Photo Attachment
+    // Trigger Dynamic Telegram Notification with Photo Attachment & WhatsApp Link
     sendDynamicTelegramNotification(
       'TELEGRAM_PAYMENT_PROOF',
       {
         invoice_code: order.invoice_code,
         company_name: order.company_name,
         customer_email: order.email,
+        contact_name: contactName,
+        phone_number: rawPhone || '-',
+        whatsapp_link: whatsappLink,
         total_amount: Number(order.total_amount).toLocaleString('id-ID'),
         proof_url: blob.url,
       },
