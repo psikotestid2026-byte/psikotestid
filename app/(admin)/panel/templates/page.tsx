@@ -16,6 +16,7 @@ import {
   HelpCircle,
   FileCode,
   ShieldAlert,
+  SendHorizontal,
 } from 'lucide-react';
 import TiptapEditor from '@/components/editor/TiptapEditor';
 
@@ -169,7 +170,7 @@ export default function TemplatesAdminPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Manajemen Template Email & Notifikasi</h1>
           <p className="text-xs text-indigo-200 mt-1 max-w-2xl leading-relaxed">
-            Kelola template email OTP verifikasi, invoice pembayaran, dan notifikasi undangan asesmen secara real-time dengan Tiptap Rich Text Editor.
+            Kelola template email OTP verifikasi, invoice pembayaran, notifikasi Telegram Bot, dan WhatsApp secara real-time dengan Tiptap Rich Text Editor.
           </p>
         </div>
 
@@ -241,12 +242,19 @@ export default function TemplatesAdminPage() {
                             Utama OTP
                           </span>
                         )}
+                        {tpl.channel === 'TELEGRAM' && (
+                          <span className="ml-2 px-2 py-0.5 text-[10px] font-sans font-bold bg-sky-100 text-sky-800 rounded-full">
+                            Telegram Bot
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
                             tpl.channel === 'EMAIL'
                               ? 'bg-blue-100 text-blue-800'
+                              : tpl.channel === 'TELEGRAM'
+                              ? 'bg-cyan-100 text-cyan-800 border border-cyan-300'
                               : 'bg-emerald-100 text-emerald-800'
                           }`}
                         >
@@ -293,29 +301,33 @@ export default function TemplatesAdminPage() {
             <Sparkles className="w-4 h-4 text-amber-500" /> Variabel Dynamic Placeholder
           </h3>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Gunakan variabel khusus di bawah ini di dalam template HTML Tiptap untuk secara otomatis mengganti data saat dikirim ke pengguna:
+            Gunakan variabel khusus di bawah ini di dalam template Tiptap untuk mengganti data secara otomatis saat dikirim ke pengguna/Telegram:
           </p>
 
           <div className="space-y-2 text-xs">
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <code className="text-indigo-700 font-bold font-mono text-xs">{'{otp_code}'}</code>
-              <p className="text-[11px] text-slate-500 mt-0.5">Kode OTP 6-digit acak (Khusus trigger OTP_VERIFICATION).</p>
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{invoice_code}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Kode Invoice pesanan (misal ORD-20260816-4892).</p>
             </div>
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
               <code className="text-indigo-700 font-bold font-mono text-xs">{'{company_name}'}</code>
               <p className="text-[11px] text-slate-500 mt-0.5">Nama Perusahaan / Institusi HR Client.</p>
             </div>
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <code className="text-indigo-700 font-bold font-mono text-xs">{'{expiry_minutes}'}</code>
-              <p className="text-[11px] text-slate-500 mt-0.5">Masa berlaku OTP dalam menit (Default: 5).</p>
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{customer_email}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Alamat Email Kontak HR Client.</p>
             </div>
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <code className="text-indigo-700 font-bold font-mono text-xs">{'{invoice_code}'}</code>
-              <p className="text-[11px] text-slate-500 mt-0.5">Nomor Invoice pesanan (Khusus ORDER_PAID/PENDING).</p>
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{total_amount}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Nominal presisi transfer yang diformat Rupiah.</p>
             </div>
             <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <code className="text-indigo-700 font-bold font-mono text-xs">{'{assessment_link}'}</code>
-              <p className="text-[11px] text-slate-500 mt-0.5">URL Tautan Asesmen Kandidat (Khusus ASSESSMENT_INVITE).</p>
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{proof_url}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">URL Tautan Foto Bukti Transfer Vercel Blob.</p>
+            </div>
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <code className="text-indigo-700 font-bold font-mono text-xs">{'{otp_code}'}</code>
+              <p className="text-[11px] text-slate-500 mt-0.5">Kode OTP 6-digit acak (Khusus OTP_VERIFICATION).</p>
             </div>
           </div>
         </div>
@@ -331,7 +343,7 @@ export default function TemplatesAdminPage() {
                   {isCreating ? 'Tambah Template Baru' : `Edit Template: ${eventTrigger}`}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Gunakan Tiptap Rich Text Editor untuk menyesuaikan isi pesan HTML.
+                  Gunakan Tiptap Rich Text Editor atau Source HTML Mode untuk menyesuaikan isi pesan.
                 </p>
               </div>
               <button
@@ -351,7 +363,7 @@ export default function TemplatesAdminPage() {
                     required
                     value={eventTrigger}
                     onChange={(e) => setEventTrigger(e.target.value.toUpperCase())}
-                    placeholder="OTP_VERIFICATION"
+                    placeholder="TELEGRAM_NEW_ORDER"
                     disabled={!isCreating}
                     className="w-full p-2.5 text-xs border border-slate-300 rounded-xl font-mono uppercase font-bold text-indigo-900 bg-slate-50 disabled:opacity-70"
                   />
@@ -365,6 +377,7 @@ export default function TemplatesAdminPage() {
                     className="w-full p-2.5 text-xs border border-slate-300 rounded-xl text-slate-900 font-semibold"
                   >
                     <option value="EMAIL">EMAIL</option>
+                    <option value="TELEGRAM">TELEGRAM BOT</option>
                     <option value="WHATSAPP">WHATSAPP</option>
                   </select>
                 </div>
@@ -389,13 +402,13 @@ export default function TemplatesAdminPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>Konten Template HTML (Tiptap Rich Text) *</span>
-                  <span className="text-[11px] text-slate-500 font-normal">Gunakan tombol "Source HTML" untuk mengedit kode mentah.</span>
+                  <span>Konten Template (Tiptap Rich Text / Source HTML) *</span>
+                  <span className="text-[11px] text-slate-500 font-normal">Gunakan tombol "Source HTML" untuk mengedit kode HTML/Telegram.</span>
                 </label>
                 <TiptapEditor
                   content={messageContent}
                   onChange={(html) => setMessageContent(html)}
-                  placeholder="Ketik isi template email di sini..."
+                  placeholder="Ketik isi template di sini..."
                 />
               </div>
             </div>

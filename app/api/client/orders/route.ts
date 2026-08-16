@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
-import { sendTelegramNotification } from '@/lib/telegram';
+import { sendDynamicTelegramNotification } from '@/lib/telegram';
 
 // GET: Fetch current HR client's orders & wallet transactions
 export async function GET() {
@@ -148,23 +148,18 @@ export async function POST(req: Request) {
       `;
     }
 
-    // Trigger Telegram Notification asynchronously for New Order
-    const telegramMsg = `
-<b>🚨 ORDER BARU MASUK (PENDING) 🚨</b>
-
-• <b>Invoice:</b> <code>${invoiceCode}</code>
-• <b>Klien HR:</b> ${companyName} (${session.user.email})
-• <b>Jenis Order:</b> ${order_type === 'TOPUP_BALANCE' ? 'Top-Up Saldo Wallet' : 'Beli Kuota Tes'}
-• <b>Nominal Presisi:</b> <b>Rp ${totalAmount.toLocaleString('id-ID')}</b> (Subtotal: Rp ${subtotal.toLocaleString('id-ID')} + Kode Unik: Rp ${uniqueCode})
-• <b>Metode Bayar:</b> Transfer Bank BCA (Manual)
-• <b>Status:</b> Menunggu Pembayaran Transfer
-
-💡 <i>Klien akan mentransfer nominal presisi Rp ${totalAmount.toLocaleString('id-ID')} ke BCA 1234567890.</i>
-    `.trim();
-
-    sendTelegramNotification({ message: telegramMsg }).catch((err) =>
-      console.error('Telegram Checkout Alert Error:', err)
-    );
+    // Trigger Dynamic Telegram Notification for New Order
+    sendDynamicTelegramNotification('TELEGRAM_NEW_ORDER', {
+      invoice_code: invoiceCode,
+      company_name: companyName,
+      customer_email: session.user.email,
+      order_type: order_type === 'TOPUP_BALANCE' ? 'Top-Up Saldo Wallet' : 'Beli Kuota Tes',
+      subtotal: subtotal.toLocaleString('id-ID'),
+      unique_code: uniqueCode.toString(),
+      total_amount: totalAmount.toLocaleString('id-ID'),
+      payment_method: 'Transfer Bank BCA (Manual)',
+      bank_info: 'BCA 1234567890 a.n PT PsikoTest Solusi Indonesia',
+    }).catch((err) => console.error('Telegram Checkout Alert Error:', err));
 
     return NextResponse.json({
       success: true,

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { put } from '@vercel/blob';
 import { sql } from '@/lib/neon';
-import { sendTelegramNotification } from '@/lib/telegram';
+import { sendDynamicTelegramNotification } from '@/lib/telegram';
 
 export async function POST(req: Request) {
   try {
@@ -64,22 +64,18 @@ export async function POST(req: Request) {
       WHERE id = ${orderId}
     `;
 
-    // Trigger Telegram Notification with Photo Attachment
-    const telegramMsg = `
-<b>📸 BUKTI TRANSFER UNGGAH BARU! 📸</b>
-
-• <b>Invoice:</b> <code>${order.invoice_code}</code>
-• <b>Klien HR:</b> ${order.company_name} (${order.email})
-• <b>Nominal Presisi:</b> <b>Rp ${Number(order.total_amount).toLocaleString('id-ID')}</b>
-• <b>Bukti Foto:</b> <a href="${blob.url}">Lihat Gambar Bukti</a>
-
-👉 <i>Silakan cek mutasi BCA & konfirmasi LUNAS di Superadmin Panel (/panel/orders)!</i>
-    `.trim();
-
-    sendTelegramNotification({
-      message: telegramMsg,
-      imageUrl: blob.url,
-    }).catch((err) => console.error('Telegram Proof Alert Error:', err));
+    // Trigger Dynamic Telegram Notification with Photo Attachment
+    sendDynamicTelegramNotification(
+      'TELEGRAM_PAYMENT_PROOF',
+      {
+        invoice_code: order.invoice_code,
+        company_name: order.company_name,
+        customer_email: order.email,
+        total_amount: Number(order.total_amount).toLocaleString('id-ID'),
+        proof_url: blob.url,
+      },
+      blob.url
+    ).catch((err) => console.error('Telegram Proof Alert Error:', err));
 
     return NextResponse.json({
       success: true,
