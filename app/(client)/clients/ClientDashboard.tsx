@@ -99,7 +99,7 @@ export default function ClientDashboard({ initialData }: { initialData: any }) {
         />
         
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {activeTab === 'overview' && <ClientOverviewTab data={data} onNavigateTopUp={handleOpenTopUp} />}
+          {activeTab === 'overview' && <ClientOverviewTab data={data} />}
           {activeTab === 'campaigns' && <CampaignsTab data={data} />}
           {activeTab === 'participants' && <ParticipantsTab data={data} />}
           {activeTab === 'billing' && <BillingTab data={data} openTopUpOnMount={openTopUpModal} />}

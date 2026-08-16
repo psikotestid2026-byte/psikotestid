@@ -1,14 +1,12 @@
-import { Metadata } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getClientData } from './actions';
+import { ClientShell } from '@/components/client/ClientShell';
 
-export const metadata: Metadata = {
-  title: 'Client Dashboard - PsikoTest.id Enterprise',
-  robots: 'noindex, nofollow',
-};
+export default async function ClientsLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession(authOptions);
+  const customerId = session?.user && (session.user as any).id ? Number((session.user as any).id) : 2;
+  const initialData = await getClientData(customerId);
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-slate-50 w-full h-screen overflow-hidden text-slate-800">
-      {children}
-    </div>
-  );
+  return <ClientShell initialData={initialData}>{children}</ClientShell>;
 }
