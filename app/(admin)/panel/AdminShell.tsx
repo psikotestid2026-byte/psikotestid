@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll, UserCog } from 'lucide-react';
+import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll, UserCog, Mail, Globe } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 
@@ -18,6 +18,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     { id: 'customers', label: 'Perusahaan / Klien', icon: <Building2 />, href: '/panel/customers' },
     { id: 'tests', label: 'Master Alat Tes', icon: <FileSpreadsheet />, href: '/panel/tests' },
     { id: 'norms', label: 'Norma & Skoring', icon: <Scroll />, href: '/panel/norms' },
+    { id: 'templates', label: 'Template Email & Notif', icon: <Mail />, href: '/panel/templates' },
+    { id: 'cms', label: 'Konten Landing Page', icon: <Globe />, href: '/panel/cms' },
     { id: 'admins', label: 'Manajemen Admin', icon: <UserCog />, href: '/panel/admins' }
   ];
 
@@ -26,6 +28,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   if (pathname.includes('/panel/customers')) activeTab = 'customers';
   else if (pathname.includes('/panel/tests')) activeTab = 'tests';
   else if (pathname.includes('/panel/norms')) activeTab = 'norms';
+  else if (pathname.includes('/panel/templates')) activeTab = 'templates';
+  else if (pathname.includes('/panel/cms')) activeTab = 'cms';
   else if (pathname.includes('/panel/admins')) activeTab = 'admins';
 
   return (
