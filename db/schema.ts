@@ -4,25 +4,52 @@ export const customers = pgTable('customers', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   auth_user_id: varchar('auth_user_id', { length: 255 }).unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
+  password_hash: varchar('password_hash', { length: 255 }),
   company_name: varchar('company_name', { length: 255 }).notNull(),
+  contact_name: varchar('contact_name', { length: 255 }),
   phone_number: varchar('phone_number', { length: 50 }),
+  balance: numeric('balance', { precision: 15, scale: 2 }).notNull().default('0.00'),
+  address: text('address'),
   logo_url: varchar('logo_url', { length: 1024 }),
   brand_color: varchar('brand_color', { length: 20 }).default('#2563eb'),
   role: varchar('role', { length: 50 }).default('CUSTOMER'),
   status: varchar('status', { length: 20 }).default('ACTIVE'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
 export const master_tests = pgTable('master_tests', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   code: varchar('code', { length: 50 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
+  category: varchar('category', { length: 50 }).default('GENERAL'),
   description: text('description'),
   duration_sec: integer('duration_sec').notNull().default(0),
   price: numeric('price', { precision: 10, scale: 2 }).notNull().default('0.00'),
   instructions: text('instructions'),
   is_active: boolean('is_active').default(true),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const test_bundles = pgTable('test_bundles', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  bundle_price: numeric('bundle_price', { precision: 10, scale: 2 }).notNull(),
+  is_active: boolean('is_active').default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const test_bundle_items = pgTable('test_bundle_items', {
+  bundle_id: integer('bundle_id').notNull().references(() => test_bundles.id, { onDelete: 'cascade' }),
+  test_id: integer('test_id').notNull().references(() => master_tests.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull().default(1),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.bundle_id, table.test_id] }),
+  };
 });
 
 export const question_banks = pgTable('question_banks', {
@@ -60,8 +87,13 @@ export const campaigns = pgTable('campaigns', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   customer_id: integer('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  access_token: varchar('access_token', { length: 100 }).unique(),
+  valid_until: timestamp('valid_until', { withTimezone: true }),
+  max_participants: integer('max_participants').default(0),
   is_active: boolean('is_active').default(true),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 }, (table) => {
   return {
     customer_idx: index('idx_campaigns_customer').on(table.customer_id),
@@ -80,10 +112,17 @@ export const campaign_tests = pgTable('campaign_tests', {
 export const participants = pgTable('participants', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   campaign_id: integer('campaign_id').notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
+  access_token: varchar('access_token', { length: 100 }).unique(),
   full_name: varchar('full_name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   phone_number: varchar('phone_number', { length: 50 }),
+  masked_phone: varchar('masked_phone', { length: 50 }),
+  phone_middle_digits: varchar('phone_middle_digits', { length: 10 }),
+  gender: varchar('gender', { length: 20 }),
+  date_of_birth: timestamp('date_of_birth', { withTimezone: true }),
   status: varchar('status', { length: 50 }).default('RUNNING'),
+  started_at: timestamp('started_at', { withTimezone: true }),
+  completed_at: timestamp('completed_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => {
   return {
@@ -131,6 +170,7 @@ export const test_orders = pgTable('test_orders', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   invoice_code: varchar('invoice_code', { length: 100 }).notNull().unique(),
   customer_id: integer('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  order_type: varchar('order_type', { length: 50 }).notNull().default('DIRECT_QUOTA'),
   payment_method_id: integer('payment_method_id').references(() => payment_methods.id, { onDelete: 'set null' }),
   subtotal: numeric('subtotal', { precision: 15, scale: 2 }).notNull(),
   fee_amount: numeric('fee_amount', { precision: 15, scale: 2 }).default('0.00'),
@@ -138,6 +178,7 @@ export const test_orders = pgTable('test_orders', {
   payment_url: varchar('payment_url', { length: 1024 }),
   payment_token: varchar('payment_token', { length: 255 }),
   proof_url: varchar('proof_url', { length: 1024 }),
+  notes: text('notes'),
   status: varchar('status', { length: 50 }).default('PENDING'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   paid_at: timestamp('paid_at', { withTimezone: true }),
@@ -151,7 +192,8 @@ export const test_orders = pgTable('test_orders', {
 export const test_order_items = pgTable('test_order_items', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   order_id: integer('order_id').notNull().references(() => test_orders.id, { onDelete: 'cascade' }),
-  test_id: integer('test_id').notNull().references(() => master_tests.id, { onDelete: 'cascade' }),
+  test_id: integer('test_id').references(() => master_tests.id, { onDelete: 'cascade' }),
+  bundle_id: integer('bundle_id').references(() => test_bundles.id, { onDelete: 'cascade' }),
   quantity: integer('quantity').notNull(),
   price_per_item: numeric('price_per_item', { precision: 10, scale: 2 }).notNull(),
   subtotal: numeric('subtotal', { precision: 15, scale: 2 }).notNull(),
@@ -159,6 +201,22 @@ export const test_order_items = pgTable('test_order_items', {
 }, (table) => {
   return {
     order_idx: index('idx_test_order_items_order').on(table.order_id),
+  };
+});
+
+export const wallet_transactions = pgTable('wallet_transactions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  customer_id: integer('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  order_id: integer('order_id').references(() => test_orders.id, { onDelete: 'set null' }),
+  type: varchar('type', { length: 50 }).notNull(),
+  amount: numeric('amount', { precision: 15, scale: 2 }).notNull(),
+  balance_before: numeric('balance_before', { precision: 15, scale: 2 }).notNull(),
+  balance_after: numeric('balance_after', { precision: 15, scale: 2 }).notNull(),
+  description: varchar('description', { length: 255 }).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => {
+  return {
+    customer_idx: index('idx_wallet_transactions_customer').on(table.customer_id),
   };
 });
 
@@ -179,6 +237,7 @@ export const quota_transactions = pgTable('quota_transactions', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   customer_id: integer('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
   test_id: integer('test_id').notNull().references(() => master_tests.id, { onDelete: 'cascade' }),
+  participant_id: integer('participant_id').references(() => participants.id, { onDelete: 'set null' }),
   reference_id: varchar('reference_id', { length: 100 }),
   quantity: integer('quantity').notNull(),
   type: varchar('type', { length: 50 }).notNull(),
@@ -186,7 +245,7 @@ export const quota_transactions = pgTable('quota_transactions', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => {
   return {
-    customer_test_desc_idx: index('idx_quota_transactions_customer_test').on(table.customer_id, table.test_id), // Drizzle index doesn't fully support DESC nicely without raw SQL, but this is fine
+    customer_test_desc_idx: index('idx_quota_transactions_customer_test').on(table.customer_id, table.test_id),
   };
 });
 
@@ -203,6 +262,16 @@ export const payment_logs = pgTable('payment_logs', {
   return {
     invoice_idx: index('idx_payment_logs_invoice').on(table.invoice_code),
   };
+});
+
+export const landing_page_contents = pgTable('landing_page_contents', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  section_key: varchar('section_key', { length: 100 }).notNull().unique(),
+  title: varchar('title', { length: 255 }).notNull(),
+  subtitle: text('subtitle'),
+  content: jsonb('content').notNull(),
+  is_active: boolean('is_active').default(true),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
 export const notification_templates = pgTable('notification_templates', {
@@ -232,8 +301,10 @@ export const notification_logs = pgTable('notification_logs', {
 export const admins = pgTable('admins', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
+  password_hash: varchar('password_hash', { length: 255 }),
   name: varchar('name', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).default('SUPERADMIN'),
   status: varchar('status', { length: 20 }).default('ACTIVE'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
