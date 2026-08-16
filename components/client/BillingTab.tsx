@@ -19,8 +19,9 @@ import {
   CreditCard,
   History,
   Loader2,
-  ShieldCheck,
-  ChevronRight,
+  Upload,
+  Image as ImageIcon,
+  ExternalLink,
 } from 'lucide-react';
 
 interface BillingTabProps {
@@ -47,6 +48,11 @@ export function BillingTab({ data }: BillingTabProps) {
   // Active Checkout Order Modal
   const [activeInstructionOrder, setActiveInstructionOrder] = useState<any | null>(null);
 
+  // File Upload State for Payment Proof (Vercel Blob)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
+
   // Countdown timer calculation for 24h expiration
   const [countdownStr, setCountdownStr] = useState<string>('23:59:59');
 
@@ -72,6 +78,14 @@ export function BillingTab({ data }: BillingTabProps) {
         }
       }, 1000);
     }
+
+    if (activeInstructionOrder?.proof_url) {
+      setPreviewUrl(activeInstructionOrder.proof_url);
+    } else {
+      setPreviewUrl(null);
+    }
+    setSelectedFile(null);
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -107,7 +121,7 @@ export function BillingTab({ data }: BillingTabProps) {
         return;
       }
 
-      toast.success('Invoice tagihan Top-Up berhasil dibuat!');
+      toast.success('Invoice tagihan Top-Up berhasil dibuat & notifikasi Telegram dikirim!');
       setIsTopUpModalOpen(false);
       setActiveInstructionOrder(result.data);
       mutateOrders();
@@ -116,6 +130,55 @@ export function BillingTab({ data }: BillingTabProps) {
       toast.error('Terjadi kesalahan jaringan.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Ukuran file gambar maksimal 5MB.');
+        return;
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUploadPaymentProof = async () => {
+    if (!selectedFile || !activeInstructionOrder?.id) {
+      toast.error('Pilih file bukti transfer terlebih dahulu.');
+      return;
+    }
+
+    setIsUploadingProof(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('order_id', activeInstructionOrder.id.toString());
+
+      const res = await fetch('/api/client/orders/proof', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal mengunggah bukti transfer.');
+        return;
+      }
+
+      toast.success('Bukti transfer berhasil diunggah & notifikasi Telegram dikirim ke Superadmin!');
+      setActiveInstructionOrder((prev: any) => ({
+        ...prev,
+        proof_url: result.proof_url,
+      }));
+      setSelectedFile(null);
+      mutateOrders();
+    } catch (err) {
+      toast.error('Terjadi kesalahan jaringan saat mengunggah.');
+    } finally {
+      setIsUploadingProof(false);
     }
   };
 
@@ -160,7 +223,7 @@ export function BillingTab({ data }: BillingTabProps) {
             <span className="text-xs font-semibold text-slate-500">Total: {orders.length} Transaksi</span>
           </div>
 
-          <Table headers={["Invoice Code", "Jenis Transaksi", "Tanggal", "Total Tagihan", "Metode Bayar", "Status", "Aksi"]} isEmpty={orders.length === 0}>
+          <Table headers={["Invoice Code", "Jenis Transaksi", "Tanggal", "Total Tagihan", "Metode Bayar", "Status", "Bukti Transfer", "Aksi"]} isEmpty={orders.length === 0}>
             {orders.map((o: any) => (
               <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                 <td className="py-3.5 px-4 font-mono font-bold text-indigo-900 text-xs">{o.invoice_code}</td>
@@ -197,6 +260,20 @@ export function BillingTab({ data }: BillingTabProps) {
                     <Badge variant="danger">{o.status}</Badge>
                   )}
                 </td>
+                <td className="py-3.5 px-4">
+                  {o.proof_url ? (
+                    <a
+                      href={o.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" /> Ter-unggah
+                    </a>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">Belum diunggah</span>
+                  )}
+                </td>
                 <td className="py-3.5 px-4 text-right">
                   {o.status === 'PENDING' ? (
                     <Button
@@ -214,7 +291,7 @@ export function BillingTab({ data }: BillingTabProps) {
                       }
                       className="text-xs font-bold text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
                     >
-                      Lihat Instruksi Bayar
+                      Bayar / Unggah Bukti
                     </Button>
                   ) : (
                     <span className="text-[11px] text-slate-400 italic">Selesai</span>
@@ -276,8 +353,8 @@ export function BillingTab({ data }: BillingTabProps) {
               <strong className="text-slate-900">Transfer Bank BCA (Manual)</strong>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Proses Verifikasi:</span>
-              <strong className="text-emerald-700">Verifikasi Manual Admin</strong>
+              <span>Notifikasi Otomatis:</span>
+              <strong className="text-indigo-700">Bot Telegram Realtime</strong>
             </div>
           </div>
 
@@ -293,7 +370,7 @@ export function BillingTab({ data }: BillingTabProps) {
         </form>
       </Modal>
 
-      {/* Modal 2: Detail Instruksi Pembayaran BCA Manual (Checkout Modal) */}
+      {/* Modal 2: Detail Instruksi Pembayaran BCA Manual & Upload Bukti Transfer (Vercel Blob) */}
       {activeInstructionOrder && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -340,7 +417,7 @@ export function BillingTab({ data }: BillingTabProps) {
                   </button>
                 </div>
                 <p className="text-[11px] text-amber-700 font-semibold bg-amber-100/60 p-1.5 rounded-lg border border-amber-200 mt-2">
-                  ⚠️ Transfer HARUS sama persis hingga 3 digit terakhir untuk mempercepat verifikasi otomatis.
+                  ⚠️ Transfer HARUS sama persis hingga 3 digit terakhir untuk mempercepat verifikasi.
                 </p>
               </div>
 
@@ -370,16 +447,57 @@ export function BillingTab({ data }: BillingTabProps) {
                 </div>
               </div>
 
-              {/* Transfer Steps */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Langkah Pembayaran:</h4>
-                <ol className="text-xs text-slate-600 space-y-1.5 pl-4 list-decimal leading-relaxed">
-                  <li>Buka aplikasi m-BCA, KlikBCA, atau mesin ATM BCA terdekat.</li>
-                  <li>Pilih menu <strong>Transfer Ke Rekening BCA</strong>.</li>
-                  <li>Masukkan Nomor Rekening <code className="font-bold text-slate-900">1234567890</code> a.n PT PsikoTest Solusi Indonesia.</li>
-                  <li>Masukkan Nominal Transfer persis sebesar <strong className="text-indigo-900">Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}</strong>.</li>
-                  <li>Setelah transfer berhasil, Superadmin akan memverifikasi dan menyetujui transaksi secara manual. Saldo wallet Anda akan langsung bertambah!</li>
-                </ol>
+              {/* Upload Payment Proof Section (Vercel Blob) */}
+              <div className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer (Vercel Blob)
+                  </h4>
+                  {activeInstructionOrder.proof_url && (
+                    <a
+                      href={activeInstructionOrder.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Lihat Foto Ter-unggah
+                    </a>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Unggah struk atau tangkapan layar bukti transfer Anda. Notifikasi beserta foto bukti akan dikirimkan langsung ke Telegram Superadmin untuk segera diverifikasi.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUploadPaymentProof}
+                    disabled={isUploadingProof || !selectedFile}
+                    className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-40 transition-all shadow-sm"
+                  >
+                    {isUploadingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {isUploadingProof ? 'Mengunggah...' : 'Kirim Bukti'}
+                  </button>
+                </div>
+
+                {previewUrl && (
+                  <div className="mt-2 p-2 bg-white border border-indigo-200 rounded-xl flex items-center gap-3">
+                    <img src={previewUrl} alt="Preview Bukti Transfer" className="w-16 h-16 object-cover rounded-lg border border-slate-200" />
+                    <div className="text-xs overflow-hidden">
+                      <span className="font-bold text-slate-800 block truncate">Bukti Transfer Siap/Ter-unggah</span>
+                      <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Tersimpan di Vercel Blob
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

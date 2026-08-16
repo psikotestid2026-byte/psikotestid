@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 // GET: Fetch current HR client's orders & wallet transactions
 export async function GET() {
@@ -31,6 +32,7 @@ export async function GET() {
         o.fee_amount,
         o.total_amount,
         o.status,
+        o.proof_url,
         o.created_at,
         o.paid_at,
         pm.name as payment_method_name,
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
     }
 
     const customer = await sql`
-      SELECT id FROM customers WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, company_name FROM customers WHERE email = ${session.user.email} LIMIT 1
     `;
 
     if (customer.length === 0) {
@@ -80,6 +82,7 @@ export async function POST(req: Request) {
     }
 
     const customerId = customer[0].id;
+    const companyName = customer[0].company_name || session.user.name || session.user.email;
     const body = await req.json();
     const { amount, order_type, test_id, quantity } = body;
 
@@ -144,6 +147,24 @@ export async function POST(req: Request) {
         VALUES (${orderId}, ${test_id}, NULL, ${quantity}, ${subtotal / quantity}, ${subtotal})
       `;
     }
+
+    // Trigger Telegram Notification asynchronously for New Order
+    const telegramMsg = `
+<b>🚨 ORDER BARU MASUK (PENDING) 🚨</b>
+
+• <b>Invoice:</b> <code>${invoiceCode}</code>
+• <b>Klien HR:</b> ${companyName} (${session.user.email})
+• <b>Jenis Order:</b> ${order_type === 'TOPUP_BALANCE' ? 'Top-Up Saldo Wallet' : 'Beli Kuota Tes'}
+• <b>Nominal Presisi:</b> <b>Rp ${totalAmount.toLocaleString('id-ID')}</b> (Subtotal: Rp ${subtotal.toLocaleString('id-ID')} + Kode Unik: Rp ${uniqueCode})
+• <b>Metode Bayar:</b> Transfer Bank BCA (Manual)
+• <b>Status:</b> Menunggu Pembayaran Transfer
+
+💡 <i>Klien akan mentransfer nominal presisi Rp ${totalAmount.toLocaleString('id-ID')} ke BCA 1234567890.</i>
+    `.trim();
+
+    sendTelegramNotification({ message: telegramMsg }).catch((err) =>
+      console.error('Telegram Checkout Alert Error:', err)
+    );
 
     return NextResponse.json({
       success: true,
