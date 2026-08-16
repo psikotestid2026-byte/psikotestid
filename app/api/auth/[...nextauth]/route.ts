@@ -44,14 +44,8 @@ export const authOptions: AuthOptions = {
             return true;
           }
 
-          // Auto-create as new customer if not found in any table
-          const companyName = profile?.name || email.split('@')[0];
-          await sql`
-            INSERT INTO customers (email, company_name, role, status)
-            VALUES (${email}, ${companyName}, 'CUSTOMER', 'ACTIVE')
-            ON CONFLICT (email) DO NOTHING
-          `;
-          return true;
+          // If email is not found in any table, redirect to registration OTP wizard
+          return `/clients/login?error=NotRegistered&email=${encodeURIComponent(email)}`;
         } catch (error) {
           console.error("Auth Error:", error);
           return false;
