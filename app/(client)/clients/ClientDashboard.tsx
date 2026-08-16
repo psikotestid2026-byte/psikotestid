@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
-import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings } from 'lucide-react';
+import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { ClientOverviewTab } from '@/components/client/ClientOverviewTab';
@@ -17,11 +17,23 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function ClientDashboard({ initialData }: { initialData: any }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [openTopUpModal, setOpenTopUpModal] = useState(false);
 
   const { data } = useSWR('/api/client/data', fetcher, {
     fallbackData: initialData,
     refreshInterval: 15000,
   });
+
+  const { data: orderData } = useSWR('/api/client/orders', fetcher, {
+    refreshInterval: 10000,
+  });
+
+  const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
+
+  const handleOpenTopUp = () => {
+    setActiveTab('billing');
+    setOpenTopUpModal(true);
+  };
 
   const menuItems: SidebarItem[] = [
     { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard /> },
@@ -65,17 +77,32 @@ export default function ClientDashboard({ initialData }: { initialData: any }) {
         <TopBar 
           title={menuItems.find(i => i.id === activeTab)?.label || 'Dashboard'} 
           rightWidget={
-            <Button size="sm" onClick={() => setActiveTab('billing')}>
-              Sisa Kuota: {data.quotas.reduce((acc: any, q: any) => acc + q.quota, 0)}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800">
+                <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Saldo: Rp {Number(walletBalance).toLocaleString('id-ID')}</span>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleOpenTopUp}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+              >
+                <PlusCircle className="w-3.5 h-3.5" /> + Top-Up Saldo
+              </Button>
+
+              <Button size="sm" variant="outline" onClick={() => setActiveTab('billing')} className="hidden md:inline-flex">
+                Sisa Kuota: {data.quotas.reduce((acc: any, q: any) => acc + q.quota, 0)}
+              </Button>
+            </div>
           }
         />
         
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {activeTab === 'overview' && <ClientOverviewTab data={data} />}
+          {activeTab === 'overview' && <ClientOverviewTab data={data} onNavigateTopUp={handleOpenTopUp} />}
           {activeTab === 'campaigns' && <CampaignsTab data={data} />}
           {activeTab === 'participants' && <ParticipantsTab data={data} />}
-          {activeTab === 'billing' && <BillingTab data={data} />}
+          {activeTab === 'billing' && <BillingTab data={data} openTopUpOnMount={openTopUpModal} />}
           {activeTab === 'settings' && <SettingsTab data={data} />}
         </div>
       </main>

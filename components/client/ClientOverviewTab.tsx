@@ -1,13 +1,38 @@
-import { Brain, Users, Building, Activity } from 'lucide-react';
+import { Brain, Users, Building, Activity, Wallet, PlusCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 interface ClientOverviewTabProps {
   data: any;
+  onNavigateTopUp?: () => void;
 }
 
-export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
+export function ClientOverviewTab({ data, onNavigateTopUp }: ClientOverviewTabProps) {
+  const walletBalance = data.customer?.balance || 0;
+
   return (
     <div className="w-full animate-fadeUp">
+      {/* Top Banner Card with Wallet Balance & Quick Top-Up Action */}
+      <div className="mb-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800">
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/20 border border-indigo-400/30 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            <Wallet className="w-3 h-3 text-indigo-400" /> Saldo Wallet Akun HR
+          </span>
+          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400">
+            Rp {Number(walletBalance).toLocaleString('id-ID')}
+          </div>
+        </div>
+
+        {onNavigateTopUp && (
+          <Button
+            onClick={onNavigateTopUp}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 shrink-0"
+          >
+            <PlusCircle className="w-4 h-4" /> Top-Up Saldo Wallet Sekarang
+          </Button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <div className="flex items-center justify-between mb-4">
