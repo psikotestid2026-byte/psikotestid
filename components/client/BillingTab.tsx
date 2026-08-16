@@ -219,7 +219,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
-      {/* SECTION INLINE: Detail Instruksi Pembayaran & Upload Bukti Transfer (Menghindari Hardcode) */}
+      {/* SECTION INLINE: Detail Instruksi Pembayaran & Upload Bukti Transfer */}
       {activeInstructionOrder && (
         <div className="bg-white rounded-3xl border-2 border-indigo-500 shadow-xl overflow-hidden animate-fadeIn">
           {/* Header Banner */}
@@ -526,7 +526,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         </Card>
       </div>
 
-      {/* Modal 1: Top-Up Saldo Form dengan Dynamic Payment Methods dari DB */}
+      {/* Modal 1: Top-Up Saldo Form dengan Scrollbar Scrollable & Distinct Payment Methods dari DB */}
       <Modal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} title="Top-Up Saldo Wallet Corporate">
         <form onSubmit={handleCreateTopUpOrder} className="space-y-5">
           {/* Preset Currency Selection */}
@@ -578,10 +578,10 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
             <p className="text-[11px] text-slate-500 mt-1">Minimal top-up saldo wallet adalah Rp 50.000.</p>
           </div>
 
-          {/* Dynamic Payment Method Selector from DB */}
+          {/* Dynamic Unique Payment Method Selector with Scrollable Container to prevent Cut-Off */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Metode Pembayaran</label>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-52 overflow-y-auto pr-1 border border-slate-200/80 rounded-2xl p-1.5 bg-slate-50/50">
               {dbPaymentMethods.length === 0 ? (
                 /* Fallback if DB list loading */
                 <label className="flex items-center justify-between p-3 rounded-2xl border border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-500/20 cursor-pointer">

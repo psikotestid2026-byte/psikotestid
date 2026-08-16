@@ -13,6 +13,7 @@ export async function GET() {
         o.fee_amount,
         o.total_amount,
         o.status,
+        o.proof_url,
         o.created_at,
         o.paid_at,
         c.company_name,
@@ -88,7 +89,6 @@ export async function PUT(req: Request) {
 
     // 2. Handle TOPUP_BALANCE order type: Credit customer wallet balance
     if (order.order_type === 'TOPUP_BALANCE') {
-      // Use subtotal or totalAmount for wallet credit (we credit subtotal or totalAmount)
       const creditAmount = subtotalAmount > 0 ? subtotalAmount : totalAmount;
       const balanceBefore = currentBalance;
       const balanceAfter = currentBalance + creditAmount;
