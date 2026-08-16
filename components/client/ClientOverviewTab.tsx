@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Brain, Users, Building, Activity, Wallet, PlusCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
