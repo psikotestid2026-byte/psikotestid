@@ -8,6 +8,7 @@ import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { compressPaymentProof } from '@/lib/imageCompressor';
 import {
   Wallet,
   PlusCircle,
@@ -26,6 +27,7 @@ import {
   QrCode,
   ShieldCheck,
   X,
+  FileCheck,
 } from 'lucide-react';
 
 interface BillingTabProps {
@@ -56,6 +58,7 @@ export function BillingTab({ data }: BillingTabProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
 
   // Countdown timer calculation for 24h expiration
   const [countdownStr, setCountdownStr] = useState<string>('23:59:59');
@@ -89,6 +92,7 @@ export function BillingTab({ data }: BillingTabProps) {
       setPreviewUrl(null);
     }
     setSelectedFile(null);
+    setCompressionInfo(null);
 
     return () => {
       if (interval) clearInterval(interval);
@@ -137,15 +141,25 @@ export function BillingTab({ data }: BillingTabProps) {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Ukuran file gambar maksimal 5MB.');
-        return;
+      const originalFile = e.target.files[0];
+      try {
+        const { compressedFile, originalSizeKB, compressedSizeKB } = await compressPaymentProof(originalFile);
+        setSelectedFile(compressedFile);
+        setPreviewUrl(URL.createObjectURL(compressedFile));
+
+        if (originalSizeKB > compressedSizeKB) {
+          const infoText = `Dicompress: ${originalSizeKB} KB ➔ ${compressedSizeKB} KB (HD Tajam)`;
+          setCompressionInfo(infoText);
+          toast.success(`Foto bukti transfer dicompress dari ${originalSizeKB} KB ke ${compressedSizeKB} KB (teks tetap tajam & tidak blur).`);
+        } else {
+          setCompressionInfo(`Ukuran optimal: ${compressedSizeKB} KB`);
+        }
+      } catch (err) {
+        setSelectedFile(originalFile);
+        setPreviewUrl(URL.createObjectURL(originalFile));
       }
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
@@ -193,7 +207,7 @@ export function BillingTab({ data }: BillingTabProps) {
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
-      {/* SECTION INLINE: Detail Instruksi Pembayaran Bank BCA & Upload Bukti Transfer (Menghilangkan Modal Cut-Off) */}
+      {/* SECTION INLINE: Detail Instruksi Pembayaran Bank BCA & Upload Bukti Transfer (High-Fidelity Compress) */}
       {activeInstructionOrder && (
         <div className="bg-white rounded-3xl border-2 border-indigo-500 shadow-xl overflow-hidden animate-fadeIn">
           {/* Header Banner */}
@@ -280,12 +294,12 @@ export function BillingTab({ data }: BillingTabProps) {
               </div>
             </div>
 
-            {/* Right Column: Vercel Blob Payment Proof Uploader */}
+            {/* Right Column: Vercel Blob Payment Proof Uploader with High Quality Compression */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer (Vercel Blob)
+                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer (Auto-Compress HD)
                   </h4>
                   {activeInstructionOrder.proof_url && (
                     <a
@@ -300,7 +314,7 @@ export function BillingTab({ data }: BillingTabProps) {
                 </div>
 
                 <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  Unggah struk atau bukti transfer Anda di bawah ini. Notifikasi beserta foto bukti akan terkirim otomatis ke Telegram Superadmin untuk segera diverifikasi.
+                  Foto bukti transfer Anda akan secara otomatis dicompress di browser agar hemat kuota tanpa mengurangi kejelasan/ketajaman huruf dan nominal transfer.
                 </p>
 
                 <div className="space-y-3">
@@ -310,6 +324,13 @@ export function BillingTab({ data }: BillingTabProps) {
                     onChange={handleFileChange}
                     className="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded-xl"
                   />
+
+                  {compressionInfo && (
+                    <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
+                      <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{compressionInfo}</span>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -326,9 +347,9 @@ export function BillingTab({ data }: BillingTabProps) {
                   <div className="mt-4 p-3 bg-indigo-50/60 border border-indigo-200 rounded-2xl flex items-center gap-3">
                     <img src={previewUrl} alt="Preview Bukti Transfer" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />
                     <div className="text-xs overflow-hidden">
-                      <span className="font-bold text-slate-900 block truncate">Struk Transfer Tersimpan</span>
+                      <span className="font-bold text-slate-900 block truncate">Struk Transfer HD Dicompress</span>
                       <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Vercel Blob Storage Ready
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Teks Tajam & Jelas
                       </span>
                     </div>
                   </div>
