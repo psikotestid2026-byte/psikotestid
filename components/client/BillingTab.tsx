@@ -1,98 +1,396 @@
-import { useState } from 'react';
-import { mutate } from 'swr';
+'use client';
+
+import { useState, useEffect } from 'react';
+import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
-import { createOrder } from '@/app/(client)/clients/actions';
+import {
+  Wallet,
+  PlusCircle,
+  Clock,
+  Copy,
+  CheckCircle2,
+  Building2,
+  AlertCircle,
+  CreditCard,
+  History,
+  Loader2,
+  ShieldCheck,
+  ChevronRight,
+} from 'lucide-react';
 
 interface BillingTabProps {
   data: any;
 }
 
-export function BillingTab({ data }: BillingTabProps) {
-  const [loading, setLoading] = useState(false);
-  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
-  const [buyQty, setBuyQty] = useState(10);
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-  const handleBuy = async (e: React.FormEvent) => {
+export function BillingTab({ data }: BillingTabProps) {
+  const { data: orderData, mutate: mutateOrders } = useSWR('/api/client/orders', fetcher, {
+    refreshInterval: 10000,
+  });
+
+  const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
+  const orders = orderData?.data?.orders || data?.orders || [];
+  const walletHistory = orderData?.data?.walletHistory || [];
+
+  // Modals & Active Order States
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<number>(500000);
+  const [customAmount, setCustomAmount] = useState<string>('500000');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Active Checkout Order Modal
+  const [activeInstructionOrder, setActiveInstructionOrder] = useState<any | null>(null);
+
+  // Countdown timer calculation for 24h expiration
+  const [countdownStr, setCountdownStr] = useState<string>('23:59:59');
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (activeInstructionOrder?.created_at) {
+      const createdAt = new Date(activeInstructionOrder.created_at).getTime();
+      const expiresAt = createdAt + 24 * 60 * 60 * 1000; // 24 hours
+
+      interval = setInterval(() => {
+        const now = Date.now();
+        const diff = expiresAt - now;
+        if (diff <= 0) {
+          setCountdownStr('00:00:00 (Kadaluwarsa)');
+          if (interval) clearInterval(interval);
+        } else {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setCountdownStr(
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          );
+        }
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeInstructionOrder]);
+
+  const handleSelectPreset = (val: number) => {
+    setSelectedPreset(val);
+    setCustomAmount(val.toString());
+  };
+
+  const handleCreateTopUpOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data.customer?.id || !data.tests?.length) {
-      toast.error('Data tidak lengkap');
+    const amount = Number(customAmount);
+    if (isNaN(amount) || amount < 50000) {
+      toast.error('Minimal nominal top-up saldo wallet adalah Rp 50.000.');
       return;
     }
-    
-    if (isNaN(buyQty) || buyQty <= 0) return;
 
-    setLoading(true);
+    setIsSubmitting(true);
     try {
-      await createOrder(data.customer.id, data.tests[0].id, buyQty);
-      await mutate('/api/client/data');
-      toast.success('Berhasil membuat order tagihan!');
-      setIsBuyModalOpen(false);
-    } catch (err: any) {
-      toast.error('Gagal membuat order: ' + err.message);
+      const res = await fetch('/api/client/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          order_type: 'TOPUP_BALANCE',
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal membuat invoice tagihan.');
+        return;
+      }
+
+      toast.success('Invoice tagihan Top-Up berhasil dibuat!');
+      setIsTopUpModalOpen(false);
+      setActiveInstructionOrder(result.data);
+      mutateOrders();
+      mutate('/api/client/data');
+    } catch (err) {
+      toast.error('Terjadi kesalahan jaringan.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="w-full animate-fadeUp">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="font-display font-bold text-lg text-slate-900">Tagihan & Beli Kuota</h2>
-        <Button onClick={() => setIsBuyModalOpen(true)} disabled={loading}>Beli Kuota Baru</Button>
-      </div>
-      <Card noPadding className="overflow-hidden">
-        <Table headers={["Invoice", "Tanggal", "Total Harga", "Status", "Aksi"]} isEmpty={data.orders.length === 0}>
-          {data.orders.map((o: any) => (
-            <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-              <td className="py-4 px-4 font-bold text-slate-800">{o.invoice_code}</td>
-              <td className="py-4 px-4 text-slate-500">{new Date(o.created_at).toLocaleDateString()}</td>
-              <td className="py-4 px-4 font-semibold text-slate-900">Rp {Number(o.total_amount).toLocaleString('id-ID')}</td>
-              <td className="py-4 px-4">
-                <Badge variant={o.status === 'PAID' ? 'success' : 'warning'}>{o.status}</Badge>
-              </td>
-              <td className="py-4 px-4 text-right">
-                {o.status === 'PENDING' && (
-                  <Button variant="outline" size="sm" onClick={() => toast.info('Fitur Cara Bayar (Xendit) akan segera hadir!')}>Cara Bayar</Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </Table>
-      </Card>
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} berhasil disalin!`);
+  };
 
-      <Modal isOpen={isBuyModalOpen} onClose={() => setIsBuyModalOpen(false)} title="Beli Kuota Tes">
-        <form onSubmit={handleBuy} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Pilih Alat Tes</label>
-            <input 
-              type="text" 
-              disabled
-              value={data.tests?.[0]?.name || 'Loading...'}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 text-slate-500" 
-            />
+  return (
+    <div className="w-full space-y-6 animate-fadeUp">
+      {/* Header Saldo Wallet Summary Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold text-indigo-300 mb-1">
+            <Wallet className="w-3.5 h-3.5 text-indigo-400" /> Saldo Wallet Corporate HR
           </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Jumlah Kuota</label>
-            <input 
-              type="number" 
-              required
-              min="1"
-              value={buyQty}
-              onChange={(e) => setBuyQty(parseInt(e.target.value) || 0)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
-            />
+          <div className="text-3xl md:text-4xl font-extrabold tracking-tight font-mono text-emerald-400">
+            Rp {walletBalance.toLocaleString('id-ID')}
           </div>
+          <p className="text-xs text-indigo-200/80 leading-relaxed max-w-xl">
+            Saldo wallet dapat digunakan kapan saja untuk beli kuota tes secara serba instan tanpa potongan biaya payment gateway.
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-3 shrink-0">
+          <Button
+            onClick={() => setIsTopUpModalOpen(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg flex items-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" /> Top-Up Saldo Wallet
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content Grid: Order History & Wallet Ledger */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">
+          <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-indigo-600" /> Riwayat Transaksi & Tagihan Invoice
+            </h3>
+            <span className="text-xs font-semibold text-slate-500">Total: {orders.length} Transaksi</span>
+          </div>
+
+          <Table headers={["Invoice Code", "Jenis Transaksi", "Tanggal", "Total Tagihan", "Metode Bayar", "Status", "Aksi"]} isEmpty={orders.length === 0}>
+            {orders.map((o: any) => (
+              <tr key={o.id} className="hover:bg-slate-50 transition-colors">
+                <td className="py-3.5 px-4 font-mono font-bold text-indigo-900 text-xs">{o.invoice_code}</td>
+                <td className="py-3.5 px-4 text-xs font-semibold text-slate-700">
+                  {o.order_type === 'TOPUP_BALANCE' ? (
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[10px]">
+                      Top-Up Saldo Wallet
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-bold text-[10px]">
+                      Beli Kuota Langsung
+                    </span>
+                  )}
+                </td>
+                <td className="py-3.5 px-4 text-xs text-slate-500">
+                  {new Date(o.created_at).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </td>
+                <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-xs">
+                  Rp {Number(o.total_amount).toLocaleString('id-ID')}
+                </td>
+                <td className="py-3.5 px-4 text-xs text-slate-600 font-medium">
+                  {o.payment_method_name || 'Transfer Bank BCA (Manual)'}
+                </td>
+                <td className="py-3.5 px-4">
+                  {o.status === 'PAID' ? (
+                    <Badge variant="success">LUNAS (PAID)</Badge>
+                  ) : o.status === 'PENDING' ? (
+                    <Badge variant="warning">MENUNGGU VERIFIKASI</Badge>
+                  ) : (
+                    <Badge variant="danger">{o.status}</Badge>
+                  )}
+                </td>
+                <td className="py-3.5 px-4 text-right">
+                  {o.status === 'PENDING' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setActiveInstructionOrder({
+                          ...o,
+                          bank_details: {
+                            bank_name: 'Bank Central Asia (BCA)',
+                            account_number: '1234567890',
+                            account_name: 'PT PsikoTest Solusi Indonesia',
+                          },
+                        })
+                      }
+                      className="text-xs font-bold text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
+                    >
+                      Lihat Instruksi Bayar
+                    </Button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic">Selesai</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+      </div>
+
+      {/* Modal 1: Top-Up Saldo Form */}
+      <Modal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} title="Top-Up Saldo Wallet Corporate">
+        <form onSubmit={handleCreateTopUpOrder} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Nominal Top-Up Saldo</label>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[100000, 250000, 500000, 1000000, 2500000, 5000000].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => handleSelectPreset(val)}
+                  className={`py-2 px-3 text-xs font-mono font-bold rounded-xl border transition-all ${
+                    selectedPreset === val && customAmount === val.toString()
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  Rp {(val / 1000).toLocaleString('id-ID')}rb
+                </button>
+              ))}
+            </div>
+
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Nominal Kustom (Rp)</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-slate-400">
+                Rp
+              </span>
+              <input
+                type="number"
+                required
+                min="50000"
+                step="10000"
+                value={customAmount}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value);
+                  setSelectedPreset(0);
+                }}
+                className="pl-9 w-full py-2.5 text-xs text-slate-900 border border-slate-300 rounded-xl font-mono font-bold focus:ring-2 focus:ring-indigo-500"
+                placeholder="50000"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Minimal top-up saldo wallet adalah Rp 50.000.</p>
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 text-xs">
+            <div className="flex justify-between text-slate-600">
+              <span>Metode Pembayaran:</span>
+              <strong className="text-slate-900">Transfer Bank BCA (Manual)</strong>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Proses Verifikasi:</span>
+              <strong className="text-emerald-700">Verifikasi Manual Admin</strong>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={() => setIsBuyModalOpen(false)}>Batal</Button>
-            <Button type="submit" disabled={loading || buyQty <= 0}>{loading ? 'Memproses...' : 'Buat Tagihan'}</Button>
+            <Button type="button" variant="outline" onClick={() => setIsTopUpModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+              {isSubmitting ? 'Memuat...' : 'Buat Tagihan Top-Up'}
+            </Button>
           </div>
         </form>
       </Modal>
+
+      {/* Modal 2: Detail Instruksi Pembayaran BCA Manual (Checkout Modal) */}
+      {activeInstructionOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 bg-indigo-950 text-white flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30">
+                  Tagihan Belum Lunas
+                </span>
+                <h3 className="text-base font-bold mt-1 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-indigo-400" /> Instruksi Transfer Bank BCA
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveInstructionOrder(null)}
+                className="text-slate-400 hover:text-white text-sm font-bold p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Expiry Countdown Box */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center justify-between text-xs text-amber-900">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Selesaikan pembayaran sebelum:</span>
+                </div>
+                <span className="font-mono font-extrabold text-sm text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300">
+                  {countdownStr}
+                </span>
+              </div>
+
+              {/* Exact Nominal Badge Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center space-y-1">
+                <span className="text-xs text-slate-500 font-medium">Total yang harus ditransfer (Presisi):</span>
+                <div className="text-2xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center justify-center gap-2">
+                  Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}
+                  <button
+                    onClick={() => copyToClipboard(activeInstructionOrder.total_amount.toString(), 'Nominal transfer')}
+                    className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-all"
+                    title="Salin Nominal"
+                  >
+                    <Copy className="w-4 h-4 text-indigo-600" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-amber-700 font-semibold bg-amber-100/60 p-1.5 rounded-lg border border-amber-200 mt-2">
+                  ⚠️ Transfer HARUS sama persis hingga 3 digit terakhir untuk mempercepat verifikasi otomatis.
+                </p>
+              </div>
+
+              {/* Destination Bank Account Card */}
+              <div className="border border-slate-200 rounded-2xl p-4 space-y-3 bg-white">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="text-xs font-bold text-slate-500">Bank Tujuan Transfer:</span>
+                  <span className="text-xs font-extrabold text-indigo-900 font-mono">BCA (Bank Central Asia)</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-slate-500 block">Nomor Rekening:</span>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">1234567890</span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard('1234567890', 'Nomor rekening BCA')}
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl flex items-center gap-1 transition-all"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Salin Rekening
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                  <span className="text-slate-500">Atas Nama Rekening:</span>
+                  <strong className="text-slate-800">PT PsikoTest Solusi Indonesia</strong>
+                </div>
+              </div>
+
+              {/* Transfer Steps */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Langkah Pembayaran:</h4>
+                <ol className="text-xs text-slate-600 space-y-1.5 pl-4 list-decimal leading-relaxed">
+                  <li>Buka aplikasi m-BCA, KlikBCA, atau mesin ATM BCA terdekat.</li>
+                  <li>Pilih menu <strong>Transfer Ke Rekening BCA</strong>.</li>
+                  <li>Masukkan Nomor Rekening <code className="font-bold text-slate-900">1234567890</code> a.n PT PsikoTest Solusi Indonesia.</li>
+                  <li>Masukkan Nominal Transfer persis sebesar <strong className="text-indigo-900">Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}</strong>.</li>
+                  <li>Setelah transfer berhasil, Superadmin akan memverifikasi dan menyetujui transaksi secara manual. Saldo wallet Anda akan langsung bertambah!</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <Button onClick={() => setActiveInstructionOrder(null)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6">
+                Saya Mengerti & Tutup
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

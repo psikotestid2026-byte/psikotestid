@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll, UserCog, Mail, Globe } from 'lucide-react';
+import { Shield, LayoutDashboard, Building2, FileSpreadsheet, Scroll, UserCog, Mail, Globe, Receipt } from 'lucide-react';
 import { Sidebar, SidebarItem } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 
@@ -16,6 +16,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const menuItems: SidebarItem[] = [
     { id: 'overview', label: 'Ringkasan Sistem', icon: <LayoutDashboard />, href: '/panel' },
     { id: 'customers', label: 'Perusahaan / Klien', icon: <Building2 />, href: '/panel/customers' },
+    { id: 'orders', label: 'Transaksi & Invoice', icon: <Receipt />, href: '/panel/orders' },
     { id: 'tests', label: 'Master Alat Tes', icon: <FileSpreadsheet />, href: '/panel/tests' },
     { id: 'norms', label: 'Norma & Skoring', icon: <Scroll />, href: '/panel/norms' },
     { id: 'templates', label: 'Template Email & Notif', icon: <Mail />, href: '/panel/templates' },
@@ -26,6 +27,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   // Determine active tab from pathname
   let activeTab = 'overview';
   if (pathname.includes('/panel/customers')) activeTab = 'customers';
+  else if (pathname.includes('/panel/orders')) activeTab = 'orders';
   else if (pathname.includes('/panel/tests')) activeTab = 'tests';
   else if (pathname.includes('/panel/norms')) activeTab = 'norms';
   else if (pathname.includes('/panel/templates')) activeTab = 'templates';
