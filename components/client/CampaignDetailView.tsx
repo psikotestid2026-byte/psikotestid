@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -33,6 +33,13 @@ interface CampaignDetailViewProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function CampaignDetailView({ initialCampaignData, campaignId }: CampaignDetailViewProps) {
+  // Fix React Hydration Error by setting origin safely in useEffect
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   // Use SWR for real-time candidate updates
   const { data: clientData, mutate: refreshData } = useSWR('/api/client/data', fetcher);
 
@@ -66,8 +73,9 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
     );
   });
 
-  const masterLink =
-    typeof window !== 'undefined' ? `${window.location.origin}/clients/test/${campaignId}` : '';
+  const masterLink = origin
+    ? `${origin}/clients/test/${campaignId}`
+    : `/clients/test/${campaignId}`;
 
   const handleAddManualCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,15 +106,18 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
     toast.success(`${label} berhasil disalin!`);
   };
 
+  const getPersonalLink = (token: string) => {
+    return origin
+      ? `${origin}/clients/test/${campaignId}?token=${token}`
+      : `/clients/test/${campaignId}?token=${token}`;
+  };
+
   const getWhatsAppUrl = (phone: string, name: string, token: string) => {
     if (!phone) return '#';
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.slice(1);
 
-    const personalLink =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/clients/test/${campaignId}?token=${token}`
-        : '';
+    const personalLink = getPersonalLink(token);
 
     const message = `Halo ${name},\n\nAnda diundang oleh ${
       initialCampaignData?.customer?.company_name || 'HR Department'
@@ -176,7 +187,7 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
         </div>
       </div>
 
-      {/* SECTION 1: Form Entry Manual Candidate (Full Width Card) */}
+      {/* SECTION 1: Form Entry Manual Candidate */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
@@ -266,10 +277,7 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
           isEmpty={filteredCandidates.length === 0}
         >
           {filteredCandidates.map((cand: any) => {
-            const personalLink =
-              typeof window !== 'undefined'
-                ? `${window.location.origin}/clients/test/${campaignId}?token=${cand.access_token}`
-                : '';
+            const personalLink = getPersonalLink(cand.access_token);
             const waUrl = getWhatsAppUrl(cand.phone_number, cand.full_name, cand.access_token);
 
             return (

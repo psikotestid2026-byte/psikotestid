@@ -1,4 +1,7 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, BrainCircuit, User, Mail, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
 import { DiscThreeCharts } from '@/components/reports/DiscCharts';
 import { DiscScoreResult } from '@/lib/scoring/disc';
@@ -9,7 +12,13 @@ interface ParticipantDetailModalProps {
 }
 
 export function ParticipantDetailModal({ participant, onClose }: ParticipantDetailModalProps) {
-  if (!participant) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!participant || !mounted) return null;
 
   const testResults = Array.isArray(participant.test_results)
     ? participant.test_results
@@ -20,9 +29,9 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
   const discResult = testResults.find((r: any) => r.scoring_data && r.scoring_data.g1);
   const scoring: DiscScoreResult | null = discResult?.scoring_data || null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 my-8 flex flex-col max-h-[90vh]">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 my-8 flex flex-col max-h-[88vh] relative z-10">
         {/* Modal Header */}
         <div className="bg-slate-900 text-white p-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -34,13 +43,13 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
               <p className="text-xs text-slate-400">Sesi: {participant.campaign_title || '-'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {discResult && (
               <a
                 href={`/api/reports/disc/${discResult.id}/pdf`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
               >
                 <Download className="w-4 h-4" /> Download PDF Report
               </a>
@@ -89,7 +98,7 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
                       {scoring.dominantLabel} — {scoring.dominantType}
                     </h3>
                     <p className="text-xs text-indigo-200 mt-1 max-w-xl">
-                      Sub-Trait Utama: <strong>{scoring.subTraits.g3}</strong> (Graph 3 Change).
+                      Sub-Trait Utama: <strong>{scoring.subTraits?.g3 || '-'}</strong> (Graph 3 Change).
                       {scoring.hasStressPotential && (
                         <span className="inline-flex items-center gap-1 text-amber-300 ml-2 font-semibold">
                           <AlertTriangle className="w-3.5 h-3.5" /> Terindikasi Penyesuaian Style (Stress Potential)
@@ -172,7 +181,7 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                 <h4 className="font-display font-bold text-slate-900 text-sm mb-3">Saran & Catatan Pengelolaan HR</h4>
                 <ul className="space-y-2 text-xs text-slate-700">
-                  {scoring.recommendations.map((rec, i) => (
+                  {scoring.recommendations?.map((rec, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 shrink-0" />
                       <span>{rec}</span>
@@ -192,6 +201,7 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

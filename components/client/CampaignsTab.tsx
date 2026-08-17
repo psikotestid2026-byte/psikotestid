@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { mutate } from 'swr';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -13,18 +13,6 @@ import {
   Copy,
   Users,
   PlusCircle,
-  Upload,
-  Download,
-  FileSpreadsheet,
-  CheckCircle2,
-  ExternalLink,
-  MessageSquare,
-  AlertCircle,
-  Brain,
-  X,
-  Send,
-  Loader2,
-  Check,
 } from 'lucide-react';
 import { createCampaign, closeCampaign } from '@/app/(client)/clients/actions';
 
@@ -33,6 +21,12 @@ interface CampaignsTabProps {
 }
 
 export function CampaignsTab({ data }: CampaignsTabProps) {
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
@@ -125,7 +119,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
           {campaigns.map((c: any) => {
             const countCandidates = allParticipants.filter((p: any) => String(p.campaign_id) === String(c.id)).length;
             const selectedTests = c.selected_tests || [];
-            const campaignLink = typeof window !== 'undefined' ? `${window.location.origin}/clients/test/${c.id}` : '';
+            const campaignLink = origin ? `${origin}/clients/test/${c.id}` : `/clients/test/${c.id}`;
 
             return (
               <tr key={c.id} className="hover:bg-slate-50 transition-colors">

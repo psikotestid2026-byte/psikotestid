@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Eye, FileDown } from 'lucide-react';
+import { Eye, FileDown, Search, Users, BrainCircuit } from 'lucide-react';
 import { ParticipantDetailModal } from './ParticipantDetailModal';
 
 interface ParticipantsTabProps {
@@ -14,13 +14,60 @@ interface ParticipantsTabProps {
 
 export function ParticipantsTab({ data }: ParticipantsTabProps) {
   const [selectedParticipant, setSelectedParticipant] = useState<any | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const participants = data?.participants || [];
+
+  const filteredParticipants = participants.filter((p: any) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.full_name?.toLowerCase().includes(q) ||
+      p.email?.toLowerCase().includes(q) ||
+      p.campaign_title?.toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <div className="w-full animate-fadeUp">
-      <h2 className="font-display font-bold text-lg text-slate-900 mb-6">Hasil Kandidat</h2>
-      <Card noPadding className="overflow-hidden">
-        <Table headers={["Nama Kandidat", "Email", "Sesi (Campaign)", "Status", "Aksi"]} isEmpty={data.participants.length === 0}>
-          {data.participants.map((p: any) => {
+    <div className="w-full space-y-6 animate-fadeUp">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-display font-bold text-xl text-slate-900">Hasil Kandidat & Laporan Asesmen</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Lihat hasil pengerjaan tes psikotes kandidat, grafik DISC, serta unduh laporan PDF resmi.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Participants List Table Card */}
+      <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">
+        <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-600" />
+            <h3 className="font-display font-bold text-sm text-slate-800">
+              Daftar Hasil Kandidat ({filteredParticipants.length} Peserta)
+            </h3>
+          </div>
+
+          {/* Search Filter Input */}
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari nama, email, campaign..."
+              className="pl-9 w-full py-1.5 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        <Table
+          headers={['Nama Kandidat', 'Email', 'Sesi (Campaign)', 'Status Ujian', 'Aksi Hasil Asesmen']}
+          isEmpty={filteredParticipants.length === 0}
+        >
+          {filteredParticipants.map((p: any) => {
             const testResults = Array.isArray(p.test_results)
               ? p.test_results
               : typeof p.test_results === 'string'
@@ -30,32 +77,37 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
 
             return (
               <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-4 px-4 font-bold text-slate-800">{p.full_name}</td>
-                <td className="py-4 px-4 text-slate-500">{p.email}</td>
-                <td className="py-4 px-4 text-slate-600 font-medium">{p.campaign_title || '-'}</td>
+                <td className="py-4 px-4 font-bold text-slate-900 text-xs">{p.full_name}</td>
+
+                <td className="py-4 px-4 text-slate-600 font-mono text-xs">{p.email}</td>
+
+                <td className="py-4 px-4 text-slate-700 font-semibold text-xs">
+                  {p.campaign_title || '-'}
+                </td>
+
                 <td className="py-4 px-4">
                   <Badge variant={p.status === 'COMPLETED' ? 'success' : 'warning'}>
-                    {p.status}
+                    {p.status === 'COMPLETED' ? 'SELESAI' : 'BELUM MENGERJAKAN'}
                   </Badge>
                 </td>
+
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<Eye className="w-4 h-4" />}
                       onClick={() => setSelectedParticipant(p)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5"
                     >
-                      Lihat Hasil
+                      <Eye className="w-3.5 h-3.5" /> Lihat Hasil
                     </Button>
+
                     {discResult && (
                       <a
                         href={`/api/reports/disc/${discResult.id}/pdf`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
                       >
-                        <FileDown className="w-4 h-4" /> PDF
+                        <FileDown className="w-3.5 h-3.5" /> PDF
                       </a>
                     )}
                   </div>
@@ -75,4 +127,3 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
     </div>
   );
 }
-
