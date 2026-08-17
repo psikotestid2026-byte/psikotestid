@@ -30,6 +30,11 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
     refreshInterval: 10000,
   });
 
+  // Standalone Layout Guard for Login Page (No Sidebar, No TopBar)
+  if (pathname === '/clients/login') {
+    return <div className="min-h-screen w-full bg-slate-50 font-body">{children}</div>;
+  }
+
   const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
   const quotas = data?.quotas || [];
   const totalQuotas = quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0);
