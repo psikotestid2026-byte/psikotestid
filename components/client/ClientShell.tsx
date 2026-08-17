@@ -64,12 +64,14 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
       <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-screen sticky top-0 z-30 shrink-0">
         {/* Header Branding */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
+          <Link href="/clients" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 group-hover:bg-indigo-600 flex items-center justify-center shrink-0 transition-colors">
               <Building className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-bold text-lg tracking-tight text-slate-900">HR Portal</span>
-          </div>
+            <span className="font-display font-bold text-lg tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
+              HR Portal
+            </span>
+          </Link>
         </div>
 
         {/* Customer Profile Widget */}
