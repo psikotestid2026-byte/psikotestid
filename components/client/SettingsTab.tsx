@@ -5,9 +5,8 @@ import { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, Building, Image as ImageIcon, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, Building, Image as ImageIcon, CheckCircle2, Loader2, Link as LinkIcon } from 'lucide-react';
 import { updateCustomerBranding } from '@/app/(client)/clients/actions';
-import { compressPaymentProof } from '@/lib/imageCompressor';
 
 interface SettingsTabProps {
   data: any;
@@ -18,27 +17,34 @@ export function SettingsTab({ data }: SettingsTabProps) {
   const [companyName, setCompanyName] = useState(data.customer?.company_name || '');
   const [logoUrl, setLogoUrl] = useState(data.customer?.logo_url || '');
   const [brandColor, setBrandColor] = useState(data.customer?.brand_color || '#2563eb');
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setIsCompressing(true);
+      setIsUploadingLogo(true);
       try {
-        const { compressedFile } = await compressPaymentProof(file, 800, 800, 0.85);
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          const result = evt.target?.result as string;
-          if (result) {
-            setLogoUrl(result);
-            toast.success(`Berhasil memproses gambar logo (${file.name})!`);
-          }
-        };
-        reader.readAsDataURL(compressedFile);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/client/upload-logo', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          toast.error(result.error || 'Gagal mengunggah logo perusahaan ke Vercel Blob.');
+          return;
+        }
+
+        setLogoUrl(result.url);
+        toast.success(`Berhasil mengunggah logo ke Vercel Blob Storage!`);
       } catch (err: any) {
-        toast.error('Gagal memproses file gambar logo.');
+        toast.error('Gagal mengunggah logo ke server: ' + err.message);
       } finally {
-        setIsCompressing(false);
+        setIsUploadingLogo(false);
       }
     }
   };
@@ -94,13 +100,13 @@ export function SettingsTab({ data }: SettingsTabProps) {
 
           {/* Logo Upload & Live Preview Card */}
           <div className="space-y-3 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-            <label className="block text-xs font-bold text-slate-700">Logo Perusahaan (Upload Gambar File / URL)</label>
+            <label className="block text-xs font-bold text-slate-700">Logo Perusahaan (Upload Vercel Blob / Link URL)</label>
 
             <div className="flex flex-col sm:flex-row items-center gap-5">
               {/* Real-Time Live Preview Avatar */}
-              <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
+              <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group p-2">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Preview Logo" className="w-full h-full object-cover" />
+                  <img src={logoUrl} alt="Preview Logo" className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-center p-2">
                     <Building className="w-6 h-6 text-slate-400 mx-auto" />
@@ -112,9 +118,9 @@ export function SettingsTab({ data }: SettingsTabProps) {
               {/* Upload Input & URL fallback */}
               <div className="flex-1 w-full space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="cursor-pointer px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all">
-                    {isCompressing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {isCompressing ? 'Memproses Logo...' : 'Upload File Logo (.png, .jpg, .svg)'}
+                  <label className="cursor-pointer px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all">
+                    {isUploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isUploadingLogo ? 'Mengunggah ke Vercel Blob...' : 'Upload File Logo (.png, .jpg, .svg)'}
                     <input
                       type="file"
                       accept="image/*"
@@ -135,13 +141,13 @@ export function SettingsTab({ data }: SettingsTabProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] text-slate-400 block font-medium">Atau masukkan link/URL gambar logo langsung:</span>
+                  <span className="text-[11px] text-slate-400 block font-medium">URL Vercel Blob Storage terdeteksi:</span>
                   <input
                     type="text"
                     value={logoUrl}
                     onChange={(e) => setLogoUrl(e.target.value)}
                     className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-700 bg-white"
-                    placeholder="https://example.com/logo-perusahaan.png"
+                    placeholder="https://xxxx.public.blob.vercel-storage.com/logo.png"
                   />
                 </div>
               </div>
@@ -172,7 +178,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
           <div className="pt-2">
             <Button
               type="submit"
-              disabled={loading || isCompressing}
+              disabled={loading || isUploadingLogo}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

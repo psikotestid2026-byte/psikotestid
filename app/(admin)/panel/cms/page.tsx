@@ -16,6 +16,8 @@ import {
   Gift,
   Coins,
   Save,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 import TiptapEditor from '@/components/editor/TiptapEditor';
 
@@ -45,6 +47,13 @@ export default function CmsAdminPage() {
   );
   const [isSavingBonus, setIsSavingBonus] = useState(false);
 
+  // Favicon Control state
+  const faviconCmsItem = cmsContents.find((item) => item.section_key === 'site_favicon');
+  const [faviconUrl, setFaviconUrl] = useState<string>(
+    faviconCmsItem?.content?.favicon_url || '/favicon.ico'
+  );
+  const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+
   const [selectedCms, setSelectedCms] = useState<CmsItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -64,6 +73,36 @@ export default function CmsAdminPage() {
     setRichTextDesc(typeof cms.content === 'object' && cms.content.description ? cms.content.description : '');
     setIsActive(cms.is_active);
     setIsEditing(true);
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsUploadingFavicon(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/admin/cms/favicon', {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          toast.error(result.error || 'Gagal mengunggah favicon ke Vercel Blob.');
+          return;
+        }
+
+        setFaviconUrl(result.favicon_url);
+        toast.success('Favicon official website berhasil diperbarui di Vercel Blob!');
+        mutate();
+      } catch (err: any) {
+        toast.error('Gagal mengunggah file favicon: ' + err.message);
+      } finally {
+        setIsUploadingFavicon(false);
+      }
+    }
   };
 
   const handleSaveBonus = async () => {
@@ -160,9 +199,9 @@ export default function CmsAdminPage() {
           <div className="inline-flex items-center gap-2 bg-indigo-500/30 border border-indigo-400/30 px-3 py-1 rounded-full text-xs font-semibold text-indigo-200 mb-2">
             <Globe className="w-3.5 h-3.5" /> Landing Page Content & System Config (CMS)
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Konten CMS & Saldo Bonus Pendaftaran HR</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Manajemen Konten CMS, Favicon & Saldo Bonus HR</h1>
           <p className="text-xs text-indigo-200 mt-1 max-w-2xl leading-relaxed">
-            Atur judul, subjudul, poin keunggulan, FAQ, serta sakelar <strong>Bonus Saldo Pendaftaran HR Client Baru</strong> secara bebas dan langsung.
+            Atur judul, subjudul, poin keunggulan, FAQ, sakelar <strong>Favicon Website Official</strong> via Vercel Blob, serta sakelar <strong>Bonus Saldo HR Client Baru</strong>.
           </p>
         </div>
         <button
@@ -171,6 +210,51 @@ export default function CmsAdminPage() {
         >
           <RefreshCw className="w-3.5 h-3.5" /> Refresh Data CMS
         </button>
+      </div>
+
+      {/* FAVICON OFFICIAL WEBSITE CONTROL CARD */}
+      <div className="bg-white rounded-2xl border-2 border-indigo-500 p-6 shadow-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-3 py-0.5 rounded-full border border-indigo-300 inline-flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5 text-indigo-600" /> Website Branding Favicon
+            </span>
+            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mt-1 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-indigo-600" /> Favicon Official Website (Browser Tab Icon)
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Ganti ikon tab browser bawaan Next.js/Vercel dengan ikon Favicon resmi PsikoTest.id Enterprise via Vercel Blob Storage.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 flex items-center justify-center overflow-hidden shrink-0 shadow-sm p-2">
+            {faviconUrl ? (
+              <img src={faviconUrl} alt="Favicon Preview" className="w-full h-full object-contain" />
+            ) : (
+              <Globe className="w-8 h-8 text-indigo-400" />
+            )}
+          </div>
+
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md transition-all">
+                {isUploadingFavicon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {isUploadingFavicon ? 'Mengunggah Favicon...' : 'Upload Favicon Baru (.ico, .png, .svg)'}
+                <input
+                  type="file"
+                  accept=".ico,.png,.svg,.jpg"
+                  onChange={handleFaviconUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-[11px] font-mono text-slate-500 truncate">
+              URL Favicon Vercel Blob: <code className="bg-slate-100 px-2 py-0.5 rounded text-indigo-700">{faviconUrl}</code>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* DYNAMIC HR WELCOME BONUS CONTROL CARD */}
