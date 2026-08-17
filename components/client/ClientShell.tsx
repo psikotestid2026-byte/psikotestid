@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
-import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle, LogOut } from 'lucide-react';
+import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle, LogOut, Ticket } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
 
@@ -31,7 +31,8 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
   });
 
   const walletBalance = orderData?.data?.balance ?? Number(data?.customer?.balance || 0);
-  const totalQuotas = data?.quotas?.reduce((acc: any, q: any) => acc + q.quota, 0) || 0;
+  const quotas = data?.quotas || [];
+  const totalQuotas = quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0);
 
   const menuItems = [
     { href: '/clients', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -42,7 +43,9 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
   ];
 
   const getPageTitle = () => {
+    if (pathname.startsWith('/clients/campaigns/')) return 'Detail Sesi Tes & Pendaftaran Kandidat';
     if (pathname === '/clients/campaigns') return 'Sesi Tes (Campaign)';
+    if (pathname.startsWith('/clients/participants/')) return 'Laporan Individu Hasil Kandidat';
     if (pathname === '/clients/participants') return 'Hasil Kandidat & Laporan';
     if (pathname === '/clients/billing') return 'Katalog Tes & Beli Kuota Wallet';
     if (pathname === '/clients/settings') return 'Branding Portal Corporate';
@@ -135,6 +138,7 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
           title={getPageTitle()}
           rightWidget={
             <div className="flex items-center space-x-2">
+              {/* Saldo Wallet Badge */}
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800">
                 <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Saldo: Rp {Number(walletBalance).toLocaleString('id-ID')}</span>
@@ -149,10 +153,18 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
                 </Button>
               </Link>
 
-              <Link href="/clients/billing" className="hidden md:inline-flex">
-                <Button size="sm" variant="outline">
-                  Sisa Kuota: {totalQuotas}
-                </Button>
+              {/* Per-Test Quota Balance Badge */}
+              <Link href="/clients/billing" className="hidden lg:inline-flex">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all">
+                  <Ticket className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span>
+                    {quotas.length === 0 ? (
+                      `Sisa Kuota: ${totalQuotas}`
+                    ) : (
+                      quotas.map((q: any) => `${q.test_code?.toUpperCase() || 'TES'}: ${q.quota}`).join(' | ')
+                    )}
+                  </span>
+                </div>
               </Link>
             </div>
           }

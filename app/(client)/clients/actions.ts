@@ -6,7 +6,12 @@ import crypto from 'crypto';
 export async function getClientData(customerId: number) {
   const [customerInfo, quotas, campaigns, participants, tests, transactions, orders] = await Promise.all([
     sql`SELECT * FROM customers WHERE id = ${customerId}`,
-    sql`SELECT * FROM customer_test_quotas WHERE customer_id = ${customerId}`,
+    sql`
+      SELECT ctq.*, mt.code as test_code, mt.name as test_name 
+      FROM customer_test_quotas ctq
+      JOIN master_tests mt ON ctq.test_id = mt.id
+      WHERE ctq.customer_id = ${customerId}
+    `,
     sql`
       SELECT c.*, 
              COALESCE(
@@ -88,6 +93,60 @@ export async function getCampaignDetails(campaignId: number) {
   };
 }
 
+export async function getParticipantFullDetails(participantId: number) {
+  const targetParticipant = await sql`
+    SELECT p.*, c.title as campaign_title, c.customer_id, cust.company_name
+    FROM participants p
+    JOIN campaigns c ON p.campaign_id = c.id
+    JOIN customers cust ON c.customer_id = cust.id
+    WHERE p.id = ${participantId}
+    LIMIT 1
+  `;
+
+  if (targetParticipant.length === 0) return null;
+
+  const candidate = targetParticipant[0];
+  const candidateEmail = candidate.email ? candidate.email.trim().toLowerCase() : '';
+
+  // Fetch test results for current participant
+  const currentTestResults = await sql`
+    SELECT tr.*, mt.code as test_code, mt.name as test_name
+    FROM test_results tr
+    JOIN master_tests mt ON tr.test_id = mt.id
+    WHERE tr.participant_id = ${participantId}
+  `;
+
+  // Fetch cumulative history for all campaigns attended by this candidate email
+  const cumulativeHistory = await sql`
+    SELECT p.id as participant_id, p.created_at, p.status, c.id as campaign_id, c.title as campaign_title,
+           COALESCE(
+             json_agg(
+               json_build_object(
+                 'id', tr.id,
+                 'test_id', tr.test_id,
+                 'test_code', mt.code,
+                 'test_name', mt.name,
+                 'scoring_data', tr.scoring_data,
+                 'created_at', tr.created_at
+               )
+             ) FILTER (WHERE tr.id IS NOT NULL), '[]'
+           ) as test_results
+    FROM participants p
+    JOIN campaigns c ON p.campaign_id = c.id
+    LEFT JOIN test_results tr ON tr.participant_id = p.id
+    LEFT JOIN master_tests mt ON tr.test_id = mt.id
+    WHERE LOWER(p.email) = ${candidateEmail} AND c.customer_id = ${candidate.customer_id}
+    GROUP BY p.id, p.created_at, p.status, c.id, c.title
+    ORDER BY p.created_at DESC
+  `;
+
+  return {
+    participant: candidate,
+    current_test_results: currentTestResults,
+    cumulative_history: cumulativeHistory,
+  };
+}
+
 export async function updateCustomerBranding(customerId: number, data: { company_name: string; logo_url: string; brand_color: string }) {
   await sql`
     UPDATE customers 
@@ -103,7 +162,6 @@ export async function createCampaign(customerId: number, title: string, testIds:
 
   const accessToken = 'cmp_' + crypto.randomBytes(8).toString('hex');
 
-  // Insert campaign via RAW SQL
   const result = await sql`
     INSERT INTO campaigns (customer_id, title, access_token, is_active) 
     VALUES (${customerId}, ${title}, ${accessToken}, TRUE) 
@@ -112,7 +170,6 @@ export async function createCampaign(customerId: number, title: string, testIds:
 
   const campaignId = result[0].id;
 
-  // Insert selected tests into campaign_tests
   if (testIds && testIds.length > 0) {
     for (const testId of testIds) {
       await sql`
@@ -122,7 +179,6 @@ export async function createCampaign(customerId: number, title: string, testIds:
       `;
     }
   } else {
-    // Default link first test if none selected
     const firstTest = await sql`SELECT id FROM master_tests WHERE is_active = TRUE LIMIT 1`;
     if (firstTest[0]) {
       await sql`
@@ -145,6 +201,60 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
     throw new Error('Nama lengkap dan Email kandidat wajib diisi.');
   }
 
+  // 1. Fetch customer_id and assigned test_ids for this campaign
+  const campaignRows = await sql`SELECT customer_id FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
+  if (campaignRows.length === 0) throw new Error('Campaign tidak ditemukan.');
+  const customerId = campaignRows[0].customer_id;
+
+  const assignedTests = await sql`
+    SELECT ct.test_id, mt.name as test_name, mt.code as test_code
+    FROM campaign_tests ct
+    JOIN master_tests mt ON ct.test_id = mt.id
+    WHERE ct.campaign_id = ${campaignId}
+  `;
+
+  // 2. Validate test quota sufficiency for all assigned tests
+  for (const testItem of assignedTests) {
+    const quotaRows = await sql`
+      SELECT quota FROM customer_test_quotas 
+      WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id} 
+      LIMIT 1
+    `;
+
+    const currentQuota = quotaRows.length > 0 ? Number(quotaRows[0].quota) : 0;
+
+    if (currentQuota <= 0) {
+      throw new Error(
+        `Kuota tes ${testItem.test_name} (${testItem.test_code.toUpperCase()}) Anda telah habis (Sisa 0). Silakan beli kuota tambahan di menu Beli Kuota.`
+      );
+    }
+  }
+
+  // 3. Deduct 1 test quota per assigned test & record transaction ledger
+  for (const testItem of assignedTests) {
+    await sql`
+      UPDATE customer_test_quotas 
+      SET quota = quota - 1 
+      WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id}
+    `;
+
+    await sql`
+      INSERT INTO quota_transactions (
+        customer_id,
+        test_id,
+        quantity,
+        type,
+        description
+      ) VALUES (
+        ${customerId},
+        ${testItem.test_id},
+        -1,
+        'DEBIT',
+        ${`Penggunaan kuota ${testItem.test_code.toUpperCase()} untuk kandidat ${data.full_name}`}
+      )
+    `;
+  }
+
   const accessToken = 'cand_' + crypto.randomBytes(8).toString('hex');
 
   const result = await sql`
@@ -159,7 +269,7 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
       ${campaignId},
       ${accessToken},
       ${data.full_name},
-      ${data.email},
+      ${data.email.trim().toLowerCase()},
       ${data.phone_number || null},
       'RUNNING'
     )
@@ -177,9 +287,64 @@ export async function bulkImportCandidates(
     throw new Error('Daftar kandidat kosong.');
   }
 
+  const campaignRows = await sql`SELECT customer_id FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
+  if (campaignRows.length === 0) throw new Error('Campaign tidak ditemukan.');
+  const customerId = campaignRows[0].customer_id;
+
+  const assignedTests = await sql`
+    SELECT ct.test_id, mt.name as test_name, mt.code as test_code
+    FROM campaign_tests ct
+    JOIN master_tests mt ON ct.test_id = mt.id
+    WHERE ct.campaign_id = ${campaignId}
+  `;
+
+  const totalRequiredCount = candidates.length;
+
+  // Validate sufficient quotas for all candidates
+  for (const testItem of assignedTests) {
+    const quotaRows = await sql`
+      SELECT quota FROM customer_test_quotas 
+      WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id} 
+      LIMIT 1
+    `;
+
+    const currentQuota = quotaRows.length > 0 ? Number(quotaRows[0].quota) : 0;
+
+    if (currentQuota < totalRequiredCount) {
+      throw new Error(
+        `Kuota tes ${testItem.test_name} (${testItem.test_code.toUpperCase()}) tidak mencukupi untuk mengimpor ${totalRequiredCount} kandidat (Sisa kuota: ${currentQuota}). Silakan beli kuota tambahan.`
+      );
+    }
+  }
+
   let count = 0;
   for (const c of candidates) {
     if (c.full_name && c.email) {
+      // Deduct quota per candidate
+      for (const testItem of assignedTests) {
+        await sql`
+          UPDATE customer_test_quotas 
+          SET quota = quota - 1 
+          WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id}
+        `;
+
+        await sql`
+          INSERT INTO quota_transactions (
+            customer_id,
+            test_id,
+            quantity,
+            type,
+            description
+          ) VALUES (
+            ${customerId},
+            ${testItem.test_id},
+            -1,
+            'DEBIT',
+            ${`Import massal kuota ${testItem.test_code.toUpperCase()} untuk kandidat ${c.full_name}`}
+          )
+        `;
+      }
+
       const accessToken = 'cand_' + crypto.randomBytes(8).toString('hex');
       await sql`
         INSERT INTO participants (
@@ -193,7 +358,7 @@ export async function bulkImportCandidates(
           ${campaignId},
           ${accessToken},
           ${c.full_name},
-          ${c.email},
+          ${c.email.trim().toLowerCase()},
           ${c.phone_number || null},
           'RUNNING'
         )

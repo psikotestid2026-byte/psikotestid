@@ -1,19 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Eye, FileDown, Search, Users, BrainCircuit } from 'lucide-react';
-import { ParticipantDetailModal } from './ParticipantDetailModal';
+import { Eye, FileDown, Search, Users } from 'lucide-react';
 
 interface ParticipantsTabProps {
   data: any;
 }
 
 export function ParticipantsTab({ data }: ParticipantsTabProps) {
-  const [selectedParticipant, setSelectedParticipant] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const participants = data?.participants || [];
@@ -35,7 +34,7 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
         <div>
           <h2 className="font-display font-bold text-xl text-slate-900">Hasil Kandidat & Laporan Asesmen</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Lihat hasil pengerjaan tes psikotes kandidat, grafik DISC, serta unduh laporan PDF resmi.
+            Lihat laporan individu kandidat, riwayat pengerjaan tes per orang, serta unduh PDF report.
           </p>
         </div>
       </div>
@@ -64,7 +63,7 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
         </div>
 
         <Table
-          headers={['Nama Kandidat', 'Email', 'Sesi (Campaign)', 'Status Ujian', 'Aksi Hasil Asesmen']}
+          headers={['Nama Kandidat', 'Email', 'Sesi (Campaign)', 'Status Ujian', 'Aksi Laporan']}
           isEmpty={filteredParticipants.length === 0}
         >
           {filteredParticipants.map((p: any) => {
@@ -93,12 +92,11 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
 
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button
-                      onClick={() => setSelectedParticipant(p)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Lihat Hasil
-                    </Button>
+                    <Link href={`/clients/participants/${p.id}`}>
+                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-white" /> Lihat Hasil ➔
+                      </Button>
+                    </Link>
 
                     {discResult && (
                       <a
@@ -117,13 +115,6 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
           })}
         </Table>
       </Card>
-
-      {selectedParticipant && (
-        <ParticipantDetailModal
-          participant={selectedParticipant}
-          onClose={() => setSelectedParticipant(null)}
-        />
-      )}
     </div>
   );
 }
