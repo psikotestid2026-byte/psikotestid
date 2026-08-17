@@ -1,17 +1,17 @@
 import { Metadata } from 'next';
-import { Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
+import { Albert_Sans, Source_Sans_3 } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { sql } from '@/lib/neon';
 import './globals.css';
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const albertSans = Albert_Sans({
   subsets: ['latin'],
-  variable: '--font-plus-jakarta',
+  variable: '--font-albert-sans',
 });
 
-const dmSans = DM_Sans({
+const sourceSans = Source_Sans_3({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-source-sans',
 });
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} ${dmSans.variable}`}>
+    <html lang="id" className={`${albertSans.variable} ${sourceSans.variable}`}>
       <head>
         <link rel="icon" href={customFaviconUrl} sizes="any" />
         <link rel="shortcut icon" href={customFaviconUrl} />

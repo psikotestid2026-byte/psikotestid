@@ -21,8 +21,10 @@
   --color-accent-800: #166534;
   --color-accent-900: #14532d;
 
-  --font-display: var(--font-plus-jakarta);
-  --font-body: var(--font-dm-sans);
+  --font-display: var(--font-albert-sans);
+  --font-body: var(--font-source-sans);
+  --font-plus-jakarta: var(--font-albert-sans);
+  --font-dm-sans: var(--font-source-sans);
 
   --animate-fadeUp: fadeUp 0.6s ease forwards;
   --animate-shimmer: shimmer 2.5s linear infinite;
