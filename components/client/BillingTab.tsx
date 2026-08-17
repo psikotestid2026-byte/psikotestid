@@ -405,26 +405,23 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                     </div>
                   )}
 
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-[11px] font-extrabold text-red-900 flex items-center gap-1.5 mt-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>⚠️ PENTING: Tekan tombol MERAH di bawah ini untuk mengirim bukti transfer ke Superadmin!</span>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleUploadPaymentProof}
                     disabled={isUploadingProof || !selectedFile}
-                    className={`w-full py-3.5 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg ${
-                      selectedFile
-                        ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-500/40 animate-pulse'
-                        : 'bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40'
-                    }`}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-xl border-2 border-red-400 uppercase tracking-wide flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] disabled:opacity-50"
                   >
                     {isUploadingProof ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4 text-white" />
                     )}
-                    {isUploadingProof
-                      ? 'Mengunggah & Mengonfirmasi...'
-                      : selectedFile
-                      ? 'KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG'
-                      : 'KONFIRMASI UNGGAH BUKTI TRANSFER'}
+                    {isUploadingProof ? 'Mengunggah & Mengirim...' : 'KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG'}
                   </button>
                 </div>
 

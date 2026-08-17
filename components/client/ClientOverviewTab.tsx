@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Brain, Users, Building, Activity, Wallet, PlusCircle } from 'lucide-react';
+import { Brain, Users, Building, Activity, Wallet, PlusCircle, ArrowRight, CheckCircle2, Ticket, Link as LinkIcon, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -10,37 +10,136 @@ interface ClientOverviewTabProps {
 }
 
 export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
-  const walletBalance = data.customer?.balance || 0;
+  const walletBalance = Number(data.customer?.balance || 0);
+  const totalQuotas = data.quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0);
+  const totalCompletedParticipants = data.participants.filter((p: any) => p.status === 'COMPLETED').length;
+  const activeCampaignsCount = data.campaigns.length;
+
+  const steps = [
+    {
+      step: 1,
+      title: 'Top-Up Saldo Wallet',
+      description: 'Isi saldo wallet akun HR via transfer bank manual/VA.',
+      href: '/clients/billing?topup=true',
+      buttonText: '+ Top-Up Saldo',
+      icon: <Wallet className="w-4 h-4 text-emerald-400" />,
+      isDone: walletBalance > 0,
+    },
+    {
+      step: 2,
+      title: 'Beli Kuota Alat Tes',
+      description: 'Potong saldo wallet untuk membeli kuota tes (DISC, WPT, dll).',
+      href: '/clients/billing',
+      buttonText: 'Beli Kuota Tes',
+      icon: <Ticket className="w-4 h-4 text-indigo-400" />,
+      isDone: totalQuotas > 0,
+    },
+    {
+      step: 3,
+      title: 'Buat Campaign Sesi Ujian',
+      description: 'Buat sesi tes baru untuk rekrutmen / promosi karyawan.',
+      href: '/clients/campaigns',
+      buttonText: 'Buat Campaign',
+      icon: <Building className="w-4 h-4 text-purple-400" />,
+      isDone: activeCampaignsCount > 0,
+    },
+    {
+      step: 4,
+      title: 'Daftarkan Peserta & Kirim Link WA',
+      description: 'Input kandidat (manual/Excel) & kirim link ujian via WA.',
+      href: '/clients/campaigns',
+      buttonText: 'Daftarkan Peserta',
+      icon: <LinkIcon className="w-4 h-4 text-blue-400" />,
+      isDone: data.participants.length > 0,
+    },
+    {
+      step: 5,
+      title: 'Pantau Hasil & Unduh PDF',
+      description: 'Lihat skor psikotes, grafik DISC, & unduh laporan PDF.',
+      href: '/clients/participants',
+      buttonText: 'Lihat Hasil Asesmen',
+      icon: <FileText className="w-4 h-4 text-amber-400" />,
+      isDone: totalCompletedParticipants > 0,
+    },
+  ];
 
   return (
-    <div className="w-full animate-fadeUp">
-      {/* Top Banner Card with Wallet Balance & Quick Top-Up Route Action */}
-      <div className="mb-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800">
-        <div className="space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/20 border border-indigo-400/30 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-            <Wallet className="w-3 h-3 text-indigo-400" /> Saldo Wallet Akun HR
-          </span>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400">
-            Rp {Number(walletBalance).toLocaleString('id-ID')}
+    <div className="w-full animate-fadeUp space-y-6">
+      {/* STEPPER WORKFLOW GUIDE CARD FOR HR CLIENTS */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/30 text-indigo-300 px-3 py-1 rounded-full border border-indigo-400/30">
+              🚀 ALUR KERJA HR: 5 LANGKAH MEMULAI ASESMEN
+            </span>
+            <h2 className="text-xl md:text-2xl font-extrabold tracking-tight text-white mt-1.5">
+              Panduan Urutan Penggunaan Portal HR Client
+            </h2>
+            <p className="text-xs text-indigo-200 mt-0.5 max-w-2xl leading-relaxed">
+              Ikuti urutan 5 langkah praktis di bawah ini untuk memulai sesi ujian psikotes dan menerima laporan kandidat.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/20 shrink-0">
+            <Wallet className="w-5 h-5 text-emerald-400" />
+            <div>
+              <span className="text-[10px] text-slate-300 block font-bold">Saldo Wallet HR</span>
+              <span className="text-base font-extrabold font-mono text-emerald-400">
+                Rp {Number(walletBalance).toLocaleString('id-ID')}
+              </span>
+            </div>
           </div>
         </div>
 
-        <Link href="/clients/billing?topup=true">
-          <Button
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 shrink-0"
-          >
-            <PlusCircle className="w-4 h-4" /> Top-Up Saldo Wallet Sekarang
-          </Button>
-        </Link>
+        {/* 5 Interactive Stepper Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {steps.map((st) => (
+            <div
+              key={st.step}
+              className={`p-4 rounded-2xl border flex flex-col justify-between transition-all ${
+                st.isDone
+                  ? 'bg-slate-800/80 border-emerald-500/40'
+                  : 'bg-white/5 border-white/10 hover:border-indigo-400/50'
+              }`}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center font-mono">
+                    {st.step}
+                  </span>
+                  {st.isDone ? (
+                    <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Selesai
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-indigo-300">Langkah {st.step}</span>
+                  )}
+                </div>
+
+                <h3 className="font-bold text-xs text-white leading-snug">{st.title}</h3>
+                <p className="text-[11px] text-slate-300 leading-relaxed">{st.description}</p>
+              </div>
+
+              <div className="pt-3 mt-2 border-t border-white/10">
+                <Link href={st.href}>
+                  <button className="w-full py-1.5 px-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-sm transition-all">
+                    <span>{st.buttonText}</span> <ArrowRight className="w-3 h-3" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-slate-500">Total Kuota Tersedia</h3>
             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Brain className="w-4 h-4 text-blue-600" /></div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 mb-1">{data.quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0)}</div>
+          <div className="text-3xl font-extrabold text-slate-900 mb-1">{totalQuotas}</div>
           <p className="text-xs text-slate-400">Dari {data.quotas.length} jenis tes</p>
         </Card>
         <Card>
@@ -48,7 +147,7 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
             <h3 className="text-sm font-medium text-slate-500">Total Peserta Selesai</h3>
             <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center"><Users className="w-4 h-4 text-green-600" /></div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 mb-1">{data.participants.filter((p:any) => p.status === 'COMPLETED').length}</div>
+          <div className="text-3xl font-extrabold text-slate-900 mb-1">{totalCompletedParticipants}</div>
           <p className="text-xs text-slate-400">Kandidat</p>
         </Card>
         <Card>
@@ -56,18 +155,19 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
             <h3 className="text-sm font-medium text-slate-500">Campaign Aktif</h3>
             <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center"><Building className="w-4 h-4 text-purple-600" /></div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 mb-1">{data.campaigns.length}</div>
+          <div className="text-3xl font-extrabold text-slate-900 mb-1">{activeCampaignsCount}</div>
           <p className="text-xs text-slate-400">Sesi ujian berjalan</p>
         </Card>
       </div>
 
+      {/* Quota Breakdown & Last Activity Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card noPadding>
           <div className="p-6">
             <h2 className="font-display font-bold text-lg text-slate-900 mb-4">Rincian Kuota</h2>
             <div className="space-y-4">
               {data.quotas.length === 0 ? (
-                <div className="text-sm text-slate-400 text-center py-4">Belum ada kuota</div>
+                <div className="text-sm text-slate-400 text-center py-4">Belum ada kuota. Beli kuota menggunakan Saldo Wallet di atas.</div>
               ) : data.quotas.map((q: any) => {
                 const test = data.tests.find((t: any) => String(t.id) === String(q.test_id));
                 const testName = q.test_name || test?.name || 'Instrumen Psikotes';

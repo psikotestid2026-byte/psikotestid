@@ -13,6 +13,10 @@ import {
   Copy,
   Users,
   PlusCircle,
+  Zap,
+  Loader2,
+  AlertTriangle,
+  Wallet,
 } from 'lucide-react';
 import { createCampaign, closeCampaign } from '@/app/(client)/clients/actions';
 
@@ -32,17 +36,53 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
   const [campaignTitle, setCampaignTitle] = useState('');
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [closeId, setCloseId] = useState<number | null>(null);
+  const [isPurchasingQuota, setIsPurchasingQuota] = useState<number | null>(null);
 
   const masterTests = data?.tests || [];
   const quotas = data?.quotas || [];
   const campaigns = data?.campaigns || [];
   const allParticipants = data?.participants || [];
+  const walletBalance = Number(data?.customer?.balance || 0);
 
   const toggleTestSelection = (testId: number) => {
     if (selectedTestIds.includes(testId)) {
       setSelectedTestIds(selectedTestIds.filter((id) => id !== testId));
     } else {
       setSelectedTestIds([...selectedTestIds, testId]);
+    }
+  };
+
+  const handleQuickPurchaseQuota = async (testId: number, price: number) => {
+    if (walletBalance < price) {
+      toast.error(
+        `Saldo Wallet tidak mencukupi (Rp ${walletBalance.toLocaleString('id-ID')}). Silakan top-up terlebih dahulu.`
+      );
+      return;
+    }
+
+    setIsPurchasingQuota(testId);
+    try {
+      const res = await fetch('/api/client/orders/purchase-quota', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_id: testId, quantity: 1 }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal membeli kuota dengan Saldo Wallet.');
+        return;
+      }
+
+      toast.success('Berhasil membeli 1 kuota menggunakan Saldo Wallet!');
+      await mutate('/api/client/data');
+      if (!selectedTestIds.includes(testId)) {
+        setSelectedTestIds((prev) => [...prev, testId]);
+      }
+    } catch (err: any) {
+      toast.error('Terjadi kesalahan jaringan.');
+    } finally {
+      setIsPurchasingQuota(null);
     }
   };
 
@@ -53,6 +93,19 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
     if (selectedTestIds.length === 0) {
       toast.error('Pilih setidaknya 1 instrumen tes untuk dimasukkan ke dalam Campaign.');
       return;
+    }
+
+    // Check if any selected test has 0 quota
+    for (const testId of selectedTestIds) {
+      const quotaObj = quotas.find((q: any) => String(q.test_id) === String(testId));
+      const currentQuota = quotaObj?.quota || 0;
+      if (currentQuota <= 0) {
+        const testObj = masterTests.find((t: any) => String(t.id) === String(testId));
+        toast.error(
+          `Kuota tes ${testObj?.name || 'terpilih'} Anda habis (0 Kuota). Beli kuota 1-klik menggunakan Saldo Wallet sebelum menyimpan.`
+        );
+        return;
+      }
     }
 
     setLoading(true);
@@ -209,18 +262,26 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2">
-              Pilih Kombinasi Alat Tes Psikotes yang Wajib Dikerjakan Peserta
-            </label>
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1 border border-slate-200 rounded-2xl p-2 bg-slate-50/50">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-700">
+                Pilih Kombinasi Alat Tes Psikotes yang Wajib Dikerjakan Peserta
+              </label>
+              <span className="text-[11px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                Saldo Wallet: Rp {walletBalance.toLocaleString('id-ID')}
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 border border-slate-200 rounded-2xl p-2 bg-slate-50/50">
               {masterTests.map((t: any) => {
-                const quotaObj = quotas.find((q: any) => q.test_id === t.id);
+                const quotaObj = quotas.find((q: any) => String(q.test_id) === String(t.id));
                 const currentQuota = quotaObj?.quota || 0;
                 const isSelected = selectedTestIds.includes(t.id);
+                const testPrice = Number(t.price || 25000);
 
                 return (
-                  <label
+                  <div
                     key={t.id}
+                    onClick={() => toggleTestSelection(t.id)}
                     className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                       isSelected
                         ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20'
@@ -236,22 +297,52 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                       />
                       <div>
                         <span className="text-xs font-bold text-slate-900 block">{t.name}</span>
-                        <span className="text-[11px] text-slate-500 block font-mono">{t.code.toUpperCase()}</span>
+                        <span className="text-[11px] text-slate-500 block font-mono">
+                          {t.code?.toUpperCase()} — Rp {testPrice.toLocaleString('id-ID')} / kuota
+                        </span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <span
-                        className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg border ${
-                          currentQuota > 0
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
-                        }`}
-                      >
-                        {currentQuota} Kuota Tersedia
-                      </span>
+                      {currentQuota > 0 ? (
+                        <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200 inline-block">
+                          ✓ {currentQuota} Kuota Tersedia
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {walletBalance >= testPrice ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleQuickPurchaseQuota(t.id, testPrice);
+                              }}
+                              disabled={isPurchasingQuota === t.id}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                            >
+                              {isPurchasingQuota === t.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Zap className="w-3 h-3 text-white" />
+                              )}
+                              {isPurchasingQuota === t.id
+                                ? 'Membeli...'
+                                : `⚡ Beli 1 Kuota (Rp ${testPrice.toLocaleString('id-ID')})`}
+                            </button>
+                          ) : (
+                            <Link
+                              href="/clients/billing?topup=true"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] font-bold text-red-600 hover:underline bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 inline-block"
+                            >
+                              Kuota 0 (Top-Up Saldo ➔)
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
@@ -261,7 +352,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                 href="/clients/billing"
                 className="text-[11px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-1"
               >
-                <PlusCircle className="w-3 h-3" /> Tambah / Beli Kuota Tes di Sini ➔
+                <PlusCircle className="w-3 h-3" /> Katalog & Pembelian Kuota Banyak ➔
               </Link>
             </div>
           </div>
