@@ -61,6 +61,33 @@ export async function getClientData(customerId: number) {
   };
 }
 
+export async function getCampaignDetails(campaignId: number) {
+  const [campaignRows, selectedTests, candidates, customerRows] = await Promise.all([
+    sql`SELECT * FROM campaigns WHERE id = ${campaignId} LIMIT 1`,
+    sql`
+      SELECT mt.* FROM campaign_tests ct
+      JOIN master_tests mt ON ct.test_id = mt.id
+      WHERE ct.campaign_id = ${campaignId}
+    `,
+    sql`SELECT * FROM participants WHERE campaign_id = ${campaignId} ORDER BY created_at DESC`,
+    sql`
+      SELECT cust.* FROM campaigns c
+      JOIN customers cust ON c.customer_id = cust.id
+      WHERE c.id = ${campaignId}
+      LIMIT 1
+    `
+  ]);
+
+  if (campaignRows.length === 0) return null;
+
+  return {
+    campaign: campaignRows[0],
+    customer: customerRows[0] || null,
+    selected_tests: selectedTests,
+    participants: candidates,
+  };
+}
+
 export async function updateCustomerBranding(customerId: number, data: { company_name: string; logo_url: string; brand_color: string }) {
   await sql`
     UPDATE customers 
