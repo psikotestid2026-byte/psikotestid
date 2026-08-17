@@ -40,7 +40,7 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
             <h3 className="text-sm font-medium text-slate-500">Total Kuota Tersedia</h3>
             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Brain className="w-4 h-4 text-blue-600" /></div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 mb-1">{data.quotas.reduce((acc: any, q: any) => acc + q.quota, 0)}</div>
+          <div className="text-3xl font-extrabold text-slate-900 mb-1">{data.quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0)}</div>
           <p className="text-xs text-slate-400">Dari {data.quotas.length} jenis tes</p>
         </Card>
         <Card>
@@ -69,14 +69,17 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
               {data.quotas.length === 0 ? (
                 <div className="text-sm text-slate-400 text-center py-4">Belum ada kuota</div>
               ) : data.quotas.map((q: any) => {
-                const test = data.tests.find((t: any) => t.id === q.test_id);
+                const test = data.tests.find((t: any) => String(t.id) === String(q.test_id));
+                const testName = q.test_name || test?.name || 'Instrumen Psikotes';
+                const testCode = q.test_code || test?.code || 'TES';
+
                 return (
                   <div key={q.id} className="flex items-center justify-between border-b border-slate-50 pb-3">
                     <div>
-                      <div className="font-bold text-slate-800 text-sm">{test?.name || 'Unknown'}</div>
-                      <div className="text-xs text-slate-400">{test?.code}</div>
+                      <div className="font-bold text-slate-800 text-sm">{testName}</div>
+                      <div className="text-xs font-mono text-indigo-600 font-bold">{testCode.toUpperCase()}</div>
                     </div>
-                    <div className="font-mono font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg">{q.quota}</div>
+                    <div className="font-mono font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-lg">{q.quota} Kuota</div>
                   </div>
                 );
               })}
