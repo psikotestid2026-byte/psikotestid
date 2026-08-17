@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function DiscPdfDocument({
+export function DiscPdfDocument({
   participant,
   scoring,
 }: {

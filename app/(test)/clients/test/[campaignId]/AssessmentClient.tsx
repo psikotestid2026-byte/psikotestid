@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
-import { BrainCircuit, Timer } from 'lucide-react';
+import { BrainCircuit, Timer, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { WelcomeStage } from '@/components/assessment/WelcomeStage';
 import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
@@ -62,7 +62,11 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       setParticipantId(pid);
       setStage('instruction');
     } catch (err: any) {
-      toast.error('Gagal mendaftar: ' + err.message);
+      if (err.message?.includes('ALREADY_COMPLETED')) {
+        setStage('already_completed');
+      } else {
+        toast.error('Gagal mendaftar: ' + err.message);
+      }
     }
   };
 
@@ -174,6 +178,26 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         {stage === 'questions' && <QuestionStage currentTest={currentTest} currentQ={currentQ} answers={answers} setAnswerValue={setAnswerValue} onPrev={prevQuestion} onNext={nextQuestion} brandColor={brandColor} />}
         {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} />}
         {stage === 'done' && <DoneStage userName={userName} customer={customer} />}
+
+        {stage === 'already_completed' && (
+          <div className="flex flex-col max-w-md w-full animate-fadeUp">
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xl space-y-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-bold">
+                ⚠️
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 font-display">Tes Sudah Pernah Dikerjakan</h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Halo <strong>{userName}</strong> ({email}), Anda telah menyelesaikan seluruh rangkaian sesi tes psikotes untuk <strong>{campaign.title}</strong> sebelumnya.
+              </p>
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 font-extrabold leading-snug">
+                Sesi tes ini <strong>hanya dapat dikerjakan 1 (satu) kali dan tidak dapat diulang</strong>.
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Seluruh jawaban dan hasil analisis psikotes Anda telah tersimpan dengan aman dan terkirim ke Tim HR Perusahaan. Terima kasih!
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

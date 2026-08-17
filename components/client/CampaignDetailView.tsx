@@ -112,16 +112,30 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
       : `/clients/test/${campaignId}?token=${token}`;
   };
 
-  const getWhatsAppUrl = (phone: string, name: string, token: string) => {
+  const getWhatsAppUrl = (phone: string, name: string, email: string, token: string) => {
     if (!phone) return '#';
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.slice(1);
 
     const personalLink = getPersonalLink(token);
+    const companyName = initialCampaignData?.customer?.company_name || 'HR Department';
 
-    const message = `Halo ${name},\n\nAnda diundang oleh ${
-      initialCampaignData?.customer?.company_name || 'HR Department'
-    } untuk mengikuti Sesi Tes Psikotes "${campaign.title}".\n\nSilakan klik Link Akses Ujian Anda di bawah ini untuk memulai pengerjaan:\n${personalLink}\n\nTerima kasih!`;
+    const message = `Halo ${name},
+
+Berikut adalah undangan resmi dari ${companyName} untuk mengikuti Sesi Tes Psikotes Online: "${campaign.title}".
+
+📋 *DATA PESERTA:*
+• Nama Kandidat : ${name}
+• Nomor WhatsApp : ${phone}
+• Email : ${email}
+
+🔗 *LINK AKSES UJIAN PERSONAL:*
+${personalLink}
+
+⚠️ *PENTING:*
+Mohon persiapkan koneksi internet yang stabil. Sesi tes psikotes online ini *hanya dapat dikerjakan 1 (satu) kali dan tidak dapat diulang*.
+
+Terima kasih dan selamat mengerjakan!`;
 
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
   };
@@ -278,7 +292,7 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
         >
           {filteredCandidates.map((cand: any) => {
             const personalLink = getPersonalLink(cand.access_token);
-            const waUrl = getWhatsAppUrl(cand.phone_number, cand.full_name, cand.access_token);
+            const waUrl = getWhatsAppUrl(cand.phone_number, cand.full_name, cand.email, cand.access_token);
 
             return (
               <tr key={cand.id} className="hover:bg-slate-50 transition-colors">

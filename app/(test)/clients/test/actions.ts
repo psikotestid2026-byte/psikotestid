@@ -3,11 +3,35 @@
 import { sql } from '@/lib/neon';
 
 export async function submitBiodata(campaignId: number, fullName: string, email: string) {
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Check if candidate with this email has already registered or completed the test for this campaign
+  const existingRows = await sql`
+    SELECT id, status FROM participants
+    WHERE campaign_id = ${campaignId} AND LOWER(email) = ${cleanEmail}
+    LIMIT 1
+  `;
+
+  if (existingRows.length > 0) {
+    const existing = existingRows[0];
+    if (existing.status === 'COMPLETED') {
+      throw new Error('ALREADY_COMPLETED');
+    }
+    // Update name if changed and return existing participant ID
+    await sql`
+      UPDATE participants 
+      SET full_name = ${fullName}, started_at = COALESCE(started_at, NOW())
+      WHERE id = ${existing.id}
+    `;
+    return existing.id;
+  }
+
   const result = await sql`
-    INSERT INTO participants (campaign_id, full_name, email, status)
-    VALUES (${campaignId}, ${fullName}, ${email}, 'RUNNING')
+    INSERT INTO participants (campaign_id, full_name, email, status, started_at)
+    VALUES (${campaignId}, ${fullName}, ${cleanEmail}, 'RUNNING', NOW())
     RETURNING id
   `;
+
   return result[0].id;
 }
 
@@ -58,5 +82,19 @@ export async function submitTestResult(participantId: number, testId: number, an
 }
 
 export async function markTestCompleted(participantId: number) {
-  await sql`UPDATE participants SET status = 'COMPLETED' WHERE id = ${participantId}`;
+  await sql`
+    UPDATE participants 
+    SET status = 'COMPLETED', completed_at = NOW() 
+    WHERE id = ${participantId}
+  `;
+
+  // Trigger HR Email notification asynchronously with attached PDF report
+  try {
+    const { sendParticipantCompletedEmailToHr } = await import('@/lib/email');
+    sendParticipantCompletedEmailToHr(participantId).catch((err) => {
+      console.error('Async HR Completed Email Trigger Error:', err);
+    });
+  } catch (err) {
+    console.error('Failed to load email helper in markTestCompleted:', err);
+  }
 }
