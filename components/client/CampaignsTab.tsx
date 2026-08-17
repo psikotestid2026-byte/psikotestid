@@ -32,7 +32,7 @@ import {
   addCandidateToCampaign,
   bulkImportCandidates,
 } from '@/app/(client)/clients/actions';
-import { downloadCandidateCSVTemplate, parseCandidateCSV } from '@/lib/excelTemplate';
+import { downloadCandidateExcelTemplate, parseCandidateExcelFile } from '@/lib/excelTemplate';
 
 interface CampaignsTabProps {
   data: any;
@@ -120,12 +120,15 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
     setIsAddingCandidate(true);
     try {
-      await addCandidateToCampaign(activeCandidateCampaign.id, {
+      const createdCandidate = await addCandidateToCampaign(activeCandidateCampaign.id, {
         full_name: candidateName,
         email: candidateEmail,
         phone_number: candidatePhone,
       });
+
+      // Force SWR cache refresh immediately
       await mutate('/api/client/data');
+
       toast.success(`Kandidat ${candidateName} berhasil didaftarkan!`);
       setCandidateName('');
       setCandidateEmail('');
@@ -144,18 +147,18 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const text = evt.target?.result as string;
-        if (text) {
-          const parsed = parseCandidateCSV(text);
+        const buffer = evt.target?.result as ArrayBuffer;
+        if (buffer) {
+          const parsed = parseCandidateExcelFile(buffer);
           if (parsed.length === 0) {
-            toast.error('Format CSV tidak valid atau tidak ada baris kandidat terdeteksi.');
+            toast.error('Format file Excel/CSV tidak valid atau tidak ada baris kandidat terdeteksi.');
           } else {
             setParsedCandidates(parsed);
-            toast.success(`Berhasil mendeteksi ${parsed.length} baris kandidat dari file.`);
+            toast.success(`Berhasil membaca ${parsed.length} baris kandidat dari file Excel (${file.name}).`);
           }
         }
       };
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     }
   };
 
@@ -190,9 +193,9 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
   };
 
-  // Get campaign candidates
+  // Get campaign candidates with robust string conversion
   const campaignCandidates = activeCandidateCampaign
-    ? allParticipants.filter((p: any) => p.campaign_id === activeCandidateCampaign.id)
+    ? allParticipants.filter((p: any) => String(p.campaign_id) === String(activeCandidateCampaign.id))
     : [];
 
   return (
@@ -222,7 +225,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
           isEmpty={campaigns.length === 0}
         >
           {campaigns.map((c: any) => {
-            const countCandidates = allParticipants.filter((p: any) => p.campaign_id === c.id).length;
+            const countCandidates = allParticipants.filter((p: any) => String(p.campaign_id) === String(c.id)).length;
             const selectedTests = c.selected_tests || [];
             const campaignLink = typeof window !== 'undefined' ? `${window.location.origin}/clients/test/${c.id}` : '';
 
@@ -285,7 +288,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                       onClick={() => setActiveCandidateCampaign(c)}
                       className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200"
                     >
-                      <Users className="w-3.5 h-3.5 mr-1" /> Kelola Peserta
+                      <Users className="w-3.5 h-3.5 mr-1" /> Kelola Peserta ({countCandidates})
                     </Button>
 
                     {c.is_active && (
@@ -301,7 +304,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
         </Table>
       </Card>
 
-      {/* Modal 1: Buat Campaign Baru dengan Pemilihan Alat Tes */}
+      {/* Modal 1: Buat Campaign Baru */}
       <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Buat Campaign Sesi Tes Baru">
         <form onSubmit={handleCreate} className="space-y-5">
           <div>
@@ -316,7 +319,6 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
             />
           </div>
 
-          {/* Pemilihan Kombinasi Alat Tes Psikotes */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">
               Pilih Kombinasi Alat Tes Psikotes yang Wajib Dikerjakan Peserta
@@ -365,7 +367,6 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
               })}
             </div>
 
-            {/* Quick Link to Billing if quota is 0 */}
             <div className="mt-2 text-right">
               <Link
                 href="/clients/billing"
@@ -391,7 +392,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
         </form>
       </Modal>
 
-      {/* Modal 2: Kelola Kandidat & Pendaftaran (Entry Manual & Excel Bulk Import) */}
+      {/* Modal 2: Kelola Kandidat & Pendaftaran */}
       {activeCandidateCampaign && (
         <Modal
           isOpen={!!activeCandidateCampaign}
@@ -419,7 +420,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                📁 Bulk Import via File Excel / CSV
+                📁 Bulk Import File Excel (.xlsx)
               </button>
             </div>
 
@@ -475,28 +476,28 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
               </form>
             )}
 
-            {/* TAB B: Bulk Import via File Excel / CSV */}
+            {/* TAB B: Bulk Import via File Excel (.xlsx) */}
             {candidateTab === 'excel' && (
               <div className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-900 block">Template Excel / CSV Resmi</span>
-                    <span className="text-[11px] text-slate-500 block">Unduh format template untuk diisi daftar nama kandidat.</span>
+                    <span className="text-xs font-bold text-slate-900 block">Template Excel Asli (.xlsx)</span>
+                    <span className="text-[11px] text-slate-500 block">Unduh format Excel asli untuk diisi nama kandidat.</span>
                   </div>
                   <button
                     type="button"
-                    onClick={downloadCandidateCSVTemplate}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl flex items-center gap-1.5 border border-indigo-200"
+                    onClick={downloadCandidateExcelTemplate}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
                   >
-                    <Download className="w-3.5 h-3.5" /> Unduh Template CSV
+                    <Download className="w-3.5 h-3.5" /> Unduh Template Excel (.xlsx)
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Unggah File CSV / Excel Terisi</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Unggah File Excel Terisi (.xlsx / .xls / .csv)</label>
                   <input
                     type="file"
-                    accept=".csv, .xlsx, .xls"
+                    accept=".xlsx, .xls, .csv"
                     onChange={handleFileUpload}
                     className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded-xl bg-white"
                   />

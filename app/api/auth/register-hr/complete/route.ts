@@ -71,6 +71,22 @@ export async function POST(req: Request) {
       );
     }
 
+    // Fetch dynamic welcome bonus setting from DB using RAW SQL
+    const bonusSettingRows = await sql`
+      SELECT content FROM landing_page_contents WHERE section_key = 'hr_welcome_bonus' LIMIT 1
+    `;
+
+    let welcomeBonusAmount = 25000.0;
+    let isBonusEnabled = true;
+
+    if (bonusSettingRows.length > 0 && bonusSettingRows[0].content) {
+      const content = bonusSettingRows[0].content;
+      isBonusEnabled = content.is_enabled !== false;
+      welcomeBonusAmount = Number(content.bonus_amount ?? 25000);
+    }
+
+    const initialBalance = isBonusEnabled ? welcomeBonusAmount : 0.0;
+
     // Hash password if provided, or default secure hash
     const rawPass = password && password.trim().length >= 6 ? password.trim() : Math.random().toString(36).slice(-10);
     const passwordHash = await bcrypt.hash(rawPass, 10);
@@ -78,7 +94,7 @@ export async function POST(req: Request) {
     const safeBrandColor = brand_color && /^#[0-9A-F]{6}$/i.test(brand_color) ? brand_color : '#2563eb';
 
     // Insert customer using RAW SQL (Zero ORM)
-    await sql`
+    const newCustomerRows = await sql`
       INSERT INTO customers (
         email,
         password_hash,
@@ -95,16 +111,44 @@ export async function POST(req: Request) {
         ${company_name.trim()},
         ${contact_name.trim()},
         ${phone_number.trim()},
-        0.00,
+        ${initialBalance},
         ${safeBrandColor},
         'CUSTOMER',
         'ACTIVE'
       )
+      RETURNING id
     `;
+
+    const newCustomerId = newCustomerRows[0].id;
+
+    // If welcome bonus credited, record wallet transaction ledger
+    if (initialBalance > 0) {
+      await sql`
+        INSERT INTO wallet_transactions (
+          customer_id,
+          order_id,
+          type,
+          amount,
+          balance_before,
+          balance_after,
+          description
+        ) VALUES (
+          ${newCustomerId},
+          NULL,
+          'WELCOME_BONUS',
+          ${initialBalance},
+          0.00,
+          ${initialBalance},
+          'Bonus Saldo Pendaftaran Akun Corporate HR Baru'
+        )
+      `;
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Pendaftaran Akun Corporate Berhasil! Akun Anda telah aktif dan siap digunakan.',
+      message: `Pendaftaran Akun Corporate Berhasil! Akun Anda telah aktif dan${
+        initialBalance > 0 ? ` mendapatkan Bonus Saldo Rp ${initialBalance.toLocaleString('id-ID')}` : ''
+      }.`,
     });
   } catch (err) {
     console.error('Complete HR Registration Error:', err);

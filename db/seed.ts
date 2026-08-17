@@ -561,6 +561,14 @@ INSERT INTO notification_templates (event_trigger, channel, message_content) VAL
 ('TELEGRAM_PAYMENT_PROOF', 'TELEGRAM', '<b>📸 BUKTI TRANSFER UNGGAH BARU! 📸</b><br/><br/>• <b>Invoice:</b> <code>{invoice_code}</code><br/>• <b>Klien HR:</b> {company_name} ({customer_email})<br/>• <b>Kontak HR:</b> {contact_name} ({phone_number})<br/>• <b>Hubungi WA HR:</b> <a href="{whatsapp_link}">Chat WhatsApp ({phone_number})</a><br/>• <b>Nominal Presisi:</b> <b>Rp {total_amount}</b><br/>• <b>Bukti Foto:</b> <a href="{proof_url}">Lihat Gambar Bukti</a><br/><br/>👉 <i>Silakan cek mutasi BCA & konfirmasi LUNAS di Superadmin Panel (/panel/orders)!</i>')
 ON CONFLICT (event_trigger) DO UPDATE SET message_content = EXCLUDED.message_content;
 
+-- ==========================================
+-- 15. CMS & HR WELCOME BONUS SEED
+-- ==========================================
+INSERT INTO landing_page_contents (section_key, title, subtitle, content, is_active) VALUES
+('hr_welcome_bonus', 'Bonus Saldo Pendaftaran HR Client Baru', 'Konfigurasi bonus saldo pendaftaran gratis untuk akun HR baru', '{"is_enabled": true, "bonus_amount": 25000}', TRUE)
+ON CONFLICT (section_key) DO UPDATE SET content = EXCLUDED.content;
+
+
 -- RESET SEQUENCES FOR ID COUNTERS
 SELECT setval('admins_id_seq', COALESCE((SELECT MAX(id) FROM admins), 1));
 SELECT setval('customers_id_seq', COALESCE((SELECT MAX(id) FROM customers), 1));

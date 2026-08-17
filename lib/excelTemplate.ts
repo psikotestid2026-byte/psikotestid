@@ -1,65 +1,76 @@
-// Helper utility for generating downloadable candidate CSV template and parsing CSV uploads
+import * as XLSX from 'xlsx';
 
-export function downloadCandidateCSVTemplate() {
-  const headers = ['nama_lengkap', 'email', 'no_whatsapp', 'posisi_dilamar'];
-  const sampleRows = [
+// Download native Microsoft Excel (.xlsx) candidate template
+export function downloadCandidateExcelTemplate() {
+  const worksheetData = [
+    ['Nama Lengkap', 'Email', 'No WhatsApp', 'Posisi Dilamar'],
     ['Budi Santoso', 'budi.santoso@example.com', '081234567890', 'Software Engineer'],
     ['Siti Rahma', 'siti.rahma@example.com', '082198765432', 'HR Specialist'],
     ['Andi Pratama', 'andi.pratama@example.com', '085711223344', 'Marketing Executive'],
   ];
 
-  const csvContent = [
-    headers.join(','),
-    ...sampleRows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
-  ].join('\n');
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', 'Template_Kandidat_PsikoTest.csv');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // Set column widths for clean Excel layout
+  worksheet['!cols'] = [
+    { wch: 25 }, // Nama Lengkap
+    { wch: 30 }, // Email
+    { wch: 18 }, // No WhatsApp
+    { wch: 22 }, // Posisi Dilamar
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Kandidat');
+  XLSX.writeFile(workbook, 'Template_Kandidat_PsikoTest.xlsx');
 }
 
-export function parseCandidateCSV(csvText: string): Array<{
+// Parse native Microsoft Excel (.xlsx / .xls) and CSV file uploads
+export function parseCandidateExcelFile(arrayBuffer: ArrayBuffer): Array<{
   full_name: string;
   email: string;
   phone_number: string;
   position: string;
 }> {
-  const lines = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  if (lines.length <= 1) return [];
+  try {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) return [];
 
-  const candidates: Array<{
-    full_name: string;
-    email: string;
-    phone_number: string;
-    position: string;
-  }> = [];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-  // Skip header (line 0)
-  for (let i = 1; i < lines.length; i++) {
-    const rowStr = lines[i];
-    // Simple CSV parser handling quotes
-    const matches = rowStr.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || rowStr.split(',');
-    const cleanCells = matches.map((cell) => cell.replace(/^"|"$/g, '').trim());
+    if (rows.length <= 1) return [];
 
-    const fullName = cleanCells[0] || '';
-    const email = cleanCells[1] || '';
-    const phone = cleanCells[2] || '';
-    const position = cleanCells[3] || '';
+    const candidates: Array<{
+      full_name: string;
+      email: string;
+      phone_number: string;
+      position: string;
+    }> = [];
 
-    if (fullName && email) {
-      candidates.push({
-        full_name: fullName,
-        email: email,
-        phone_number: phone,
-        position: position,
-      });
+    // Skip header row (index 0)
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !Array.isArray(row)) continue;
+
+      const fullName = row[0] ? String(row[0]).trim() : '';
+      const email = row[1] ? String(row[1]).trim() : '';
+      const phone = row[2] ? String(row[2]).trim() : '';
+      const position = row[3] ? String(row[3]).trim() : '';
+
+      if (fullName && email) {
+        candidates.push({
+          full_name: fullName,
+          email: email,
+          phone_number: phone,
+          position: position,
+        });
+      }
     }
-  }
 
-  return candidates;
+    return candidates;
+  } catch (err) {
+    console.error('Error parsing Excel file:', err);
+    return [];
+  }
 }
