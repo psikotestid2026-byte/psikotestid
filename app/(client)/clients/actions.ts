@@ -1,12 +1,30 @@
 'use server';
 
 import { sql } from '@/lib/neon';
+import crypto from 'crypto';
 
 export async function getClientData(customerId: number) {
   const [customerInfo, quotas, campaigns, participants, tests, transactions, orders] = await Promise.all([
     sql`SELECT * FROM customers WHERE id = ${customerId}`,
     sql`SELECT * FROM customer_test_quotas WHERE customer_id = ${customerId}`,
-    sql`SELECT * FROM campaigns WHERE customer_id = ${customerId} ORDER BY created_at DESC`,
+    sql`
+      SELECT c.*, 
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', mt.id,
+                   'code', mt.code,
+                   'name', mt.name
+                 )
+               ) FILTER (WHERE mt.id IS NOT NULL), '[]'
+             ) as selected_tests
+      FROM campaigns c
+      LEFT JOIN campaign_tests ct ON ct.campaign_id = c.id
+      LEFT JOIN master_tests mt ON ct.test_id = mt.id
+      WHERE c.customer_id = ${customerId}
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+    `,
     sql`
       SELECT p.*, c.title as campaign_title,
              COALESCE(
@@ -51,24 +69,113 @@ export async function updateCustomerBranding(customerId: number, data: { company
   `;
 }
 
-export async function createCampaign(customerId: number, title: string) {
+export async function createCampaign(customerId: number, title: string, testIds: number[]) {
+  if (!title || title.trim().length === 0) {
+    throw new Error('Nama Campaign harus diisi.');
+  }
+
+  const accessToken = 'cmp_' + crypto.randomBytes(8).toString('hex');
+
+  // Insert campaign via RAW SQL
   const result = await sql`
-    INSERT INTO campaigns (customer_id, title) 
-    VALUES (${customerId}, ${title}) 
+    INSERT INTO campaigns (customer_id, title, access_token, is_active) 
+    VALUES (${customerId}, ${title}, ${accessToken}, TRUE) 
     RETURNING id
   `;
-  // By default, let's link the first active test to the new campaign for demo purposes
-  const firstTest = await sql`SELECT id FROM master_tests WHERE is_active = TRUE LIMIT 1`;
-  if (firstTest[0]) {
-    await sql`
-      INSERT INTO campaign_tests (campaign_id, test_id) 
-      VALUES (${result[0].id}, ${firstTest[0].id})
-    `;
+
+  const campaignId = result[0].id;
+
+  // Insert selected tests into campaign_tests
+  if (testIds && testIds.length > 0) {
+    for (const testId of testIds) {
+      await sql`
+        INSERT INTO campaign_tests (campaign_id, test_id)
+        VALUES (${campaignId}, ${testId})
+        ON CONFLICT DO NOTHING
+      `;
+    }
+  } else {
+    // Default link first test if none selected
+    const firstTest = await sql`SELECT id FROM master_tests WHERE is_active = TRUE LIMIT 1`;
+    if (firstTest[0]) {
+      await sql`
+        INSERT INTO campaign_tests (campaign_id, test_id) 
+        VALUES (${campaignId}, ${firstTest[0].id})
+        ON CONFLICT DO NOTHING
+      `;
+    }
   }
+
+  return { campaignId, accessToken };
 }
 
 export async function closeCampaign(campaignId: number) {
   await sql`UPDATE campaigns SET is_active = FALSE WHERE id = ${campaignId}`;
+}
+
+export async function addCandidateToCampaign(campaignId: number, data: { full_name: string; email: string; phone_number?: string }) {
+  if (!data.full_name || !data.email) {
+    throw new Error('Nama lengkap dan Email kandidat wajib diisi.');
+  }
+
+  const accessToken = 'cand_' + crypto.randomBytes(8).toString('hex');
+
+  const result = await sql`
+    INSERT INTO participants (
+      campaign_id,
+      access_token,
+      full_name,
+      email,
+      phone_number,
+      status
+    ) VALUES (
+      ${campaignId},
+      ${accessToken},
+      ${data.full_name},
+      ${data.email},
+      ${data.phone_number || null},
+      'RUNNING'
+    )
+    RETURNING id, access_token
+  `;
+
+  return result[0];
+}
+
+export async function bulkImportCandidates(
+  campaignId: number,
+  candidates: Array<{ full_name: string; email: string; phone_number?: string }>
+) {
+  if (!candidates || candidates.length === 0) {
+    throw new Error('Daftar kandidat kosong.');
+  }
+
+  let count = 0;
+  for (const c of candidates) {
+    if (c.full_name && c.email) {
+      const accessToken = 'cand_' + crypto.randomBytes(8).toString('hex');
+      await sql`
+        INSERT INTO participants (
+          campaign_id,
+          access_token,
+          full_name,
+          email,
+          phone_number,
+          status
+        ) VALUES (
+          ${campaignId},
+          ${accessToken},
+          ${c.full_name},
+          ${c.email},
+          ${c.phone_number || null},
+          'RUNNING'
+        )
+      `;
+      count++;
+    }
+  }
+
+  return { importedCount: count };
 }
 
 export async function createOrder(customerId: number, testId: number, quantity: number) {

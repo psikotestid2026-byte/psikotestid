@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
@@ -453,6 +454,27 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           </div>
         </div>
       )}
+
+      {/* Banner Pemandu Setelah Beli Kuota */}
+      <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-5 text-white shadow-md border border-emerald-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Panduan Langkah Selanjutnya
+          </span>
+          <h3 className="font-extrabold text-base text-white tracking-tight mt-1">
+            Sudah Memiliki Kuota Tes? Daftarkan Kandidat & Buat Sesi Tes Ujian Sekarang
+          </h3>
+          <p className="text-xs text-emerald-100/80 leading-relaxed max-w-2xl">
+            Setelah membeli kuota tes, masuk ke halaman <strong>Sesi Tes (Campaign)</strong> untuk membuat sesi ujian dan mendaftarkan peserta kandidat (secara manual atau via impor file Excel).
+          </p>
+        </div>
+
+        <Link href="/clients/campaigns">
+          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 shrink-0">
+            Ke Halaman Campaign & Peserta ➔
+          </Button>
+        </Link>
+      </div>
 
       {/* Header Saldo Wallet Summary Card */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
