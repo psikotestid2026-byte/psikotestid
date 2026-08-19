@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
@@ -12,10 +13,18 @@ interface ParticipantsTabProps {
   data: any;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function ParticipantsTab({ data }: ParticipantsTabProps) {
+  const { data: clientData } = useSWR('/api/client/data', fetcher, {
+    fallbackData: data,
+    refreshInterval: 10000,
+  });
+
+  const activeData = clientData || data;
   const [searchQuery, setSearchQuery] = useState('');
 
-  const participants = data?.participants || [];
+  const participants = activeData?.participants || [];
 
   const filteredParticipants = participants.filter((p: any) => {
     if (!searchQuery) return true;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { mutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,11 +12,19 @@ interface SettingsTabProps {
   data: any;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function SettingsTab({ data }: SettingsTabProps) {
+  const { data: clientData } = useSWR('/api/client/data', fetcher, {
+    fallbackData: data,
+  });
+
+  const activeData = clientData || data;
+
   const [loading, setLoading] = useState(false);
-  const [companyName, setCompanyName] = useState(data.customer?.company_name || '');
-  const [logoUrl, setLogoUrl] = useState(data.customer?.logo_url || '');
-  const [brandColor, setBrandColor] = useState(data.customer?.brand_color || '#2563eb');
+  const [companyName, setCompanyName] = useState(activeData.customer?.company_name || '');
+  const [logoUrl, setLogoUrl] = useState(activeData.customer?.logo_url || '');
+  const [brandColor, setBrandColor] = useState(activeData.customer?.brand_color || '#2563eb');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +59,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!data.customer?.id) return;
+    if (!activeData.customer?.id) return;
 
     if (!companyName || companyName.trim().length === 0) {
       toast.error('Nama Perusahaan wajib diisi.');
@@ -60,7 +68,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
 
     setLoading(true);
     try {
-      await updateCustomerBranding(data.customer.id, {
+      await updateCustomerBranding(activeData.customer.id, {
         company_name: companyName,
         logo_url: logoUrl,
         brand_color: brandColor,

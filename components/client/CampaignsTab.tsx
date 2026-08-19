@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
@@ -24,12 +24,21 @@ interface CampaignsTabProps {
   data: any;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function CampaignsTab({ data }: CampaignsTabProps) {
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  const { data: clientData } = useSWR('/api/client/data', fetcher, {
+    fallbackData: data,
+    refreshInterval: 10000,
+  });
+
+  const activeData = clientData || data;
 
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -38,11 +47,11 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
   const [closeId, setCloseId] = useState<number | null>(null);
   const [isPurchasingQuota, setIsPurchasingQuota] = useState<number | null>(null);
 
-  const masterTests = data?.tests || [];
-  const quotas = data?.quotas || [];
-  const campaigns = data?.campaigns || [];
-  const allParticipants = data?.participants || [];
-  const walletBalance = Number(data?.customer?.balance || 0);
+  const masterTests = activeData?.tests || [];
+  const quotas = activeData?.quotas || [];
+  const campaigns = activeData?.campaigns || [];
+  const allParticipants = activeData?.participants || [];
+  const walletBalance = Number(activeData?.customer?.balance || 0);
 
   const toggleTestSelection = (testId: number) => {
     if (selectedTestIds.includes(testId)) {
@@ -75,7 +84,10 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
       }
 
       toast.success('Berhasil membeli 1 kuota menggunakan Saldo Wallet!');
-      await mutate('/api/client/data');
+      await Promise.all([
+        mutate('/api/client/data'),
+        mutate('/api/client/orders')
+      ]);
       if (!selectedTestIds.includes(testId)) {
         setSelectedTestIds((prev) => [...prev, testId]);
       }
@@ -88,7 +100,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!campaignTitle || !data.customer?.id) return;
+    if (!campaignTitle || !activeData?.customer?.id) return;
 
     if (selectedTestIds.length === 0) {
       toast.error('Pilih setidaknya 1 instrumen tes untuk dimasukkan ke dalam Campaign.');
@@ -110,8 +122,11 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
     setLoading(true);
     try {
-      await createCampaign(data.customer.id, campaignTitle, selectedTestIds);
-      await mutate('/api/client/data');
+      await createCampaign(activeData.customer.id, campaignTitle, selectedTestIds);
+      await Promise.all([
+        mutate('/api/client/data'),
+        mutate('/api/client/orders')
+      ]);
       toast.success('Campaign Asesmen baru berhasil dibuat!');
       setIsCreateOpen(false);
       setCampaignTitle('');

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Brain, Users, Building, Activity, Wallet, PlusCircle, ArrowRight, CheckCircle2, Ticket, Link as LinkIcon, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,11 +10,24 @@ interface ClientOverviewTabProps {
   data: any;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
-  const walletBalance = Number(data.customer?.balance || 0);
-  const totalQuotas = data.quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0);
-  const totalCompletedParticipants = data.participants.filter((p: any) => p.status === 'COMPLETED').length;
-  const activeCampaignsCount = data.campaigns.length;
+  const { data: clientData } = useSWR('/api/client/data', fetcher, {
+    fallbackData: data,
+    refreshInterval: 10000,
+  });
+
+  const activeData = clientData || data;
+
+  const walletBalance = Number(activeData.customer?.balance || 0);
+  const quotas = activeData.quotas || [];
+  const participants = activeData.participants || [];
+  const campaigns = activeData.campaigns || [];
+
+  const totalQuotas = quotas.reduce((acc: any, q: any) => acc + (q.quota || 0), 0);
+  const totalCompletedParticipants = participants.filter((p: any) => p.status === 'COMPLETED').length;
+  const activeCampaignsCount = campaigns.length;
 
   const steps = [
     {
@@ -50,7 +64,7 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
       href: '/clients/campaigns',
       buttonText: 'Daftarkan Peserta',
       icon: <LinkIcon className="w-4 h-4 text-blue-400" />,
-      isDone: data.participants.length > 0,
+      isDone: participants.length > 0,
     },
     {
       step: 5,
@@ -62,6 +76,9 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
       isDone: totalCompletedParticipants > 0,
     },
   ];
+
+  const tests = activeData.tests || [];
+  const transactions = activeData.transactions || [];
 
   return (
     <div className="w-full animate-fadeUp space-y-6">
@@ -140,7 +157,7 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Brain className="w-4 h-4 text-blue-600" /></div>
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mb-1">{totalQuotas}</div>
-          <p className="text-xs text-slate-400">Dari {data.quotas.length} jenis tes</p>
+          <p className="text-xs text-slate-400">Dari {quotas.length} jenis tes</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between mb-4">
@@ -166,10 +183,10 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
           <div className="p-6">
             <h2 className="font-display font-bold text-lg text-slate-900 mb-4">Rincian Kuota</h2>
             <div className="space-y-4">
-              {data.quotas.length === 0 ? (
+              {quotas.length === 0 ? (
                 <div className="text-sm text-slate-400 text-center py-4">Belum ada kuota. Beli kuota menggunakan Saldo Wallet di atas.</div>
-              ) : data.quotas.map((q: any) => {
-                const test = data.tests.find((t: any) => String(t.id) === String(q.test_id));
+              ) : quotas.map((q: any) => {
+                const test = tests.find((t: any) => String(t.id) === String(q.test_id));
                 const testName = q.test_name || test?.name || 'Instrumen Psikotes';
                 const testCode = q.test_code || test?.code || 'TES';
 
@@ -191,9 +208,9 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
           <div className="p-6">
             <h2 className="font-display font-bold text-lg text-slate-900 mb-4">Riwayat Penggunaan Terakhir</h2>
             <div className="space-y-4">
-              {data.transactions.length === 0 ? (
+              {transactions.length === 0 ? (
                 <div className="text-sm text-slate-400 text-center py-4">Belum ada transaksi</div>
-              ) : data.transactions.slice(0, 5).map((t: any) => (
+              ) : transactions.slice(0, 5).map((t: any) => (
                 <div key={t.id} className="flex items-start gap-3 border-b border-slate-50 pb-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${t.type === 'DEBIT' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                     <Activity className="w-4 h-4" />
