@@ -12,15 +12,37 @@ import { TransitionStage, DoneStage } from '@/components/assessment/CompletionSt
 import { submitBiodata, submitTestResult, markTestCompleted } from '../actions';
 
 export default function AssessmentClient({ initialData }: { initialData: any }) {
-  const { campaign, customer, tests } = initialData;
+  const { campaign, customer, tests, sessionUser, existingParticipant } = initialData;
   const [stage, setStage] = useState('welcome');
-  const [participantId, setParticipantId] = useState<number | null>(null);
+  const [participantId, setParticipantId] = useState<number | null>(existingParticipant?.id || null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<any>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
+
+  const initialName = existingParticipant?.full_name || sessionUser?.name || '';
+  const initialEmail = existingParticipant?.email || sessionUser?.email || '';
+
+  const [userName, setUserName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+
+  useEffect(() => {
+    if (existingParticipant?.full_name) {
+      setUserName(existingParticipant.full_name);
+    } else if (sessionUser?.name && !userName) {
+      setUserName(sessionUser.name);
+    }
+
+    if (existingParticipant?.email) {
+      setEmail(existingParticipant.email);
+    } else if (sessionUser?.email && !email) {
+      setEmail(sessionUser.email);
+    }
+
+    if (existingParticipant?.id) {
+      setParticipantId(existingParticipant.id);
+    }
+  }, [sessionUser, existingParticipant]);
 
   useEffect(() => {
     if (customer?.brand_color) {

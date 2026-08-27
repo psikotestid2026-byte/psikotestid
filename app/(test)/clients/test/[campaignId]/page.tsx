@@ -1,9 +1,12 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
 import AssessmentClient from './AssessmentClient';
 
 export default async function AssessmentPage({ params }: { params: Promise<{ campaignId: string }> | { campaignId: string } }) {
   const resolvedParams = await params;
   const campaignId = resolvedParams.campaignId;
+  const session = await getServerSession(authOptions);
 
   // Fetch campaign and test info based on campaignId
   const campaignData = await sql`SELECT * FROM campaigns WHERE id = ${campaignId}`;
@@ -11,6 +14,24 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
 
   let customer = null;
   let tests: any[] = [];
+  let existingParticipant = null;
+  let sessionUser = null;
+
+  if (session?.user?.email) {
+    sessionUser = {
+      name: session.user.name || '',
+      email: session.user.email || '',
+    };
+
+    const pRows = await sql`
+      SELECT id, full_name, email, status FROM participants
+      WHERE campaign_id = ${campaignId} AND LOWER(email) = ${session.user.email.toLowerCase()}
+      LIMIT 1
+    `;
+    if (pRows.length > 0) {
+      existingParticipant = pRows[0];
+    }
+  }
 
   if (campaign) {
     const customerData = await sql`SELECT * FROM customers WHERE id = ${campaign.customer_id}`;
@@ -36,7 +57,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
     }
   }
 
-  const initialData = { campaign, customer, tests };
+  const initialData = { campaign, customer, tests, sessionUser, existingParticipant };
 
   return <AssessmentClient initialData={initialData} />;
 }
