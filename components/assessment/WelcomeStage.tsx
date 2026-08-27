@@ -46,7 +46,7 @@ export function WelcomeStage({ customer, tests, onNext, brandColor, sessionUser 
           className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all hover:opacity-90" 
           style={{ backgroundColor: brandColor }}
         >
-          Mulai Asesmen <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          Isi Data Diri & Mulai Asesmen <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
       ) : (
         <button 
