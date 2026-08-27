@@ -27,6 +27,12 @@ export default withAuth(
       return NextResponse.redirect(new URL('/panel', req.url));
     }
 
+    // 2b. Redirect authenticated candidates away from candidate login page
+    if (path === '/clients/test/login' && token) {
+      const callbackUrl = req.nextUrl.searchParams.get('callbackUrl') || '/clients/test';
+      return NextResponse.redirect(new URL(callbackUrl, req.url));
+    }
+
     // 3. Admin Portal Route Protection
     if (path.startsWith('/panel') && !path.startsWith('/panel/login')) {
       if (!token || (role !== 'SUPERADMIN' && role !== 'ADMIN')) {
@@ -36,8 +42,10 @@ export default withAuth(
 
     // 4. Candidate Test Taking Route Protection
     if (path.startsWith('/clients/test') && !path.startsWith('/clients/test/login')) {
-      if (!token || role !== 'PARTICIPANT') {
-        return NextResponse.redirect(new URL('/clients/test/login', req.url));
+      if (!token) {
+        const loginUrl = new URL('/clients/test/login', req.url);
+        loginUrl.searchParams.set('callbackUrl', path);
+        return NextResponse.redirect(loginUrl);
       }
     }
 
