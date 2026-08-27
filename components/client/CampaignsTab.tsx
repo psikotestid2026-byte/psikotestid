@@ -43,6 +43,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
   const [loading, setLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
+  const [registrationType, setRegistrationType] = useState('OPEN_LINK');
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [closeId, setCloseId] = useState<number | null>(null);
   const [isPurchasingQuota, setIsPurchasingQuota] = useState<number | null>(null);
@@ -122,7 +123,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
     setLoading(true);
     try {
-      await createCampaign(activeData.customer.id, campaignTitle, selectedTestIds);
+      await createCampaign(activeData.customer.id, campaignTitle, selectedTestIds, registrationType);
       await Promise.all([
         mutate('/api/client/data'),
         mutate('/api/client/orders')
@@ -130,6 +131,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
       toast.success('Campaign Asesmen baru berhasil dibuat!');
       setIsCreateOpen(false);
       setCampaignTitle('');
+      setRegistrationType('OPEN_LINK');
       setSelectedTestIds([]);
     } catch (err: any) {
       toast.error('Gagal membuat campaign: ' + err.message);
@@ -181,19 +183,32 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
       {/* Main Campaign List Table */}
       <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">
         <Table
-          headers={['Nama Campaign', 'Alat Tes Terpilih', 'Jumlah Peserta', 'Link Akses Utama', 'Status', 'Aksi']}
+          headers={['Nama Campaign', 'Skema Akses', 'Alat Tes Terpilih', 'Jumlah Peserta', 'Link Akses Utama', 'Status', 'Aksi']}
           isEmpty={campaigns.length === 0}
         >
           {campaigns.map((c: any) => {
             const countCandidates = allParticipants.filter((p: any) => String(p.campaign_id) === String(c.id)).length;
             const selectedTests = c.selected_tests || [];
             const campaignLink = origin ? `${origin}/clients/test/${c.id}` : `/clients/test/${c.id}`;
+            const regType = c.registration_type || 'OPEN_LINK';
 
             return (
               <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                 <td className="py-4 px-4 font-bold text-slate-900 text-xs">
                   <div>{c.title}</div>
                   <div className="text-[10px] text-slate-400 font-mono mt-0.5">ID: CMP-{c.id}</div>
+                </td>
+
+                <td className="py-4 px-4">
+                  {regType === 'OPEN_LINK' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 text-sky-700 font-bold text-[10px] rounded-lg border border-sky-200">
+                      🌐 Link Bebas (Google SSO)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 font-bold text-[10px] rounded-lg border border-amber-200">
+                      🔒 Undangan Khusus (Pre-Registered)
+                    </span>
+                  )}
                 </td>
 
                 <td className="py-4 px-4">
@@ -274,6 +289,57 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
               className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 font-semibold"
               placeholder="Contoh: Rekrutmen Software Engineer - Batch 1 2026"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Mekanisme Akses & Pendaftaran Peserta</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div
+                onClick={() => setRegistrationType('OPEN_LINK')}
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  registrationType === 'OPEN_LINK'
+                    ? 'bg-sky-50/80 border-sky-500 ring-2 ring-sky-500/20'
+                    : 'bg-white border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center space-x-2 mb-1">
+                  <input
+                    type="radio"
+                    name="regType"
+                    checked={registrationType === 'OPEN_LINK'}
+                    onChange={() => setRegistrationType('OPEN_LINK')}
+                    className="w-4 h-4 text-sky-600 focus:ring-sky-500"
+                  />
+                  <span className="text-xs font-extrabold text-slate-900">🌐 Link Publik (Google SSO)</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed ml-6">
+                  HR cukup membagikan 1 Link Utama. Peserta mendaftar mandiri via Google SSO dan kuota terpotong otomatis saat peserta mendaftar.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setRegistrationType('PRE_REGISTERED')}
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  registrationType === 'PRE_REGISTERED'
+                    ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-white border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center space-x-2 mb-1">
+                  <input
+                    type="radio"
+                    name="regType"
+                    checked={registrationType === 'PRE_REGISTERED'}
+                    onChange={() => setRegistrationType('PRE_REGISTERED')}
+                    className="w-4 h-4 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-xs font-extrabold text-slate-900">🔒 Undangan Khusus</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed ml-6">
+                  HR wajib memasukkan daftar email kandidat terlebih dahulu. Hanya kandidat terdaftar yang diizinkan mengakses tes.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>

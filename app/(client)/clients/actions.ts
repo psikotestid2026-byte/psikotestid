@@ -155,16 +155,22 @@ export async function updateCustomerBranding(customerId: number, data: { company
   `;
 }
 
-export async function createCampaign(customerId: number, title: string, testIds: number[]) {
+export async function createCampaign(
+  customerId: number, 
+  title: string, 
+  testIds: number[], 
+  registrationType: string = 'OPEN_LINK'
+) {
   if (!title || title.trim().length === 0) {
     throw new Error('Nama Campaign harus diisi.');
   }
 
   const accessToken = 'cmp_' + crypto.randomBytes(8).toString('hex');
+  const validRegType = ['OPEN_LINK', 'PRE_REGISTERED'].includes(registrationType) ? registrationType : 'OPEN_LINK';
 
   const result = await sql`
-    INSERT INTO campaigns (customer_id, title, access_token, is_active) 
-    VALUES (${customerId}, ${title}, ${accessToken}, TRUE) 
+    INSERT INTO campaigns (customer_id, title, access_token, registration_type, is_active) 
+    VALUES (${customerId}, ${title}, ${accessToken}, ${validRegType}, TRUE) 
     RETURNING id
   `;
 
@@ -196,7 +202,7 @@ export async function closeCampaign(campaignId: number) {
   await sql`UPDATE campaigns SET is_active = FALSE WHERE id = ${campaignId}`;
 }
 
-export async function addCandidateToCampaign(campaignId: number, data: { full_name: string; email: string; phone_number?: string }) {
+export async function addCandidateToCampaign(campaignId: number, data: { full_name: string; email: string; phone_number?: string; nik?: string }) {
   if (!data.full_name || !data.email) {
     throw new Error('Nama lengkap dan Email kandidat wajib diisi.');
   }
@@ -249,8 +255,8 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
         ${customerId},
         ${testItem.test_id},
         -1,
-        'DEBIT',
-        ${`Penggunaan kuota ${testItem.test_code.toUpperCase()} untuk kandidat ${data.full_name}`}
+        'USAGE',
+        ${`Penggunaan kuota ${testItem.test_code.toUpperCase()} untuk kandidat ${data.full_name} (Undangan HR)`}
       )
     `;
   }
@@ -264,6 +270,8 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
       full_name,
       email,
       phone_number,
+      nik,
+      registration_source,
       status
     ) VALUES (
       ${campaignId},
@@ -271,6 +279,8 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
       ${data.full_name},
       ${data.email.trim().toLowerCase()},
       ${data.phone_number || null},
+      ${data.nik || null},
+      'HR_INVITE',
       'RUNNING'
     )
     RETURNING id, access_token

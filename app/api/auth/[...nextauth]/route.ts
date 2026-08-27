@@ -38,14 +38,8 @@ export const authOptions: AuthOptions = {
             return true;
           }
 
-          // Check participants table
-          const participants = await sql`SELECT id, status FROM participants WHERE email = ${email} LIMIT 1`;
-          if (participants.length > 0) {
-            return true;
-          }
-
-          // If email is not found in any table, redirect to registration OTP wizard
-          return `/clients/login?error=NotRegistered&email=${encodeURIComponent(email)}`;
+          // Check participants table or allow new candidate Google sign-in
+          return true;
         } catch (error) {
           console.error("Auth Error:", error);
           return false;

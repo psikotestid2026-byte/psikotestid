@@ -287,18 +287,34 @@ Terima kasih dan selamat mengerjakan!`;
         </div>
 
         <Table
-          headers={['Nama Kandidat', 'Email', 'No WhatsApp & Undangan', 'Link Akses Ujian Personal', 'Status Pengerjaan', 'Aksi']}
+          headers={['Nama Kandidat', 'Email & NIK', 'Metode Pendaftaran', 'No WhatsApp & Undangan', 'Link Akses Ujian Personal', 'Status Pengerjaan', 'Aksi']}
           isEmpty={filteredCandidates.length === 0}
         >
           {filteredCandidates.map((cand: any) => {
             const personalLink = getPersonalLink(cand.access_token);
             const waUrl = getWhatsAppUrl(cand.phone_number, cand.full_name, cand.email, cand.access_token);
+            const regSource = cand.registration_source || 'OPEN_LINK';
 
             return (
               <tr key={cand.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-3.5 px-4 font-bold text-slate-900 text-xs">{cand.full_name}</td>
+                <td className="py-3.5 px-4 font-bold text-slate-900 text-xs">
+                  <div>{cand.full_name}</div>
+                  {cand.nik && <div className="text-[10px] text-slate-400 font-mono">NIK: {cand.nik}</div>}
+                </td>
 
                 <td className="py-3.5 px-4 font-mono text-xs text-slate-600">{cand.email}</td>
+
+                <td className="py-3.5 px-4">
+                  {regSource === 'OPEN_LINK' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-sky-50 text-sky-700 font-bold text-[10px] rounded-md border border-sky-200">
+                      🌐 Daftar Mandiri
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-purple-50 text-purple-700 font-bold text-[10px] rounded-md border border-purple-200">
+                      🔒 Undangan HR
+                    </span>
+                  )}
+                </td>
 
                 <td className="py-3.5 px-4">
                   {cand.phone_number ? (

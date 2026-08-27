@@ -25,6 +25,8 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
 
   const [userName, setUserName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
+  const [phoneNumber, setPhoneNumber] = useState(existingParticipant?.phone_number || '');
+  const [nik, setNik] = useState(existingParticipant?.nik || '');
 
   useEffect(() => {
     if (existingParticipant?.full_name) {
@@ -80,12 +82,16 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const handleBiodataSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const pid = await submitBiodata(campaign.id, userName, email);
+      const pid = await submitBiodata(campaign.id, userName, email, phoneNumber, nik);
       setParticipantId(pid);
       setStage('instruction');
     } catch (err: any) {
       if (err.message?.includes('ALREADY_COMPLETED')) {
         setStage('already_completed');
+      } else if (err.message?.includes('KUOTA_HABIS')) {
+        setStage('kuota_habis');
+      } else if (err.message?.includes('NOT_PRE_REGISTERED')) {
+        setStage('not_pre_registered');
       } else {
         toast.error('Gagal mendaftar: ' + err.message);
       }
@@ -195,11 +201,59 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
 
       <main className="flex-1 flex items-center justify-center p-4">
         {stage === 'welcome' && <WelcomeStage customer={customer} tests={tests} onNext={() => setStage('biodata')} brandColor={brandColor} />}
-        {stage === 'biodata' && <BiodataStage userName={userName} setUserName={setUserName} email={email} setEmail={setEmail} onSubmit={handleBiodataSubmit} brandColor={brandColor} />}
+        {stage === 'biodata' && (
+          <BiodataStage 
+            userName={userName} 
+            setUserName={setUserName} 
+            email={email} 
+            setEmail={setEmail} 
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
+            nik={nik}
+            setNik={setNik}
+            onSubmit={handleBiodataSubmit} 
+            brandColor={brandColor}
+            isGoogleVerified={Boolean(sessionUser?.email)}
+          />
+        )}
         {stage === 'instruction' && <InstructionStage currentTest={currentTest} onStart={startTest} brandColor={brandColor} />}
         {stage === 'questions' && <QuestionStage currentTest={currentTest} currentQ={currentQ} answers={answers} setAnswerValue={setAnswerValue} onPrev={prevQuestion} onNext={nextQuestion} brandColor={brandColor} />}
         {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} />}
         {stage === 'done' && <DoneStage userName={userName} customer={customer} />}
+
+        {stage === 'kuota_habis' && (
+          <div className="flex flex-col max-w-md w-full animate-fadeUp">
+            <div className="bg-white rounded-3xl border border-red-200 p-8 text-center shadow-xl space-y-4">
+              <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-2xl font-bold">
+                ⚠️
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 font-display">Kuota Tes Sudah Habis</h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Mohon maaf, sisa kuota tes untuk sesi <strong>{campaign.title}</strong> telah habis terpakai oleh peserta lain.
+              </p>
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-900 font-extrabold leading-snug">
+                Silakan hubungi tim HR <strong>{customer?.company_name || 'Penyelenggara'}</strong> untuk penambahan kuota tes.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {stage === 'not_pre_registered' && (
+          <div className="flex flex-col max-w-md w-full animate-fadeUp">
+            <div className="bg-white rounded-3xl border border-amber-200 p-8 text-center shadow-xl space-y-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-bold">
+                🔒
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 font-display">Akses Ditolak (Undangan Khusus)</h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Email Anda (<strong>{email}</strong>) belum didaftarkan oleh HR untuk sesi tes <strong>{campaign.title}</strong> ini.
+              </p>
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 font-extrabold leading-snug">
+                Sesi tes ini bersifat terbatas. Silakan hubungi HR perusahaan Anda untuk mendaftarkan email ini.
+              </div>
+            </div>
+          </div>
+        )}
 
         {stage === 'already_completed' && (
           <div className="flex flex-col max-w-md w-full animate-fadeUp">
