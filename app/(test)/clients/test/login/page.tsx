@@ -63,7 +63,7 @@ export default function ParticipantLogin() {
       </div>
       
       <div className="mt-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} PsikoTest.id. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} ruangtes. All rights reserved.</p>
       </div>
     </div>
   );

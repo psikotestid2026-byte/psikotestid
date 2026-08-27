@@ -25,11 +25,8 @@ export default function PublicPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/clients" className="hidden sm:flex text-brand-600 font-semibold text-sm hover:text-brand-800 transition-colors">
-              Masuk
-            </Link>
-            <Link href="/clients" className="btn-primary text-white font-semibold text-sm px-4 py-2 rounded-full border border-brand-200 transition-all shadow-md">
-              Daftar Admin
+            <Link href="/clients" className="btn-primary text-white font-semibold text-sm px-5 py-2 rounded-full border border-brand-200 transition-all shadow-md">
+              Masuk Portal
             </Link>
           </div>
         </div>

@@ -152,7 +152,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
           </div>
         )}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:block text-xs text-slate-300 font-bold">PsikoTest.id</div>
+          <div className="hidden sm:block text-xs text-slate-300 font-bold">ruangtes</div>
           <button onClick={() => signOut({ callbackUrl: '/clients/test/login' })} className="text-xs text-red-500 font-bold hover:underline">Logout</button>
         </div>
       </header>

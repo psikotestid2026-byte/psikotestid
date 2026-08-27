@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Portal Asesmen - PsikoTest.id',
+  title: 'Portal Asesmen - Ruangtes',
   robots: 'noindex, nofollow',
 };
 
