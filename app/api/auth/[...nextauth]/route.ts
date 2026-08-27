@@ -22,34 +22,7 @@ export const authOptions: AuthOptions = {
       if (account?.provider === "google") {
         const email = profile?.email;
         if (!email) return false;
-
-        try {
-          // Check admins table
-          const admins = await sql`SELECT id, role, status FROM admins WHERE email = ${email} LIMIT 1`;
-          if (admins.length > 0) {
-            if (admins[0].status !== 'ACTIVE') return false;
-            return true;
-          }
-
-          // Check customers table
-          const customers = await sql`SELECT id, role, status FROM customers WHERE email = ${email} LIMIT 1`;
-          if (customers.length > 0) {
-            if (customers[0].status !== 'ACTIVE') return false;
-            return true;
-          }
-
-          // Check participants table
-          const participants = await sql`SELECT id FROM participants WHERE LOWER(email) = ${email.toLowerCase()} LIMIT 1`;
-          if (participants.length > 0) {
-            return true;
-          }
-
-          // If email is not registered as admin, customer, or candidate, redirect to HR registration wizard
-          return `/clients/login?error=NotRegistered&email=${encodeURIComponent(email)}`;
-        } catch (error) {
-          console.error("Auth Error:", error);
-          return false;
-        }
+        return true;
       }
       return false;
     },
