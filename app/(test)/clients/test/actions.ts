@@ -64,12 +64,18 @@ export async function submitTestResult(participantId: number, testId: number, an
     WHERE customer_id = ${customerId} AND test_id = ${testId}
   `;
 
-  // Calculate scoring data if test is DISC
+  // Calculate scoring data if test is DISC or WPT
   const testInfo = await sql`SELECT code FROM master_tests WHERE id = ${testId}`;
   let scoringData = null;
-  if (testInfo[0] && testInfo[0].code.toLowerCase() === 'disc') {
-    const { calculateDiscScore } = await import('@/lib/scoring/disc');
-    scoringData = calculateDiscScore(answers);
+  if (testInfo[0]) {
+    const code = testInfo[0].code.toLowerCase();
+    if (code === 'disc') {
+      const { calculateDiscScore } = await import('@/lib/scoring/disc');
+      scoringData = calculateDiscScore(answers);
+    } else if (code === 'wpt') {
+      const { calculateWptScore } = await import('@/lib/scoring/wpt');
+      scoringData = calculateWptScore(answers);
+    }
   }
 
   // Insert result (upsert in case of retry)

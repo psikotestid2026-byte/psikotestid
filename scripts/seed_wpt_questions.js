@@ -19,14 +19,14 @@ const wptQuestions = [
   { text: "\"Anak-anak lelaki ini adalah anak yang normal.\" Apakah kalimat ini:", options: ["Benar", "Salah", "Tidak Tahu"] },
   { text: "JAUH adalah lawan kata dari:", options: ["Terpencil", "Dekat", "Jarak", "Terburu-buru", "Pasti"] },
   { text: "3 permen lemon seharga 10 rupiah. Berapa harga 6 permen?", options: ["15 rupiah", "20 rupiah", "25 rupiah", "30 rupiah", "18 rupiah"] },
-  { text: "Berapa banyak pasangan angka identik berikut? (3254-3254, 4215-4215, 6314-6314, 5214-5214, 1423-1423)", options: ["1", "2", "3", "4", "5"] },
-  { text: "Susunlah kata-kata berikut menjadi kalimat: 'penyanyi dia seorang merupakan'. Apakah huruf pertama dari kata ketiga?", options: ["S", "P", "D", "M", "E"] },
+  { text: "Berapa banyak duplikasi yang sama dari lima pasang angka berikut? (3254-3254, 4215-4215, 6314-6314, 5214-5214, 1423-1423)", options: ["1", "2", "3", "4", "5"] },
+  { text: "Susunlah kata-kata berikut menjadi kalimat: 'penyanyi dia seorang merupakan'. Apakah huruf terakhir dari kata ketiga?", options: ["A", "S", "P", "D", "M"] },
   { text: "Anak lelaki berumur 5 tahun dan saudara perempuannya berumur dua kali lipat. Ketika anak lelaki tersebut berumur 8 tahun, berapa umur saudara perempuannya?", options: ["10 tahun", "11 tahun", "13 tahun", "16 tahun", "14 tahun"] },
   { text: "IT'S dan ITS. Apakah kata-kata ini:", options: ["Memiliki arti yang sama", "Memiliki arti berlawanan", "Memiliki tata bahasa dan arti berbeda"] },
   { text: "\"John seusia dengan Sally. Sally lebih muda dari Bill. Bill lebih tua dari John.\" Jika 2 pernyataan pertama benar, maka pernyataan ketiga adalah:", options: ["Benar", "Salah", "Tidak pasti"] },
   { text: "Seorang pedagang membeli beberapa barel seharga 4.000 rupiah. Ia menjualnya kembali seharga 5.000 rupiah dan mendapat untung 50 rupiah per barel. Berapa barel yang dijual?", options: ["10 barel", "20 barel", "50 barel", "100 barel", "25 barel"] },
   { text: "Susunlah kata-kata berikut menjadi kalimat: 'sebuah kaki tiga memiliki segitiga'. Pernyataan tersebut adalah:", options: ["Benar", "Salah", "Tidak pasti"] },
-  { text: "Dua dari peribahasa berikut memiliki arti yang mirip: 1) Ada gula ada semut, 2) Air tenang menghanyutkan, 3) Di mana bumi dipijak di sana langit dijunjung, 4) Dimana ada gula di situ ada semut. Manakah itu?", options: ["1 dan 2", "1 dan 4", "2 dan 3", "3 dan 4"] },
+  { text: "Dua dari peribahasa berikut memiliki arti yang mirip: 1) Hemat pangkal kaya, 2) Rajin pangkal pandai, 3) Sedikit-sedikit lama-lama menjadi bukit, 4) Di mana bumi dipijak di sana langit dijunjung. Manakah itu?", options: ["1 dan 3", "1 dan 2", "2 dan 3", "3 dan 4"] },
   { text: "Sebuah jam terlambat 1 menit 18 detik dalam 39 hari. Berapa detik terlambat dalam sehari?", options: ["1 detik", "2 detik", "3 detik", "4 detik", "5 detik"] },
   { text: "CANVASS dan CANVAS. Apakah kata-kata ini:", options: ["Memiliki arti yang sama", "Memiliki arti berlawanan", "Memiliki arti berbeda"] },
   { text: "\"Semua siswa mengikuti ujian. Beberapa orang di ruangan ini adalah siswa. Oleh karena itu, beberapa orang di ruangan ini mengikuti ujian.\" Apakah pernyataan tersebut:", options: ["Benar", "Salah", "Tidak pasti"] },
@@ -38,22 +38,22 @@ const wptQuestions = [
   { text: "Apakah PM berarti 'Post Meridiem'?", options: ["Ya", "Tidak", "Tidak Tahu"] },
   { text: "DAPAT DIPERCAYA dan GAMPANG PERCAYA. Apakah kata-kata ini:", options: ["Memiliki arti yang sama", "Memiliki arti berlawanan", "Memiliki arti berbeda"] },
   { text: "Sebuah rok membutuhkan 2 1/4 meter kain. Berapa banyak rok yang dapat dibuat dari 45 meter kain?", options: ["15 rok", "18 rok", "20 rok", "22 rok", "25 rok"] },
-  { text: "Sebuah jam menunjukkan tepat pukul 12 siang pada hari Senin. Pada pukul 2 siang hari Rabu berikutnya (50 jam), ia terlambat 25 detik. Berapa detik keterlambatan jam tersebut dalam 1 jam?", options: ["0.5 detik", "1 detik", "2 detik", "5 detik"] },
+  { text: "Sebuah jam menunjukkan tepat pukul 12 siang pada hari Senin. Pada pukul 2 siang hari Rabu berikutnya (50 jam), ia terlambat 25 detik. Berapa detik keterlambatan jam tersebut dalam 1/2 jam?", options: ["0.25 detik", "0.5 detik", "1 detik", "2.5 detik"] },
   { text: "Tim bisbol kami kalah 9 permainan dalam musim ini. Ini merupakan 3/8 dari seluruh permainan. Berapa banyak total permainan yang dimainkan?", options: ["18 permainan", "24 permainan", "27 permainan", "32 permainan", "36 permainan"] },
   { text: "Apakah angka selanjutnya dari deret ini? 100, 97, 94, 91, 88, 85, ...", options: ["82", "81", "83", "80", "84"] },
-  { text: "Manakah pasangan sudut yang dapat membentuk sebuah bujur sangkar jika digabungkan?", options: ["Dua segitiga siku-siku sama kaki", "Dua lingkaran", "Dua garis lurus", "Dua trapesium sembarang"] },
+  { text: "Bentuk geometris ini dapat dibagi oleh suatu garis lurus menjadi dua bagian yang dapat disatukan membentuk sebuah bujur sangkar.", options: ["Dua segitiga siku-siku sama kaki", "Dua lingkaran", "Dua garis lurus", "Dua trapesium sembarang"] },
   { text: "\"Sebuah sapu yang baru menyapu dengan bersih.\" Apakah peribahasa ini bermakna:", options: ["Karyawan/alat baru sering bekerja sangat efisien", "Sapu tua tidak bisa dipakai", "Pekerjaan bersih hanya untuk orang kaya"] },
   { text: "Berapa banyak dari 3 pasangan kata berikut yang artinya persis sama? (Besar-Agung, Terang-Cerah, Cepat-Laju)", options: ["0", "1", "2", "3"] },
-  { text: "Dua dari peribahasa ini memiliki makna yang serupa: 1) Hemat pangkal kaya, 2) Rajin pangkal pandai, 3) Sedikit-sedikit lama-lama menjadi bukit. Manakah itu?", options: ["1 dan 2", "1 dan 3", "2 dan 3"] },
-  { text: "Sebuah jajar genjang dapat dibagi garis lurus menjadi dua bagian yang membentuk persegi panjang jika sudutnya:", options: ["90 derajat", "45 derajat", "180 derajat", "60 derajat"] },
-  { text: "Dalam kelompok angka berikut, manakah angka terkecil? 10, 1, 0.9, 0.99, 0.88, 2, 0.33", options: ["0.9", "0.99", "0.88", "0.33", "1"] },
+  { text: "Dua dari peribahasa ini memiliki makna yang serupa: 1) Hemat pangkal kaya, 2) Rajin pangkal pandai, 3) Sedikit-sedikit lama-lama menjadi bukit. Manakah itu?", options: ["1 dan 3", "1 dan 2", "2 dan 3"] },
+  { text: "Gambar geometris ini dapat dibagi dengan garis lurus menjadi dua bagian yang membentuk persegi panjang.", options: ["Dua trapesium siku-siku", "Dua lingkaran", "Dua titik"] },
+  { text: "Dalam kelompok angka berikut, manakah angka terkecil? 10, 1, 0.9, 0.99, 0.88, 2, 0.33", options: ["0.33", "0.88", "0.9", "0.99", "1"] },
   { text: "\"Tidak ada orang jujur meminta maaf atas kejujurannya.\" Apakah kalimat ini bermakna:", options: ["Kejujuran adalah nilai moral yang tidak perlu disesali", "Orang jujur tidak pernah bersalah", "Orang jujur selalu meminta maaf"] },
-  { text: "Sebuah grosir membeli 12 lusin buah seharga Rp 180.000. Berapa harga per buah?", options: ["Rp 1.000", "Rp 1.250", "Rp 1.500", "Rp 2.000"] },
+  { text: "Dengan biaya Rp 180.000, sebuah grosir membeli 12 lusin buah. Berapa harga per buah?", options: ["Rp 1.250", "Rp 1.000", "Rp 1.500", "Rp 2.000"] },
   { text: "Dalam rangkaian kata berikut, manakah kata yang berbeda?", options: ["Kelereng", "Bola", "Kubus", "Global", "Mutiara"] },
   { text: "\"Orang besar dibodohi. Saya dibodohi. Saya adalah orang besar.\" Kesimpulan ini:", options: ["Benar", "Salah (Sesat Pikir)", "Tidak pasti"] },
-  { text: "Tiga orang membagi keuntungan Rp 900.000 sama rata. Berapa bagian masing-masing?", options: ["Rp 200.000", "Rp 300.000", "Rp 400.000", "Rp 450.000"] },
-  { text: "Empat dari 5 bentuk berikut dapat digabungkan membentuk segitiga siku-siku. Berapa jumlah sudut dalam segitiga tersebut?", options: ["90 derajat", "180 derajat", "360 derajat", "270 derajat"] },
-  { text: "Untuk mencetak artikel berisi 30.000 kata dengan kecepatan 600 kata per menit, berapa menit waktu yang dibutuhkan?", options: ["30 menit", "45 menit", "50 menit", "60 menit", "100 menit"] }
+  { text: "Tiga orang membagi keuntungan Rp 900.000 sama rata. Berapa bagian masing-masing?", options: ["Rp 300.000", "Rp 200.000", "Rp 400.000", "Rp 450.000"] },
+  { text: "Empat dari 5 bentuk berikut dapat digabungkan membentuk segitiga siku-siku.", options: ["Potongan 1, 2, 4, 5", "Potongan 1, 2, 3, 4", "Potongan 2, 3, 4, 5"] },
+  { text: "Untuk mencetak artikel berisi 30.000 kata dengan kecepatan 600 kata per menit, berapa menit waktu yang dibutuhkan?", options: ["50 menit", "30 menit", "45 menit", "60 menit", "100 menit"] }
 ];
 
 async function seed() {
@@ -66,10 +66,12 @@ async function seed() {
   const wptTestId = tests[0].id;
   console.log(`WPT Test ID: ${wptTestId}`);
 
-  // Delete existing question banks for WPT
+  // Delete all existing question banks for WPT to prevent duplicate questions
+  console.log('Clearing old WPT question bank entries...');
   await sql`DELETE FROM question_banks WHERE test_id = ${wptTestId}`;
 
-  // Insert 50 WPT questions
+  // Insert exactly 50 WPT questions
+  console.log(`Inserting ${wptQuestions.length} clean WPT questions...`);
   for (let i = 0; i < wptQuestions.length; i++) {
     const q = wptQuestions[i];
     const orderNumber = i + 1;
