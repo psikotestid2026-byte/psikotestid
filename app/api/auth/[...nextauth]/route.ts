@@ -38,8 +38,14 @@ export const authOptions: AuthOptions = {
             return true;
           }
 
-          // Check participants table or allow new candidate Google sign-in
-          return true;
+          // Check participants table
+          const participants = await sql`SELECT id FROM participants WHERE LOWER(email) = ${email.toLowerCase()} LIMIT 1`;
+          if (participants.length > 0) {
+            return true;
+          }
+
+          // If email is not registered as admin, customer, or candidate, redirect to HR registration wizard
+          return `/clients/login?error=NotRegistered&email=${encodeURIComponent(email)}`;
         } catch (error) {
           console.error("Auth Error:", error);
           return false;
