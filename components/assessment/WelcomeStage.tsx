@@ -1,5 +1,5 @@
-import { UserCheck, ClipboardList, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { signIn } from 'next-auth/react';
+import { UserCheck, ClipboardList, ArrowRight, LogIn } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 
 interface WelcomeStageProps {
@@ -7,9 +7,14 @@ interface WelcomeStageProps {
   tests: any[];
   onNext: () => void;
   brandColor: string;
+  sessionUser?: any;
 }
 
-export function WelcomeStage({ customer, tests, onNext, brandColor }: WelcomeStageProps) {
+export function WelcomeStage({ customer, tests, onNext, brandColor, sessionUser }: WelcomeStageProps) {
+  const handleGoogleLogin = () => {
+    signIn('google', { callbackUrl: window.location.href });
+  };
+
   return (
     <div className="flex flex-col items-center text-center max-w-lg w-full animate-fadeUp">
       <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-xl" style={{ background: brandColor }}>
@@ -35,13 +40,27 @@ export function WelcomeStage({ customer, tests, onNext, brandColor }: WelcomeSta
         </div>
       </Card>
 
-      <button 
-        onClick={onNext} 
-        className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all hover:opacity-90" 
-        style={{ backgroundColor: brandColor }}
-      >
-        Mulai <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-      </button>
+      {sessionUser ? (
+        <button 
+          onClick={onNext} 
+          className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all hover:opacity-90" 
+          style={{ backgroundColor: brandColor }}
+        >
+          Mulai Asesmen <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
+      ) : (
+        <button 
+          onClick={handleGoogleLogin} 
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all"
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            className="w-5 h-5 bg-white p-0.5 rounded-full"
+            alt="Google"
+          />
+          Mulai Asesmen (Login Google SSO) <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
+      )}
     </div>
   );
 }

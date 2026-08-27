@@ -200,7 +200,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       )}
 
       <main className="flex-1 flex items-center justify-center p-4">
-        {stage === 'welcome' && <WelcomeStage customer={customer} tests={tests} onNext={() => setStage('biodata')} brandColor={brandColor} />}
+        {stage === 'welcome' && <WelcomeStage customer={customer} tests={tests} onNext={() => setStage('biodata')} brandColor={brandColor} sessionUser={sessionUser} />}
         {stage === 'biodata' && (
           <BiodataStage 
             userName={userName} 

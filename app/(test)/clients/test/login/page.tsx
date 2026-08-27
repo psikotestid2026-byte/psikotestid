@@ -21,7 +21,8 @@ function LoginContent() {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    await signIn("google", { callbackUrl: "/clients/test" });
+    const callbackUrl = searchParams.get("callbackUrl") || "/clients/test";
+    await signIn("google", { callbackUrl });
   };
 
   return (
