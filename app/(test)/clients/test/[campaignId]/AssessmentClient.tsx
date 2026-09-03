@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
-import { BrainCircuit, Timer, AlertTriangle, CheckCircle2, RefreshCw, Copy, Maximize, Minimize } from 'lucide-react';
+import Link from 'next/link';
+import { BrainCircuit, Timer, AlertTriangle, CheckCircle2, RefreshCw, Copy, Maximize, Minimize, LogOut, ArrowLeft } from 'lucide-react';
 import { WelcomeStage } from '@/components/assessment/WelcomeStage';
 import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
@@ -440,21 +441,37 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         )}
 
         {stage === 'already_completed' && (
-          <div className="flex flex-col max-w-md w-full animate-fadeUp">
-            <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xl space-y-4">
+          <div className="flex flex-col max-w-lg w-full animate-fadeUp">
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xl space-y-5">
               <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-bold">
                 ⚠️
               </div>
-              <h2 className="text-xl font-bold text-slate-900 font-display">Tes Sudah Pernah Dikerjakan</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-display">Tes Sudah Pernah Dikerjakan</h2>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Halo <strong>{userName}</strong> ({email}), Anda telah menyelesaikan seluruh rangkaian sesi tes psikotes untuk <strong>{campaign.title}</strong> sebelumnya.
+                Halo <strong className="text-slate-900">{userName || 'Peserta'}</strong> ({email}), Anda telah menyelesaikan seluruh rangkaian sesi tes psikotes untuk <strong className="text-slate-900">{campaign.title}</strong> sebelumnya.
               </p>
-              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 font-extrabold leading-snug">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 font-extrabold leading-relaxed">
                 Sesi tes ini <strong>hanya dapat dikerjakan 1 (satu) kali dan tidak dapat diulang</strong>.
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Seluruh jawaban dan hasil analisis psikotes Anda telah tersimpan dengan aman dan terkirim ke Tim HR Perusahaan. Terima kasih!
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Seluruh jawaban dan hasil analisis psikotes Anda telah tersimpan dengan aman dan terkirim ke Tim HR Perusahaan. Terima kasih atas partisipasi Anda!
               </p>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: '/clients/test/login' })}
+                  className="w-full sm:w-1/2 py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all"
+                >
+                  <LogOut className="w-4 h-4 text-slate-400" /> Logout / Keluar Sesi
+                </button>
+                <Link
+                  href="/clients/test/login"
+                  className="w-full sm:w-1/2 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 transition-all border border-slate-200"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-500" /> Portal Login Peserta
+                </Link>
+              </div>
             </div>
           </div>
         )}
