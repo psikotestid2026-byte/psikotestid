@@ -25,10 +25,23 @@ export function QuestionStage({
   const questionType = questionObj?.question_type || 'multiple_choice';
   const isDisc = questionType === 'disc' || currentTest?.code?.toLowerCase() === 'disc';
 
+  const testCode = currentTest?.code?.toLowerCase() || '';
+
+  const getFallbackOptions = () => {
+    if (testCode === 'riasec') return ['Suka', 'Tidak Suka'];
+    if (testCode === 'bigfive') return ['Sangat Tidak Setuju', 'Tidak Setuju', 'Netral', 'Setuju', 'Sangat Setuju'];
+    if (testCode === 'enneagram') return ['Sangat Tidak Sesuai', 'Tidak Sesuai', 'Netral', 'Sesuai', 'Sangat Sesuai'];
+    if (testCode === 'msai') return ['Sangat Kurang', 'Kurang', 'Cukup', 'Baik', 'Sangat Baik'];
+    if (questionType === 'true_false') return ['Benar', 'Salah'];
+    return [];
+  };
+
   const rawOptions: any[] =
-    questionData.options ||
-    questionData.items ||
-    (questionType === 'true_false' ? ['Benar', 'Salah'] : []);
+    (questionData.options && questionData.options.length > 0)
+      ? questionData.options
+      : (questionData.items && questionData.items.length > 0)
+      ? questionData.items
+      : getFallbackOptions();
 
   const options: string[] = rawOptions.filter(
     (o) => o !== null && o !== undefined && String(o).trim() !== ''

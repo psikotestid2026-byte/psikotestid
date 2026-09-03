@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
-import { BrainCircuit, Timer, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { BrainCircuit, Timer, AlertTriangle, CheckCircle2, RefreshCw, Copy, Maximize, Minimize } from 'lucide-react';
 import { WelcomeStage } from '@/components/assessment/WelcomeStage';
 import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
@@ -19,6 +19,8 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<any>({});
   const [timeLeft, setTimeLeft] = useState(0);
+  const [copiedHrMsg, setCopiedHrMsg] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const initialName = existingParticipant?.full_name || sessionUser?.name || '';
   const initialEmail = existingParticipant?.email || sessionUser?.email || '';
@@ -27,6 +29,82 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const [email, setEmail] = useState(initialEmail);
   const [phoneNumber, setPhoneNumber] = useState(existingParticipant?.phone_number || '');
   const [nik, setNik] = useState(existingParticipant?.nik || '');
+
+  // Fullscreen event listener
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        toast.error('Gagal masuk mode layar penuh: ' + err.message);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  // LocalStorage Key based on campaign and participant/email
+  const storageKey = campaign?.id ? `psikotest_progress_c${campaign.id}_${email || participantId || 'guest'}` : null;
+
+  // Restore state from LocalStorage on mount
+  useEffect(() => {
+    if (!storageKey || typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.answers && Object.keys(parsed.answers).length > 0) {
+          setAnswers(parsed.answers);
+        }
+        if (parsed.participantId) setParticipantId(parsed.participantId);
+        if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
+          setActiveIdx(parsed.activeIdx);
+        }
+        if (typeof parsed.currentQ === 'number') {
+          setCurrentQ(parsed.currentQ);
+        }
+        if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
+          setStage(parsed.stage);
+        }
+        if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0) {
+          setTimeLeft(parsed.timeLeft);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load localStorage progress:', e);
+    }
+  }, [storageKey, tests.length]);
+
+  // Persist state to LocalStorage when changed
+  useEffect(() => {
+    if (!storageKey || typeof window === 'undefined') return;
+    if (stage === 'done') {
+      localStorage.removeItem(storageKey);
+      return;
+    }
+    try {
+      const dataToSave = {
+        answers,
+        participantId,
+        activeIdx,
+        currentQ,
+        stage,
+        timeLeft,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    } catch (e) {
+      console.error('Failed to save progress to localStorage:', e);
+    }
+  }, [storageKey, answers, participantId, activeIdx, currentQ, stage, timeLeft]);
 
   useEffect(() => {
     if (existingParticipant?.full_name) {
@@ -179,8 +257,16 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             <Timer className="w-4 h-4" /><span>{formatTime(timeLeft)}</span>
           </div>
         )}
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:block text-xs text-slate-300 font-bold">ruangtes</div>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs"
+            title={isFullscreen ? 'Keluar Mode Layar Penuh' : 'Mode Layar Penuh'}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-indigo-600" /> : <Maximize className="w-3.5 h-3.5 text-slate-600" />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Keluar Fullscreen' : 'Layar Penuh'}</span>
+          </button>
           <button onClick={() => signOut({ callbackUrl: '/clients/test/login' })} className="text-xs text-red-500 font-bold hover:underline">Logout</button>
         </div>
       </header>
@@ -222,17 +308,72 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         {stage === 'done' && <DoneStage userName={userName} customer={customer} />}
 
         {stage === 'kuota_habis' && (
-          <div className="flex flex-col max-w-md w-full animate-fadeUp">
-            <div className="bg-white rounded-3xl border border-red-200 p-8 text-center shadow-xl space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-2xl font-bold">
-                ⚠️
+          <div className="flex flex-col max-w-lg w-full animate-fadeUp">
+            <div className="bg-white rounded-3xl border border-red-200 p-6 sm:p-8 text-center shadow-xl space-y-5">
+              <div className="w-16 h-16 rounded-3xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-100 shadow-sm">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 font-display">Kuota Tes Sudah Habis</h2>
+
+              <div>
+                <span className="inline-block px-3 py-1 bg-red-100 text-red-700 font-bold text-[11px] uppercase tracking-wider rounded-full mb-2">
+                  Akses Ujian Belum Tersedia
+                </span>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-display">Kuota Tes Sudah Habis</h2>
+              </div>
+
               <p className="text-sm text-slate-600 leading-relaxed">
-                Mohon maaf, sisa kuota tes untuk sesi <strong>{campaign.title}</strong> telah habis terpakai oleh peserta lain.
+                Halo <strong className="text-slate-800">{userName || email || 'Peserta'}</strong>, mohon maaf atas ketidaknyamanannya.
+                Sisa kuota pengerjaan untuk sesi tes <strong>{campaign?.title}</strong> di <strong>{customer?.company_name || 'Perusahaan'}</strong> saat ini sedang habis terpakai oleh peserta lain.
               </p>
-              <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-900 font-extrabold leading-snug">
-                Silakan hubungi tim HR <strong>{customer?.company_name || 'Penyelenggara'}</strong> untuk penambahan kuota tes.
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-left space-y-2 text-xs text-amber-900 font-medium">
+                <div className="font-bold text-amber-950 flex items-center gap-1.5 text-sm">
+                  💡 Informasi Penting untuk Anda:
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-slate-700">
+                  <li><strong>Status Ujian Aman:</strong> Waktu ujian Anda belum berjalan dan jawaban Anda belum ada yang hilang.</li>
+                  <li><strong>Data Diri Tersimpan:</strong> Anda tidak perlu mengisi ulang biodata saat kembali nanti.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-left space-y-2">
+                <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Langkah yang Perlu Dilakukan:
+                </div>
+                <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
+                  <li>
+                    <strong>Hubungi Tim HRD / Rekrutmen {customer?.company_name || 'Penyelenggara'}:</strong> Beritahukan bahwa kuota tes untuk sesi <em>"{campaign?.title}"</em> perlu ditambahkan.
+                  </li>
+                  <li>
+                    <strong>Muat Ulang Halaman:</strong> Setelah tim HRD memperbarui kuota tes, klik tombol di bawah untuk mencoba kembali.
+                  </li>
+                </ol>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = `Halo Tim HRD ${customer?.company_name || ''}, saya ${userName || email} ingin menginfokan bahwa kuota tes untuk sesi "${campaign?.title}" telah habis saat saya mencoba mulai. Mohon bantuan penambahan kuota tes. Terima kasih!`;
+                    navigator.clipboard.writeText(msg);
+                    setCopiedHrMsg(true);
+                    toast.success('Pesan konfirmasi ke HRD berhasil disalin!');
+                    setTimeout(() => setCopiedHrMsg(false), 3000);
+                  }}
+                  className="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                >
+                  {copiedHrMsg ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  {copiedHrMsg ? 'Pesan Tersalin!' : 'Salin Pesan ke HRD'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="flex-1 py-3.5 px-4 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:opacity-90 active:scale-95"
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <RefreshCw className="w-4 h-4" /> Coba Lagi / Reload
+                </button>
               </div>
             </div>
           </div>
