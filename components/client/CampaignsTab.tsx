@@ -123,7 +123,22 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
     setLoading(true);
     try {
-      await createCampaign(activeData.customer.id, campaignTitle, selectedTestIds, registrationType);
+      const res = await fetch('/api/client/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: campaignTitle,
+          test_ids: selectedTestIds,
+          registration_type: registrationType,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal membuat campaign.');
+        return;
+      }
+
       await Promise.all([
         mutate('/api/client/data'),
         mutate('/api/client/orders')
@@ -144,7 +159,21 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
     if (!closeId) return;
     setLoading(true);
     try {
-      await closeCampaign(closeId);
+      const res = await fetch('/api/client/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'close',
+          campaign_id: closeId,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal menutup campaign.');
+        return;
+      }
+
       await mutate('/api/client/data');
       toast.success('Campaign berhasil ditutup!');
       setCloseId(null);

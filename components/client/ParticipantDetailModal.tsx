@@ -44,16 +44,14 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {discResult && (
-              <a
-                href={`/api/reports/disc/${discResult.id}/pdf`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
-              >
-                <Download className="w-4 h-4" /> Download PDF Report
-              </a>
-            )}
+            <a
+              href={`/api/reports/participant/${participant.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+            >
+              <Download className="w-4 h-4" /> Download PDF Report
+            </a>
             <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-all"

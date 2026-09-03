@@ -211,13 +211,36 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     const t = tests[activeIdx];
     try {
       if (participantId) {
-        await submitTestResult(participantId, t.id, answers[t.id] || {});
+        const res = await fetch('/api/test/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            participant_id: participantId,
+            test_id: t.id,
+            answers: answers[t.id] || {},
+          }),
+        });
+
+        const result = await res.json();
+        if (!res.ok || !result.success) {
+          toast.error(result.error || 'Gagal menyimpan jawaban tes.');
+          return;
+        }
       }
-      
+
       if (activeIdx < tests.length - 1) {
         setStage('transition');
       } else {
-        if (participantId) await markTestCompleted(participantId);
+        if (participantId) {
+          await fetch('/api/test/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'mark_completed',
+              participant_id: participantId,
+            }),
+          });
+        }
         setStage('done');
       }
     } catch (err: any) {

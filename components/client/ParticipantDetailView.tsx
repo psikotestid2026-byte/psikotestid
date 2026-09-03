@@ -77,16 +77,14 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
 
         {/* Action Button Header */}
         <div className="flex items-center gap-3 shrink-0">
-          {discResult && (
-            <a
-              href={`/api/reports/disc/${discResult.id}/pdf`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all"
-            >
-              <Download className="w-4 h-4" /> Download PDF Report Resmi
-            </a>
-          )}
+          <a
+            href={`/api/reports/participant/${candidate.id || participantId}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all"
+          >
+            <Download className="w-4 h-4" /> Download PDF Report Resmi
+          </a>
         </div>
       </div>
 
@@ -146,18 +144,31 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
                         <div className="space-y-1">
                           {results.map((r: any, rIdx: number) => {
                             const sc = r.scoring_data;
+                            let labelStr = '';
+                            let isDone = false;
+
+                            if (sc?.dominantLabel) {
+                              labelStr = `${sc.dominantLabel} (${sc.dominantType})`;
+                              isDone = true;
+                            } else if (sc?.score || sc?.wptScore) {
+                              labelStr = `Skor: ${sc.score || sc.wptScore}`;
+                              isDone = true;
+                            } else if (sc || item.status === 'COMPLETED') {
+                              labelStr = 'Selesai (Jawaban Tersimpan)';
+                              isDone = true;
+                            } else {
+                              labelStr = 'Sedang Dikerjakan';
+                              isDone = false;
+                            }
+
                             return (
                               <div key={rIdx} className="flex items-center gap-2">
                                 <span className="font-mono font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded border border-indigo-200 text-[10px]">
-                                  {r.test_code?.toUpperCase() || 'DISC'}
+                                  {r.test_code?.toUpperCase() || 'TES'}
                                 </span>
-                                {sc ? (
-                                  <span className="font-bold text-slate-800 text-[11px]">
-                                    {sc.dominantLabel ? `${sc.dominantLabel} (${sc.dominantType})` : JSON.stringify(sc)}
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 italic text-[11px]">Sedang Dikerjakan</span>
-                                )}
+                                <span className={`font-bold text-[11px] ${isDone ? 'text-emerald-700' : 'text-slate-400 italic'}`}>
+                                  {labelStr}
+                                </span>
                               </div>
                             );
                           })}

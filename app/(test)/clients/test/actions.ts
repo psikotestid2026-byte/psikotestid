@@ -159,11 +159,17 @@ export async function submitTestResult(participantId: number, testId: number, an
   }
 
   // Insert result (upsert in case of retry)
+  const finalScoringData = scoringData || {
+    completed: true,
+    total_answers: Object.keys(answers || {}).length,
+    completed_at: new Date().toISOString()
+  };
+
   await sql`
     INSERT INTO test_results (participant_id, test_id, raw_answers, scoring_data)
-    VALUES (${participantId}, ${testId}, ${answers}, ${scoringData ? JSON.stringify(scoringData) : null}::jsonb)
+    VALUES (${participantId}, ${testId}, ${answers}, ${JSON.stringify(finalScoringData)}::jsonb)
     ON CONFLICT (participant_id, test_id)
-    DO UPDATE SET raw_answers = ${answers}, scoring_data = ${scoringData ? JSON.stringify(scoringData) : null}::jsonb
+    DO UPDATE SET raw_answers = ${answers}, scoring_data = ${JSON.stringify(finalScoringData)}::jsonb
   `;
 }
 

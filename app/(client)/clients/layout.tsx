@@ -9,7 +9,7 @@ export default async function ClientsLayout({ children }: { children: React.Reac
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.email) {
-    redirect('/clients/login');
+    return <>{children}</>;
   }
 
   // Check if session user email is registered as HR Customer
@@ -20,7 +20,7 @@ export default async function ClientsLayout({ children }: { children: React.Reac
   `;
 
   if (customerRows.length === 0 || customerRows[0].status !== 'ACTIVE') {
-    redirect(`/clients/login?error=NotRegistered&email=${encodeURIComponent(session.user.email)}`);
+    return <>{children}</>;
   }
 
   const customerId = customerRows[0].id;

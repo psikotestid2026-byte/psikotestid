@@ -107,16 +107,14 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
                       </Button>
                     </Link>
 
-                    {discResult && (
-                      <a
-                        href={`/api/reports/disc/${discResult.id}/pdf`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
-                      >
-                        <FileDown className="w-3.5 h-3.5" /> PDF
-                      </a>
-                    )}
+                    <a
+                      href={`/api/reports/participant/${p.id}/pdf`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                    >
+                      <FileDown className="w-3.5 h-3.5" /> PDF
+                    </a>
                   </div>
                 </td>
               </tr>
