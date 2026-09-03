@@ -41,7 +41,7 @@ export async function submitBiodata(
   if (existingRows.length > 0) {
     const existing = existingRows[0];
     if (existing.status === 'COMPLETED') {
-      throw new Error('ALREADY_COMPLETED');
+      return { success: false, error: 'ALREADY_COMPLETED' };
     }
     // Candidate already registered: update contact details if provided, return existing ID (No quota deduction)
     await sql`
@@ -52,7 +52,7 @@ export async function submitBiodata(
           started_at = COALESCE(started_at, NOW())
       WHERE id = ${existing.id}
     `;
-    return existing.id;
+    return { success: true, participantId: existing.id };
   }
 
   // 3. Candidate is NOT yet registered
@@ -60,7 +60,7 @@ export async function submitBiodata(
 
   // If campaign is PRE_REGISTERED and candidate is not registered upfront by HR, reject
   if (regType === 'PRE_REGISTERED') {
-    throw new Error('NOT_PRE_REGISTERED');
+    return { success: false, error: 'NOT_PRE_REGISTERED' };
   }
 
   // 4. OPEN_LINK Campaign: Perform Atomic Quota Check & Reservation
@@ -73,7 +73,7 @@ export async function submitBiodata(
   `;
 
   if (assignedTests.length === 0) {
-    throw new Error('NO_TESTS_ASSIGNED');
+    return { success: false, error: 'NO_TESTS_ASSIGNED' };
   }
 
   // Track deducted test IDs for rollback in case of partial failure
@@ -97,7 +97,7 @@ export async function submitBiodata(
           WHERE customer_id = ${customerId} AND test_id = ${revertedTestId}
         `;
       }
-      throw new Error('KUOTA_HABIS');
+      return { success: false, error: 'KUOTA_HABIS' };
     }
 
     deductedTestIds.push(testItem.test_id);
@@ -127,7 +127,7 @@ export async function submitBiodata(
     RETURNING id
   `;
 
-  return result[0].id;
+  return { success: true, participantId: result[0].id };
 }
 
 export async function submitTestResult(participantId: number, testId: number, answers: any) {

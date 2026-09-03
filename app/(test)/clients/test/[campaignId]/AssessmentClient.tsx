@@ -131,12 +131,26 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   }, [customer]);
 
   useEffect(() => {
+    if (existingParticipant?.status === 'COMPLETED') {
+      setStage('already_completed');
+    }
+  }, [existingParticipant]);
+
+  useEffect(() => {
     let timer: any;
+    const currentTestCode = tests[activeIdx]?.code?.toLowerCase();
+
     if (stage === 'questions' && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            finishActiveTest();
+            clearInterval(timer);
+            if (currentTestCode === 'wpt') {
+              toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
+              finishActiveTest();
+            } else {
+              toast.warning('Waktu alokasi pengerjaan telah selesai, namun Anda masih dapat meninjau dan menyelesaikan jawaban sebelum menekan tombol Selesai.');
+            }
             return 0;
           }
           return prev - 1;
@@ -144,7 +158,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [stage, timeLeft]);
+  }, [stage, timeLeft, activeIdx, tests]);
 
   if (!campaign || tests.length === 0) {
     return (
@@ -160,19 +174,23 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const handleBiodataSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const pid = await submitBiodata(campaign.id, userName, email, phoneNumber, nik);
-      setParticipantId(pid);
+      const res = await submitBiodata(campaign.id, userName, email, phoneNumber, nik);
+      if (!res.success) {
+        if (res.error === 'ALREADY_COMPLETED') {
+          setStage('already_completed');
+        } else if (res.error === 'KUOTA_HABIS') {
+          setStage('kuota_habis');
+        } else if (res.error === 'NOT_PRE_REGISTERED') {
+          setStage('not_pre_registered');
+        } else {
+          toast.error('Gagal mendaftar: ' + (res.error || 'Terjadi kesalahan'));
+        }
+        return;
+      }
+      setParticipantId(res.participantId);
       setStage('instruction');
     } catch (err: any) {
-      if (err.message?.includes('ALREADY_COMPLETED')) {
-        setStage('already_completed');
-      } else if (err.message?.includes('KUOTA_HABIS')) {
-        setStage('kuota_habis');
-      } else if (err.message?.includes('NOT_PRE_REGISTERED')) {
-        setStage('not_pre_registered');
-      } else {
-        toast.error('Gagal mendaftar: ' + err.message);
-      }
+      toast.error('Gagal mendaftar: ' + err.message);
     }
   };
 
@@ -227,6 +245,8 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
           return;
         }
       }
+
+      toast.success(`Jawaban tes ${t.name || 'psikotes'} berhasil disimpan!`);
 
       if (activeIdx < tests.length - 1) {
         setStage('transition');
