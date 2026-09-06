@@ -84,7 +84,7 @@ export function DoneStage({ userName, customer }: DoneStageProps) {
         <LogOut className="w-4 h-4 text-slate-400" /> Logout Sekarang
       </button>
 
-      <p className="text-[10px] text-slate-300 uppercase tracking-[0.3em] font-bold">PsikoTest.id Enterprise</p>
+      <p className="text-[10px] text-slate-300 uppercase tracking-[0.3em] font-bold">RuangTes Enterprise</p>
     </div>
   );
 }

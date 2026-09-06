@@ -15,7 +15,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: 'Ruangtes',
+  title: 'RuangTes',
   description: 'Platform Asesmen Psikotes Online Terintegrasi & Serverless',
   icons: {
     icon: [

@@ -16,10 +16,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const menuItems: SidebarItem[] = [
     { id: 'overview', label: 'Ringkasan Sistem', icon: <LayoutDashboard />, href: '/panel' },
     { id: 'customers', label: 'Perusahaan / Klien', icon: <Building2 />, href: '/panel/customers' },
+    { id: 'participants', label: 'Peserta Asesmen', icon: <UserCog />, href: '/panel/participants' },
     { id: 'orders', label: 'Transaksi & Invoice', icon: <Receipt />, href: '/panel/orders' },
     { id: 'tests', label: 'Master Alat Tes', icon: <FileSpreadsheet />, href: '/panel/tests' },
     { id: 'norms', label: 'Norma & Skoring', icon: <Scroll />, href: '/panel/norms' },
     { id: 'templates', label: 'Template Email & Notif', icon: <Mail />, href: '/panel/templates' },
+    { id: 'payment-methods', label: 'Metode Pembayaran', icon: <Receipt />, href: '/panel/payment-methods' },
     { id: 'cms', label: 'Konten Landing Page', icon: <Globe />, href: '/panel/cms' },
     { id: 'admins', label: 'Manajemen Admin', icon: <UserCog />, href: '/panel/admins' }
   ];
@@ -27,10 +29,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   // Determine active tab from pathname
   let activeTab = 'overview';
   if (pathname.includes('/panel/customers')) activeTab = 'customers';
+  else if (pathname.includes('/panel/participants')) activeTab = 'participants';
   else if (pathname.includes('/panel/orders')) activeTab = 'orders';
   else if (pathname.includes('/panel/tests')) activeTab = 'tests';
   else if (pathname.includes('/panel/norms')) activeTab = 'norms';
   else if (pathname.includes('/panel/templates')) activeTab = 'templates';
+  else if (pathname.includes('/panel/payment-methods')) activeTab = 'payment-methods';
   else if (pathname.includes('/panel/cms')) activeTab = 'cms';
   else if (pathname.includes('/panel/admins')) activeTab = 'admins';
 

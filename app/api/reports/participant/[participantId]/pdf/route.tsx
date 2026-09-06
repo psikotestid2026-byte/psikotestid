@@ -306,7 +306,7 @@ export function UniversalPdfDocument({
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>LAPORAN HASIL ASESMEN PSIKOTES</Text>
-            <Text style={styles.subtitle}>PsikoTest.id Enterprise · Laporan Lengkap Evaluasi Talenta</Text>
+            <Text style={styles.subtitle}>RuangTes Enterprise · Laporan Lengkap Evaluasi Talenta</Text>
           </View>
           <Text style={styles.companyBadge}>{participant.company_name || 'Corporate'}</Text>
         </View>
@@ -379,7 +379,7 @@ export function UniversalPdfDocument({
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Laporan ini diterbitkan secara resmi & terverifikasi oleh PsikoTest.id Enterprise Platform.
+          Laporan ini diterbitkan secara resmi & terverifikasi oleh RuangTes Enterprise Platform.
         </Text>
       </Page>
     </Document>

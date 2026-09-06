@@ -60,6 +60,72 @@
   }
 }
 
+/* TipTap & Rendered HTML Instruction Styles */
+.prose-instruction,
+.prose-instruction * {
+  box-sizing: border-box;
+}
+
+.prose-instruction ol,
+ol.instruction-list {
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+
+.prose-instruction ul,
+ul.instruction-list {
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+
+.prose-instruction li,
+ol.instruction-list li,
+ul.instruction-list li {
+  display: list-item !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.6 !important;
+}
+
+.prose-instruction p {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: 140px;
+}
+.tiptap-editor .ProseMirror ol {
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+.tiptap-editor .ProseMirror ul {
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+.tiptap-editor .ProseMirror li {
+  display: list-item !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
 @layer components {
   .glass-nav {
     background: rgba(255, 255, 255, 0.85);

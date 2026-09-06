@@ -14,7 +14,7 @@ export default function PublicPage() {
               <Brain className="w-4 h-4 text-white" />
             </div>
             <span className="font-display font-800 text-brand-800 text-lg leading-tight tracking-tight">
-              PsikoTest<span className="text-brand-500">.id</span>
+              RuangTes
             </span>
           </Link>
 
@@ -237,7 +237,7 @@ export default function PublicPage() {
       <section className="hero-mesh py-16 px-4">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Siap Memodernisasi Proses Asesmen Anda?</h2>
-          <p className="text-brand-100 text-lg mb-8 max-w-2xl mx-auto">Bergabung dengan ratusan perusahaan dan institusi pendidikan yang telah mempercayakan asesmen psikologinya pada PsikoTest.id.</p>
+          <p className="text-brand-100 text-lg mb-8 max-w-2xl mx-auto">Bergabung dengan ratusan perusahaan dan institusi pendidikan yang telah mempercayakan asesmen psikologinya pada RuangTes.</p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/clients" className="bg-white text-brand-700 font-bold px-8 py-4 rounded-xl text-base hover:bg-brand-50 transition-all shadow-xl flex items-center gap-2">
               Buat Akun Admin Sekarang
@@ -256,7 +256,7 @@ export default function PublicPage() {
                 <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
                   <Brain className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-display font-bold text-white text-base">PsikoTest<span className="text-brand-400">.id</span></span>
+                <span className="font-display font-bold text-white text-base">RuangTes</span>
               </div>
               <p className="text-sm leading-relaxed text-slate-500 mb-6">Platform B2B SaaS Asesmen Psikologi. Kelola rekrutmen dan pemetaan talenta lebih cerdas dan otomatis.</p>
               <div className="flex gap-3">
@@ -300,7 +300,7 @@ export default function PublicPage() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
-            <span>© 2026 PsikoTest.id Enterprise — Hak Cipta Dilindungi.</span>
+            <span>© 2026 RuangTes — Hak Cipta Dilindungi.</span>
             <div className="flex items-center gap-4">
               <Link href="/panel" className="hover:text-slate-400 transition-colors">Portal Super Admin</Link>
               <span>Syarat & Ketentuan</span>

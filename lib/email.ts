@@ -23,7 +23,7 @@ async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
 }
 
 export async function sendOtpEmail(to: string, otp: string): Promise<boolean> {
-  const from = process.env.SMTP_FROM || `"PsikoTest.id Enterprise" <${process.env.SMTP_USER}>`;
+  const from = process.env.SMTP_FROM || `"RuangTes Enterprise" <${process.env.SMTP_USER}>`;
 
   let htmlContent = '';
 
@@ -63,7 +63,7 @@ export async function sendOtpEmail(to: string, otp: string): Promise<boolean> {
       </head>
       <body>
         <div class="container">
-          <div class="header"><h2>PsikoTest.id Enterprise</h2></div>
+          <div class="header"><h2>RuangTes Enterprise</h2></div>
           <div class="content">
             <h3>Verifikasi Email Akun Corporate</h3>
             <p>Kode OTP verifikasi email perusahaan Anda:</p>
@@ -82,7 +82,7 @@ export async function sendOtpEmail(to: string, otp: string): Promise<boolean> {
     await transporter.sendMail({
       from,
       to,
-      subject: `[${otp}] Kode OTP Verifikasi Registrasi Corporate PsikoTest.id`,
+      subject: `[${otp}] Kode OTP Verifikasi Registrasi Corporate RuangTes`,
       html: htmlContent,
     });
     return true;
@@ -179,7 +179,7 @@ export async function sendParticipantCompletedEmailToHr(participantId: number): 
       `;
     }
 
-    const from = process.env.SMTP_FROM || `"PsikoTest.id Enterprise" <${process.env.SMTP_USER}>`;
+    const from = process.env.SMTP_FROM || `"RuangTes Enterprise" <${process.env.SMTP_USER}>`;
     const attachments = pdfBuffer
       ? [
           {

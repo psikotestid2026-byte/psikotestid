@@ -556,7 +556,7 @@ export default function ClientLogin() {
             Solusi Asesmen Psikotes Modern & Automated
           </h1>
           <p className="text-xs xl:text-sm text-indigo-100 leading-relaxed">
-            PsikoTest.id Enterprise mempermudah proses rekrutmen karyawan dengan instrumen tes psikologi terstandarisasi, skoring instan, serta laporan grafik hasil tes otomatis secara real-time.
+            RuangTes Enterprise mempermudah proses rekrutmen karyawan dengan instrumen tes psikologi terstandarisasi, skoring instan, serta laporan grafik hasil tes otomatis secara real-time.
           </p>
         </div>
       </div>

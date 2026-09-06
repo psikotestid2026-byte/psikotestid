@@ -356,7 +356,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
                   <span className="text-slate-500">Atas Nama Rekening:</span>
                   <strong className="text-slate-800 font-bold">
-                    {activeInstructionOrder.bank_details?.account_name || 'PT PsikoTest Solusi Indonesia'}
+                    {activeInstructionOrder.bank_details?.account_name || 'PT RuangTes Solusi Indonesia'}
                   </strong>
                 </div>
               </div>

@@ -40,7 +40,7 @@ export default function AssessmentLoading() {
             <div className="bg-indigo-600 h-full w-2/3 rounded-full animate-pulse" />
           </div>
 
-          <p className="text-[10px] text-slate-400 font-mono">PsikoTest.id Enterprise Platform</p>
+          <p className="text-[10px] text-slate-400 font-mono">RuangTes Enterprise Platform</p>
         </div>
       </main>
 

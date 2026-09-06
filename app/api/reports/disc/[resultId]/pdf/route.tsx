@@ -151,7 +151,7 @@ export function DiscPdfDocument({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>DISC PERSONALITY ASSESSMENT REPORT</Text>
-          <Text style={styles.subtitle}>PsikoTest.id Enterprise · Laporan Asesmen Kepribadian</Text>
+          <Text style={styles.subtitle}>RuangTes Enterprise · Laporan Asesmen Kepribadian</Text>
         </View>
 
         {/* Participant Info */}
@@ -254,7 +254,7 @@ export function DiscPdfDocument({
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Laporan ini diterbitkan secara otomatis oleh PsikoTest.id Enterprise.
+          Laporan ini diterbitkan secara otomatis oleh RuangTes Enterprise.
         </Text>
       </Page>
     </Document>

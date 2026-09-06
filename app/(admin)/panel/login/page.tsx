@@ -50,7 +50,7 @@ export default function SuperadminLogin() {
           <ShieldAlert className="w-8 h-8" />
         </div>
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-white">
-          PsikoTest.id Enterprise
+          RuangTes Enterprise
         </h2>
         <p className="mt-2 text-center text-sm text-slate-400">
           Secured Superadmin Portal
