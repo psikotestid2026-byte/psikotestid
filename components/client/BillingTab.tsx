@@ -2,8 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
+
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        token: string,
+        callbacks?: {
+          onSuccess?: (result: any) => void;
+          onPending?: (result: any) => void;
+          onError?: (result: any) => void;
+          onClose?: () => void;
+        }
+      ) => void;
+    };
+  }
+}
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
@@ -35,6 +53,8 @@ import {
   ShoppingBag,
   Sparkles,
   Check,
+  Store,
+  ChevronDown,
 } from 'lucide-react';
 
 interface BillingTabProps {
@@ -45,6 +65,7 @@ interface BillingTabProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) {
+  const router = useRouter();
   const { data: clientData, mutate: mutateClientData } = useSWR('/api/client/data', fetcher, {
     fallbackData: data,
   });
@@ -73,59 +94,14 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
   const [purchaseQuantity, setPurchaseQuantity] = useState<number>(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  // Active Inline Instruction Order State
-  const [activeInstructionOrder, setActiveInstructionOrder] = useState<any | null>(null);
-
-  // File Upload State for Payment Proof (Vercel Blob)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isUploadingProof, setIsUploadingProof] = useState(false);
-  const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
-
-  // Countdown timer calculation for 24h expiration
-  const [countdownStr, setCountdownStr] = useState<string>('23:59:59');
+  // Accordion state for grouped payment methods in Top-Up Modal (default closed)
+  const [openPaymentGroupKey, setOpenPaymentGroupKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (openTopUpOnMount) {
       setIsTopUpModalOpen(true);
     }
   }, [openTopUpOnMount]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (activeInstructionOrder?.created_at) {
-      const createdAt = new Date(activeInstructionOrder.created_at).getTime();
-      const expiresAt = createdAt + 24 * 60 * 60 * 1000; // 24 hours
-
-      interval = setInterval(() => {
-        const now = Date.now();
-        const diff = expiresAt - now;
-        if (diff <= 0) {
-          setCountdownStr('00:00:00 (Kadaluwarsa)');
-          if (interval) clearInterval(interval);
-        } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          setCountdownStr(
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-          );
-        }
-      }, 1000);
-    }
-
-    if (activeInstructionOrder?.proof_url) {
-      setPreviewUrl(activeInstructionOrder.proof_url);
-    } else {
-      setPreviewUrl(null);
-    }
-    setSelectedFile(null);
-    setCompressionInfo(null);
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [activeInstructionOrder]);
 
   const handleSelectPreset = (val: number) => {
     setSelectedPreset(val);
@@ -148,6 +124,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         body: JSON.stringify({
           amount,
           order_type: 'TOPUP_BALANCE',
+          payment_method_code: selectedPaymentMethod,
         }),
       });
       const result = await res.json();
@@ -159,9 +136,30 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
 
       toast.success('Invoice tagihan Top-Up berhasil dibuat!');
       setIsTopUpModalOpen(false);
-      setActiveInstructionOrder(result.data);
+
+      const orderId = result.data?.id;
+
+      // 1. Instantly seed SWR cache so PaymentInstructionView displays in 0ms without waiting for API refetch
+      if (orderId && result.data) {
+        mutate(`/api/client/orders/${orderId}`, { success: true, data: result.data }, false);
+      }
+
+      // 2. Refresh orders & client data in background (non-blocking)
       mutateOrders();
       mutateClientData();
+
+      // 3. Trigger popup Snap Midtrans if applicable
+      if (
+        result.data?.payment_provider?.toLowerCase() === 'midtrans' &&
+        result.data?.payment_token
+      ) {
+        openMidtransSnap(result.data.payment_token, result.data.payment_url);
+      }
+
+      // 4. Instant navigation to payment instructions
+      if (orderId) {
+        router.push(`/clients/payments/${orderId}`);
+      }
     } catch (err) {
       toast.error('Terjadi kesalahan jaringan.');
     } finally {
@@ -201,62 +199,30 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const originalFile = e.target.files[0];
-      try {
-        const { compressedFile, originalSizeKB, compressedSizeKB } = await compressPaymentProof(originalFile);
-        setSelectedFile(compressedFile);
-        setPreviewUrl(URL.createObjectURL(compressedFile));
-
-        if (originalSizeKB > compressedSizeKB) {
-          const infoText = `Dicompress: ${originalSizeKB} KB ➔ ${compressedSizeKB} KB (HD Tajam)`;
-          setCompressionInfo(infoText);
-          toast.success(`Foto bukti transfer dicompress dari ${originalSizeKB} KB ke ${compressedSizeKB} KB (teks tetap tajam & tidak blur).`);
-        } else {
-          setCompressionInfo(`Ukuran optimal: ${compressedSizeKB} KB`);
-        }
-      } catch (err) {
-        setSelectedFile(originalFile);
-        setPreviewUrl(URL.createObjectURL(originalFile));
-      }
-    }
-  };
-
-  const handleUploadPaymentProof = async () => {
-    if (!selectedFile || !activeInstructionOrder?.id) {
-      toast.error('Pilih file foto bukti transfer terlebih dahulu sebelum mengonfirmasi.');
-      return;
-    }
-
-    setIsUploadingProof(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('order_id', activeInstructionOrder.id.toString());
-
-      const res = await fetch('/api/client/orders/proof', {
-        method: 'POST',
-        body: formData,
+  const openMidtransSnap = (token: string, redirectFallbackUrl?: string) => {
+    if (typeof window !== 'undefined' && window.snap && typeof window.snap.pay === 'function') {
+      window.snap.pay(token, {
+        onSuccess: function (result: any) {
+          toast.success('Pembayaran Midtrans berhasil!');
+          mutateOrders();
+          mutateClientData();
+        },
+        onPending: function (result: any) {
+          toast.info('Menunggu penyelesaian pembayaran.');
+          mutateOrders();
+        },
+        onError: function (result: any) {
+          toast.error('Pembayaran gagal atau dibatalkan.');
+          mutateOrders();
+        },
+        onClose: function () {
+          toast('Modal pembayaran ditutup.');
+        },
       });
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        toast.error(result.error || 'Gagal mengunggah bukti transfer.');
-        return;
-      }
-
-      toast.success('Bukti transfer berhasil diunggah & notifikasi verifikasi dikirim ke Superadmin!');
-      setActiveInstructionOrder((prev: any) => ({
-        ...prev,
-        proof_url: result.proof_url,
-      }));
-      setSelectedFile(null);
-      mutateOrders();
-    } catch (err) {
-      toast.error('Terjadi kesalahan jaringan saat mengunggah.');
-    } finally {
-      setIsUploadingProof(false);
+    } else if (redirectFallbackUrl) {
+      window.open(redirectFallbackUrl, '_blank');
+    } else {
+      toast.error('Script Snap Midtrans sedang dimuat, silakan coba sesaat lagi.');
     }
   };
 
@@ -267,191 +233,6 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
-      {/* SECTION INLINE: Detail Instruksi Pembayaran & Upload Bukti Transfer */}
-      {activeInstructionOrder && (
-        <div className="bg-white rounded-3xl border-2 border-indigo-500 shadow-xl overflow-hidden animate-fadeIn">
-          {/* Header Banner */}
-          <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
-                <Building2 className="w-5 h-5 text-indigo-300" />
-              </div>
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/30 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                  Tagihan PENDING — Menunggu Transfer & Konfirmasi
-                </span>
-                <h3 className="text-lg font-extrabold tracking-tight mt-0.5">
-                  {activeInstructionOrder.payment_method || 'Instruksi Transfer Bank (Manual)'}
-                </h3>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setActiveInstructionOrder(null)}
-              className="p-2 hover:bg-white/10 rounded-xl text-slate-300 hover:text-white transition-all flex items-center gap-1 text-xs font-bold shrink-0"
-            >
-              <X className="w-4 h-4" /> Tutup Petunjuk
-            </button>
-          </div>
-
-          {/* Body Content Inline Grid */}
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/50">
-            {/* Left Column: Expiry & Dynamic Bank Details */}
-            <div className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between text-xs text-amber-900 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="font-semibold">Batas Waktu Transfer (24 Jam):</span>
-                </div>
-                <span className="font-mono font-extrabold text-sm text-amber-700 bg-amber-100 px-3 py-1 rounded-xl border border-amber-300">
-                  {countdownStr}
-                </span>
-              </div>
-
-              <div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-sm space-y-1">
-                <span className="text-xs text-slate-500 font-medium block">Total Nominal yang Harus Ditransfer (Presisi):</span>
-                <div className="text-3xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center gap-3">
-                  Rp {Number(activeInstructionOrder.total_amount).toLocaleString('id-ID')}
-                  <button
-                    onClick={() => copyToClipboard(activeInstructionOrder.total_amount.toString(), 'Nominal transfer')}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-xl text-xs text-indigo-700 font-bold flex items-center gap-1.5 transition-all border border-indigo-200"
-                    title="Salin Nominal Presisi"
-                  >
-                    <Copy className="w-3.5 h-3.5" /> Salin Nominal
-                  </button>
-                </div>
-                <p className="text-xs text-amber-800 font-semibold bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-3 leading-relaxed">
-                  ⚠️ Transfer HARUS persis sama hingga 3 digit terakhir untuk otomatisasi verifikasi Superadmin.
-                </p>
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <span className="text-xs font-bold text-slate-500">Bank Tujuan Transfer:</span>
-                  <span className="text-xs font-extrabold text-indigo-900 font-mono">
-                    {activeInstructionOrder.bank_details?.bank_name || 'BCA (Bank Central Asia)'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-slate-500 block">Nomor Rekening:</span>
-                    <span className="text-lg font-extrabold text-slate-900 font-mono tracking-wider">
-                      {activeInstructionOrder.bank_details?.account_number || '1234567890'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(
-                        activeInstructionOrder.bank_details?.account_number || '1234567890',
-                        'Nomor rekening'
-                      )
-                    }
-                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Copy className="w-3.5 h-3.5" /> Salin Rekening
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
-                  <span className="text-slate-500">Atas Nama Rekening:</span>
-                  <strong className="text-slate-800 font-bold">
-                    {activeInstructionOrder.bank_details?.account_name || 'PT RuangTes Solusi Indonesia'}
-                  </strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Vercel Blob Payment Proof Uploader */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-indigo-600" /> Unggah Bukti Transfer & Konfirmasi
-                  </h4>
-                  {activeInstructionOrder.proof_url && (
-                    <a
-                      href={activeInstructionOrder.proof_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-emerald-600 hover:underline flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Bukti Ter-unggah
-                    </a>
-                  )}
-                </div>
-
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1 mb-3">
-                  <strong className="flex items-center gap-1.5 text-amber-800 font-bold">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" /> PENTING — PERATURAN KONFIRMASI:
-                  </strong>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Transaksi <strong>TIDAK AKAN dicek/diproses</strong> Superadmin sampai Anda menekan tombol <strong>"KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG"</strong> di bawah.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded-xl"
-                  />
-
-                  {compressionInfo && (
-                    <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
-                      <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{compressionInfo}</span>
-                    </div>
-                  )}
-
-                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-[11px] font-extrabold text-red-900 flex items-center gap-1.5 mt-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                    <span>⚠️ PENTING: Tekan tombol MERAH di bawah ini untuk mengirim bukti transfer ke Superadmin!</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleUploadPaymentProof}
-                    disabled={isUploadingProof || !selectedFile}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-xl border-2 border-red-400 uppercase tracking-wide flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] disabled:opacity-50"
-                  >
-                    {isUploadingProof ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4 text-white" />
-                    )}
-                    {isUploadingProof ? 'Mengunggah & Mengirim...' : 'KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG'}
-                  </button>
-                </div>
-
-                {previewUrl && (
-                  <div className="mt-4 p-3 bg-indigo-50/60 border border-indigo-200 rounded-2xl flex items-center gap-3">
-                    <img src={previewUrl} alt="Preview Bukti Transfer" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />
-                    <div className="text-xs overflow-hidden">
-                      <span className="font-bold text-slate-900 block truncate">Struk Transfer Tersimpan</span>
-                      <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Teks Tajam & Jelas (HD)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex justify-end">
-                <Button
-                  onClick={() => setActiveInstructionOrder(null)}
-                  variant="outline"
-                  className="text-xs font-bold text-slate-700"
-                >
-                  Selesai / Sembunyikan Petunjuk
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Banner Pemandu Setelah Beli Kuota */}
       <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-5 text-white shadow-md border border-emerald-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -573,101 +354,27 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         </div>
       </div>
 
-      {/* Main Content Grid: Order History & Wallet Ledger */}
-      <div className="grid grid-cols-1 gap-6">
-        <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">
-          <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
-            <h3 className="font-display font-bold text-sm text-slate-800 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-indigo-600" /> Riwayat Transaksi & Tagihan Invoice
-            </h3>
-            <span className="text-xs font-semibold text-slate-500">Total: {orders.length} Transaksi</span>
+      {/* Banner Menuju Halaman Riwayat Transaksi & Tagihan Invoice */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shrink-0">
+            <History className="w-6 h-6 text-indigo-600" />
           </div>
+          <div>
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              Riwayat Transaksi, Tagihan Invoice & Mutasi Saldo
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Lihat seluruh daftar tagihan invoice, status pembayaran lunas, unggah bukti transfer, dan unduh invoice resmi di halaman terpisah.
+            </p>
+          </div>
+        </div>
 
-          <Table headers={["Invoice Code", "Jenis Transaksi", "Tanggal", "Total Tagihan", "Metode Bayar", "Status", "Bukti Transfer", "Aksi"]} isEmpty={orders.length === 0}>
-            {orders.map((o: any) => (
-              <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-3.5 px-4 font-mono font-bold text-indigo-900 text-xs">{o.invoice_code}</td>
-                <td className="py-3.5 px-4 text-xs font-semibold text-slate-700">
-                  {o.order_type === 'TOPUP_BALANCE' ? (
-                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-[10px]">
-                      Top-Up Saldo Wallet
-                    </span>
-                  ) : o.order_type === 'BALANCE_PURCHASE' ? (
-                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-full font-bold text-[10px]">
-                      Beli Kuota Saldo Wallet
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-bold text-[10px]">
-                      Beli Kuota Direct
-                    </span>
-                  )}
-                </td>
-                <td className="py-3.5 px-4 text-xs text-slate-500">
-                  {new Date(o.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </td>
-                <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-xs">
-                  Rp {Number(o.total_amount).toLocaleString('id-ID')}
-                </td>
-                <td className="py-3.5 px-4 text-xs text-slate-600 font-medium">
-                  {o.payment_method_name || 'Saldo Wallet / Transfer BCA'}
-                </td>
-                <td className="py-3.5 px-4">
-                  {o.status === 'PAID' ? (
-                    <Badge variant="success">LUNAS (PAID)</Badge>
-                  ) : o.status === 'PENDING' ? (
-                    <Badge variant="warning">MENUNGGU VERIFIKASI</Badge>
-                  ) : (
-                    <Badge variant="danger">{o.status}</Badge>
-                  )}
-                </td>
-                <td className="py-3.5 px-4">
-                  {o.proof_url ? (
-                    <a
-                      href={o.proof_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" /> Ter-unggah
-                    </a>
-                  ) : (
-                    <span className="text-[11px] text-slate-400">
-                      {o.order_type === 'BALANCE_PURCHASE' ? 'Potong Saldo' : 'Belum diunggah'}
-                    </span>
-                  )}
-                </td>
-                <td className="py-3.5 px-4 text-right">
-                  {o.status === 'PENDING' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setActiveInstructionOrder({
-                          ...o,
-                          bank_details: {
-                            bank_name: 'Bank Central Asia (BCA)',
-                            account_number: '1234567890',
-                            account_name: 'PT PsikoTest Solusi Indonesia',
-                          },
-                        });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="text-xs font-bold text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
-                    >
-                      Petunjuk / Unggah Bukti
-                    </Button>
-                  ) : (
-                    <span className="text-[11px] text-slate-400 italic">Selesai</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </Table>
-        </Card>
+        <Link href="/clients/transactions">
+          <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-sm flex items-center gap-2 shrink-0">
+            <CreditCard className="w-4 h-4" /> Buka Riwayat Transaksi & Tagihan ➔
+          </Button>
+        </Link>
       </div>
 
       {/* Modal 1: Top-Up Saldo Form */}
@@ -723,7 +430,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-2">Pilih Metode Pembayaran</label>
-            <div className="space-y-2 max-h-52 overflow-y-auto pr-1 border border-slate-200/80 rounded-2xl p-1.5 bg-slate-50/50">
+            <div className="space-y-4 max-h-72 overflow-y-auto pr-1.5 border border-slate-200/80 rounded-2xl p-2.5 bg-slate-50/50">
               {dbPaymentMethods.length === 0 ? (
                 <label className="flex items-center justify-between p-3 rounded-2xl border border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-500/20 cursor-pointer">
                   <div className="flex items-center space-x-3">
@@ -738,44 +445,135 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                   </span>
                 </label>
               ) : (
-                dbPaymentMethods.map((pm: any) => (
-                  <label
-                    key={pm.id}
-                    className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
-                      selectedPaymentMethod === pm.code
-                        ? 'bg-indigo-50/60 border-indigo-500 ring-2 ring-indigo-500/20'
-                        : 'bg-white border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        name="payment_method"
-                        value={pm.code}
-                        checked={selectedPaymentMethod === pm.code}
-                        onChange={() => setSelectedPaymentMethod(pm.code)}
-                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
-                      />
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">{pm.name}</span>
-                        <span className="text-[11px] text-slate-500 block">
-                          {pm.code === 'MANUAL_BCA'
-                            ? 'Verifikasi instan via Telegram Superadmin & Vercel Blob'
-                            : `Biaya Admin: Rp ${Number(pm.admin_fee_flat || 0).toLocaleString('id-ID')}`}
-                        </span>
+                (() => {
+                  const groups = [
+                    {
+                      key: 'va',
+                      title: 'Virtual Account (VA Bank)',
+                      icon: <Building2 className="w-4 h-4 text-indigo-600" />,
+                      filter: (pm: any) => pm.type?.toLowerCase() === 'va',
+                    },
+                    {
+                      key: 'ewallet',
+                      title: 'E-Wallet & QRIS (Instant)',
+                      icon: <QrCode className="w-4 h-4 text-emerald-600" />,
+                      filter: (pm: any) => {
+                        const t = pm.type?.toLowerCase();
+                        return t === 'e-wallet' || t === 'qr_code' || t === 'credit_card';
+                      },
+                    },
+                    {
+                      key: 'retail',
+                      title: 'Gerai Retail / Minimarket',
+                      icon: <Store className="w-4 h-4 text-amber-600" />,
+                      filter: (pm: any) => pm.type?.toLowerCase() === 'retail_outlet',
+                    },
+                    {
+                      key: 'manual',
+                      title: 'Transfer Bank Manual (Verifikasi Struk)',
+                      icon: <CreditCard className="w-4 h-4 text-blue-600" />,
+                      filter: (pm: any) => pm.type?.toLowerCase() === 'manual_transfer' || pm.provider?.toLowerCase() === 'manual',
+                    },
+                  ];
+
+                  return groups.map((grp) => {
+                    const methodsInGroup = dbPaymentMethods.filter(grp.filter);
+                    if (methodsInGroup.length === 0) return null;
+                    const isGroupOpen = openPaymentGroupKey === grp.key;
+                    const hasSelectedMethod = methodsInGroup.some((pm: any) => pm.code === selectedPaymentMethod);
+
+                    return (
+                      <div key={grp.key} className="border border-slate-200/80 rounded-2xl bg-white overflow-hidden shadow-2xs transition-all">
+                        {/* Group Header / Accordion Trigger */}
+                        <button
+                          type="button"
+                          onClick={() => setOpenPaymentGroupKey(isGroupOpen ? null : grp.key)}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left transition-colors ${
+                            isGroupOpen ? 'bg-slate-50 border-b border-slate-100' : 'hover:bg-slate-50/80'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {grp.icon}
+                            <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                              {grp.title}
+                            </span>
+                            {hasSelectedMethod && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                Dipilih
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {methodsInGroup.length} Saluran
+                            </span>
+                            <ChevronDown
+                              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                                isGroupOpen ? 'rotate-180 text-indigo-600' : ''
+                              }`}
+                            />
+                          </div>
+                        </button>
+
+                        {/* List Items (Accordion Body - Default Closed) */}
+                        {isGroupOpen && (
+                          <div className="p-2 space-y-1.5 bg-slate-50/40">
+                            {methodsInGroup.map((pm: any) => (
+                              <label
+                                key={pm.id}
+                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                  selectedPaymentMethod === pm.code
+                                    ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs'
+                                    : 'bg-white border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <input
+                                    type="radio"
+                                    name="payment_method"
+                                    value={pm.code}
+                                    checked={selectedPaymentMethod === pm.code}
+                                    onChange={() => setSelectedPaymentMethod(pm.code)}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                                  />
+                                  {pm.logo_url && (
+                                    <div className="w-10 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center p-1 shrink-0 shadow-2xs">
+                                      <img src={pm.logo_url} alt={pm.name} className="max-h-full max-w-full object-contain" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-bold text-slate-900">{pm.name}</span>
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 uppercase border border-slate-200">
+                                        {pm.provider}
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] text-slate-500 block">
+                                      {pm.provider?.toLowerCase() === 'manual'
+                                        ? 'Verifikasi instan via Telegram Superadmin & Vercel Blob'
+                                        : Number(pm.admin_fee_flat || 0) > 0
+                                        ? `Biaya Admin: Rp ${Number(pm.admin_fee_flat).toLocaleString('id-ID')}`
+                                        : 'Bebas Biaya Admin (Rp 0)'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span
+                                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                    pm.is_active
+                                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  }`}
+                                >
+                                  {pm.is_active ? 'Aktif' : 'Nonaktif'}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <span
-                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                        pm.code === 'MANUAL_BCA'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}
-                    >
-                      {pm.code === 'MANUAL_BCA' ? 'Aktif' : 'Tersedia'}
-                    </span>
-                  </label>
-                ))
+                    );
+                  });
+                })()
               )}
             </div>
           </div>
@@ -784,9 +582,9 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
             <Button type="button" variant="outline" onClick={() => setIsTopUpModalOpen(false)}>
               Batal
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all duration-150">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-              {isSubmitting ? 'Memuat...' : 'Buat Tagihan Top-Up'}
+              {isSubmitting ? 'Memproses Tagihan...' : 'Buat Tagihan Top-Up'}
             </Button>
           </div>
         </form>
@@ -871,6 +669,17 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           </form>
         </Modal>
       )}
+
+      {/* Script Snap Midtrans Sandbox / Production */}
+      <Script
+        src={
+          process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true'
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js'
+        }
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-Bm9rvKq-RwzCAGJ5'}
+        strategy="lazyOnload"
+      />
     </div>
   );
 }

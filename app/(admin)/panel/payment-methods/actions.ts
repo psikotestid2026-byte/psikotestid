@@ -9,6 +9,7 @@ export async function getAdminPaymentMethods() {
       pm.id,
       pm.code,
       pm.name,
+      pm.logo_url,
       pm.type,
       pm.provider,
       pm.admin_fee_flat,

@@ -205,3 +205,187 @@ export async function sendParticipantCompletedEmailToHr(participantId: number): 
     return false;
   }
 }
+
+/**
+ * Send Payment Instruction Email to HR Client for Virtual Account & Minimarket/Retail
+ */
+export async function sendPaymentInstructionEmail(
+  orderId: number,
+  paymentCodeOrVa: string,
+  instructionsHtml: string
+): Promise<boolean> {
+  try {
+    const orderRows = await sql`
+      SELECT 
+        o.id,
+        o.invoice_code,
+        o.total_amount,
+        c.company_name,
+        c.contact_name,
+        c.email as customer_email,
+        pm.name as payment_method_name,
+        pm.type as payment_method_type,
+        pm.logo_url as payment_method_logo
+      FROM test_orders o
+      JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN payment_methods pm ON o.payment_method_id = pm.id
+      WHERE o.id = ${orderId}
+      LIMIT 1
+    `;
+
+    if (orderRows.length === 0) {
+      console.warn(`Order #${orderId} not found for instruction email.`);
+      return false;
+    }
+
+    const order = orderRows[0];
+    const customerEmail = order.customer_email;
+    if (!customerEmail) return false;
+
+    const paymentLabel = order.payment_method_type === 'retail_outlet' ? 'Kode Pembayaran Kasir' : 'Nomor Virtual Account';
+    const totalFormatted = Number(order.total_amount).toLocaleString('id-ID');
+
+    const paymentLogoHtml = order.payment_method_logo
+      ? `<img src="${order.payment_method_logo}" alt="${order.payment_method_name}" style="max-height: 28px; max-width: 90px; object-fit: contain; vertical-align: middle; margin-right: 8px;" />`
+      : '';
+
+    // Fetch template from notification_templates
+    const templateRows = await sql`
+      SELECT message_content FROM notification_templates
+      WHERE event_trigger = 'ORDER_INSTRUCTION_VA_RETAIL' AND is_active = true
+      LIMIT 1
+    `;
+
+    let html = '';
+    if (templateRows.length > 0 && templateRows[0].message_content) {
+      html = templateRows[0].message_content
+        .replace(/{invoice_code}/g, order.invoice_code)
+        .replace(/{contact_name}/g, order.contact_name || 'HR Admin')
+        .replace(/{company_name}/g, order.company_name || 'Perusahaan Klien')
+        .replace(/{payment_method_name}/g, `${paymentLogoHtml}${order.payment_method_name || 'Virtual Account'}`)
+        .replace(/{total_amount}/g, totalFormatted)
+        .replace(/{payment_code_label}/g, paymentLabel)
+        .replace(/{payment_code_or_va}/g, paymentCodeOrVa)
+        .replace(/{instructions_html}/g, instructionsHtml || '<p>Selesaikan pembayaran melalui aplikasi bank atau gerai mitra terdekat.</p>');
+    } else {
+      html = `
+        <h2>Instruksi Pembayaran: ${order.invoice_code}</h2>
+        <p>Yth. <strong>${order.contact_name}</strong> (${order.company_name}),</p>
+        <p>Metode Pembayaran: ${paymentLogoHtml}<strong>${order.payment_method_name}</strong></p>
+        <p>${paymentLabel}: <strong style="font-size:20px;">${paymentCodeOrVa}</strong></p>
+        <p>Total Tagihan: <strong>Rp ${totalFormatted}</strong></p>
+        <div>${instructionsHtml}</div>
+      `;
+    }
+
+    const from = process.env.SMTP_FROM || `"PsikoTest.id Enterprise" <${process.env.SMTP_USER}>`;
+
+    await transporter.sendMail({
+      from,
+      to: customerEmail,
+      subject: `[Instruksi Bayar] Tagihan ${order.invoice_code} - ${order.payment_method_name}`,
+      html,
+    });
+
+    console.log(`Payment instruction email successfully sent to ${customerEmail} for order #${orderId}`);
+    return true;
+  } catch (err) {
+    console.error('Failed to send payment instruction email:', err);
+    return false;
+  }
+}
+
+/**
+ * Send Payment Completed (PAID) Confirmation Email to HR Client
+ * Applies to ALL payment channels (Xendit, Midtrans, Manual Transfer)
+ */
+export async function sendOrderPaidEmailToHr(orderId: number): Promise<boolean> {
+  try {
+    const orderRows = await sql`
+      SELECT 
+        o.id,
+        o.invoice_code,
+        o.order_type,
+        o.total_amount,
+        o.paid_at,
+        c.company_name,
+        c.contact_name,
+        c.email as customer_email,
+        pm.name as payment_method_name,
+        pm.logo_url as payment_method_logo
+      FROM test_orders o
+      JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN payment_methods pm ON o.payment_method_id = pm.id
+      WHERE o.id = ${orderId}
+      LIMIT 1
+    `;
+
+    if (orderRows.length === 0) {
+      console.warn(`Order #${orderId} not found for paid confirmation email.`);
+      return false;
+    }
+
+    const order = orderRows[0];
+    const customerEmail = order.customer_email;
+    if (!customerEmail) return false;
+
+    const appBaseUrl = process.env.NEXTAUTH_URL || 'https://psikotest.id';
+    const dashboardUrl = `${appBaseUrl}/clients/billing`;
+    const totalFormatted = Number(order.total_amount).toLocaleString('id-ID');
+    const paidAtFormatted = order.paid_at
+      ? new Date(order.paid_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })
+      : new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+
+    const orderImpactDesc = order.order_type === 'TOPUP_BALANCE'
+      ? `Saldo wallet corporate perusahaan Anda sebesar <strong>Rp ${totalFormatted}</strong> telah berhasil ditambahkan dan siap digunakan untuk pembelian kuota asesmen.`
+      : `Kuota instrumen tes psikotes yang Anda pesan telah berhasil dikreditkan ke akun perusahaan Anda dan siap dialokasikan ke kandidat.`;
+
+    const paymentLogoHtml = order.payment_method_logo
+      ? `<img src="${order.payment_method_logo}" alt="${order.payment_method_name}" style="max-height: 28px; max-width: 90px; object-fit: contain; vertical-align: middle; margin-right: 8px;" />`
+      : '';
+
+    // Fetch template from notification_templates
+    const templateRows = await sql`
+      SELECT message_content FROM notification_templates
+      WHERE event_trigger = 'ORDER_PAID_CONFIRMATION' AND is_active = true
+      LIMIT 1
+    `;
+
+    let html = '';
+    if (templateRows.length > 0 && templateRows[0].message_content) {
+      html = templateRows[0].message_content
+        .replace(/{invoice_code}/g, order.invoice_code)
+        .replace(/{contact_name}/g, order.contact_name || 'HR Admin')
+        .replace(/{company_name}/g, order.company_name || 'Perusahaan Klien')
+        .replace(/{payment_method_name}/g, `${paymentLogoHtml}${order.payment_method_name || 'Pembayaran Online'}`)
+        .replace(/{total_amount}/g, totalFormatted)
+        .replace(/{paid_at}/g, paidAtFormatted)
+        .replace(/{order_impact_desc}/g, orderImpactDesc)
+        .replace(/{dashboard_url}/g, dashboardUrl);
+    } else {
+      html = `
+        <h2>Pembayaran Tagihan Lunas (PAID): ${order.invoice_code}</h2>
+        <p>Halo <strong>${order.contact_name}</strong> (${order.company_name}),</p>
+        <p>Pembayaran Anda sebesar <strong>Rp ${totalFormatted}</strong> via ${paymentLogoHtml}<strong>${order.payment_method_name}</strong> telah berhasil diverifikasi lunas.</p>
+        <p>${orderImpactDesc}</p>
+        <p><a href="${dashboardUrl}">Kunjungi Dashboard Billing Klien</a></p>
+      `;
+    }
+
+    const from = process.env.SMTP_FROM || `"PsikoTest.id Enterprise" <${process.env.SMTP_USER}>`;
+
+    await transporter.sendMail({
+      from,
+      to: customerEmail,
+      subject: `[Lunas] Konfirmasi Pembayaran Tagihan ${order.invoice_code} Berhasil`,
+      html,
+    });
+
+    console.log(`Order PAID confirmation email successfully sent to ${customerEmail} for order #${orderId}`);
+    return true;
+  } catch (err) {
+    console.error('Failed to send order paid confirmation email:', err);
+    return false;
+  }
+}
+

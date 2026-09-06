@@ -36,6 +36,7 @@ interface PaymentMethodItem {
   id: number;
   code: string;
   name: string;
+  logo_url?: string | null;
   type: string;
   provider: string;
   admin_fee_flat: string | number;
@@ -313,13 +314,23 @@ export default function PaymentMethodsAdminPage() {
 
                       {/* Code & Name */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                          <CreditCard className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          {pm.name}
+                        <div className="flex items-center gap-3">
+                          {pm.logo_url ? (
+                            <div className="w-9 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center p-0.5 shrink-0 shadow-2xs">
+                              <img src={pm.logo_url} alt={pm.name} className="max-h-full max-w-full object-contain" />
+                            </div>
+                          ) : (
+                            <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center shrink-0">
+                              <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-900">{pm.name}</div>
+                            <span className="font-mono text-[10px] text-slate-400 font-semibold">
+                              {pm.code}
+                            </span>
+                          </div>
                         </div>
-                        <span className="font-mono text-[10px] text-slate-400 font-semibold">
-                          {pm.code}
-                        </span>
                       </td>
 
                       {/* Type & Provider */}

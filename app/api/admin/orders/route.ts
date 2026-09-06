@@ -160,6 +160,12 @@ export async function PUT(req: Request) {
       }
     }
 
+    // Trigger PAID Confirmation Email to HR Client for Manual Transfer
+    const { sendOrderPaidEmailToHr } = await import('@/lib/email');
+    sendOrderPaidEmailToHr(order_id).catch((err) =>
+      console.error('Admin Set Paid: Failed to send PAID email to HR:', err)
+    );
+
     return NextResponse.json({
       success: true,
       message: `Transaksi Invoice ${order.invoice_code} untuk ${order.company_name} berhasil dikonfirmasi LUNAS! Saldo wallet telah ditambahkan.`,

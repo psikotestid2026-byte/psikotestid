@@ -214,6 +214,7 @@ export default function ParticipantsAdminPage() {
                     <th className="py-3 px-4">Progres Tes</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Tanggal Daftar</th>
+                    <th className="py-3 px-4 text-center">Aksi / Laporan PDF</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -278,6 +279,18 @@ export default function ParticipantsAdminPage() {
                             month: 'short',
                             year: 'numeric',
                           })}
+                        </td>
+
+                        {/* Action PDF Download Button */}
+                        <td className="py-3.5 px-4 text-center">
+                          <a
+                            href={`/api/reports/participant/${p.id}/pdf`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-all shadow-xs"
+                          >
+                            <Download className="w-3.5 h-3.5" /> PDF Report
+                          </a>
                         </td>
                       </tr>
                     );

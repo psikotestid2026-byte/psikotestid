@@ -67,20 +67,22 @@
 }
 
 .prose-instruction ol,
-ol.instruction-list {
+ol.instruction-list,
+.instruction-container ol {
   list-style-type: decimal !important;
-  list-style-position: inside !important;
-  padding-left: 0.5rem !important;
+  list-style-position: outside !important;
+  padding-left: 1.25rem !important;
   margin-top: 0.5rem !important;
   margin-bottom: 0.5rem !important;
   display: block !important;
 }
 
 .prose-instruction ul,
-ul.instruction-list {
+ul.instruction-list,
+.instruction-container ul {
   list-style-type: disc !important;
-  list-style-position: inside !important;
-  padding-left: 0.5rem !important;
+  list-style-position: outside !important;
+  padding-left: 1.25rem !important;
   margin-top: 0.5rem !important;
   margin-bottom: 0.5rem !important;
   display: block !important;
@@ -88,14 +90,16 @@ ul.instruction-list {
 
 .prose-instruction li,
 ol.instruction-list li,
-ul.instruction-list li {
+ul.instruction-list li,
+.instruction-container li {
   display: list-item !important;
-  margin-top: 0.25rem !important;
-  margin-bottom: 0.25rem !important;
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.35rem !important;
   line-height: 1.6 !important;
 }
 
-.prose-instruction p {
+.prose-instruction p,
+.instruction-container p {
   margin-top: 0.5rem !important;
   margin-bottom: 0.5rem !important;
 }

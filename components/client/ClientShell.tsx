@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
-import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle, LogOut, Ticket } from 'lucide-react';
+import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle, LogOut, Ticket, History, ShoppingBag } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
 
@@ -43,11 +43,14 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
     { href: '/clients', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: '/clients/campaigns', label: 'Sesi Tes (Campaign)', icon: <LinkIcon className="w-4 h-4" /> },
     { href: '/clients/participants', label: 'Hasil Kandidat', icon: <Users className="w-4 h-4" /> },
-    { href: '/clients/billing', label: 'Beli Kuota & Katalog', icon: <CreditCard className="w-4 h-4" /> },
+    { href: '/clients/billing', label: 'Beli Tes & Katalog', icon: <ShoppingBag className="w-4 h-4" /> },
+    { href: '/clients/transactions', label: 'Riwayat & Tagihan', icon: <History className="w-4 h-4" /> },
     { href: '/clients/settings', label: 'Branding Portal', icon: <Settings className="w-4 h-4" /> },
   ];
 
   const getPageTitle = () => {
+    if (pathname.startsWith('/clients/payments/')) return 'Instruksi Pembayaran Tagihan';
+    if (pathname.startsWith('/clients/transactions')) return 'Riwayat Transaksi & Tagihan Invoice';
     if (pathname.startsWith('/clients/campaigns/')) return 'Detail Sesi Tes & Pendaftaran Kandidat';
     if (pathname === '/clients/campaigns') return 'Sesi Tes (Campaign)';
     if (pathname.startsWith('/clients/participants/')) return 'Laporan Individu Hasil Kandidat';

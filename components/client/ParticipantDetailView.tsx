@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { DiscThreeCharts } from '@/components/reports/DiscCharts';
 import { DiscScoreResult } from '@/lib/scoring/disc';
+import { getDiscProfileInterpretation } from '@/lib/scoring/interpretations';
 
 interface ParticipantDetailViewProps {
   participantData: any;
@@ -287,6 +288,112 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
               </div>
             </div>
 
+            {/* Narrative Profile & Interpretations */}
+            {(() => {
+              const interp = getDiscProfileInterpretation(scoring.dominantLabel);
+              return (
+                <div className="space-y-4">
+                  {/* Recommended Roles Banner */}
+                  <div className="bg-gradient-to-r from-emerald-900 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-emerald-800 space-y-3">
+                    <h4 className="font-display font-bold text-emerald-300 text-sm flex items-center gap-2">
+                      💼 Proyeksi Penempatan Posisi / Profesi / Bidang Ideal
+                    </h4>
+                    <p className="text-xs text-emerald-100/90 leading-relaxed">{interp.rolesNarrative}</p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {interp.recommendedRoles.map((role, idx) => (
+                        <span key={idx} className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 font-semibold px-3 py-1 rounded-xl text-xs">
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 space-y-3">
+                      <h4 className="font-display font-bold text-indigo-950 text-sm flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-indigo-600" /> Deskripsi Profil & Kekuatan Kerja
+                      </h4>
+                      <p className="text-xs text-slate-700 leading-relaxed">{interp.generalDescription}</p>
+                      <div className="pt-2 border-t border-indigo-100 space-y-1.5">
+                        <span className="text-[11px] font-bold text-indigo-900">Uraian Kekuatan Utama:</span>
+                        <p className="text-xs text-slate-600 leading-relaxed">{interp.strengthsNarrative}</p>
+                        <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                          {interp.strengths.map((str, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <span className="text-emerald-600 font-bold">•</span>
+                              <span>{str}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                      <h4 className="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-slate-600" /> Gaya Komunikasi & Lingkungan Ideal
+                      </h4>
+                      <div className="space-y-2 text-xs text-slate-700">
+                        <div>
+                          <strong className="text-slate-900">Gaya Komunikasi:</strong> {interp.communicationStyle}
+                        </div>
+                        <div>
+                          <strong className="text-slate-900">Lingkungan Ideal:</strong> {interp.idealEnvironment}
+                        </div>
+                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                          <strong className="text-amber-800">Uraian Area Pengembangan / Risiko:</strong>
+                          <p className="text-xs text-slate-600 leading-relaxed">{interp.weaknessesNarrative}</p>
+                          <ul className="mt-1 space-y-1 text-xs text-slate-600">
+                            {interp.weaknesses.map((wk, idx) => (
+                              <li key={idx} className="flex items-start gap-1.5">
+                                <span className="text-amber-600 font-bold">•</span>
+                                <span>{wk}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Conflict Potential & Best Treatments */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 space-y-3">
+                      <h4 className="font-display font-bold text-amber-950 text-sm flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" /> Potensi Konflik Kerja & Solusi
+                      </h4>
+                      <p className="text-xs text-slate-700 leading-relaxed">{interp.conflictsNarrative}</p>
+                      <div className="space-y-2 text-xs">
+                        {interp.potentialConflicts.map((cnf, idx) => (
+                          <div key={idx} className="p-3 bg-white rounded-xl border border-amber-200/80 space-y-1">
+                            <p className="text-amber-900 font-semibold">⚡ Pemicu: {cnf.trigger}</p>
+                            <p className="text-slate-600">⚠️ Dampak: {cnf.impact}</p>
+                            <p className="text-emerald-700 font-medium">💡 Solusi: {cnf.solution}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200 space-y-3">
+                      <h4 className="font-display font-bold text-blue-950 text-sm flex items-center gap-2">
+                        🌟 Treatment Terbaik (Pendekatan Efektif Atasan & HR)
+                      </h4>
+                      <p className="text-xs text-slate-700 leading-relaxed">{interp.treatmentsNarrative}</p>
+                      <ul className="space-y-2 text-xs text-slate-700">
+                        {interp.bestTreatments.map((trm, idx) => (
+                          <li key={idx} className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-blue-100">
+                            <span className="w-2 h-2 rounded-full bg-blue-600 mt-1 shrink-0" />
+                            <span>{trm}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })()}
+
+
             {/* Development Recommendations */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
               <h4 className="font-display font-bold text-slate-900 text-sm mb-3">Saran & Catatan Pengelolaan HR</h4>
@@ -299,6 +406,7 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
                 ))}
               </ul>
             </div>
+
           </>
         ) : (
           <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
