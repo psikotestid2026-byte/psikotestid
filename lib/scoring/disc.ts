@@ -94,40 +94,7 @@ const TABEL: Record<string, (number | null)[]> = {
 
 const ORDER: DiscDimension[] = ['D', 'I', 'S', 'C'];
 
-const TYPE_NAMES: Record<string, string> = {
-  D: 'Establisher',
-  DI: 'Concluder',
-  DC: 'Challenger',
-  DIS: 'Director',
-  DIC: 'Chancellor',
-  DCS: 'Attainer',
-  DCI: 'Chancellor',
-  I: 'Communicator',
-  ID: 'Persuader',
-  IS: 'Advisor',
-  IC: 'Assessor',
-  IDS: 'Reformer',
-  IDC: 'Leader',
-  ISC: 'Governor',
-  ISD: 'Motivator',
-  S: 'Technician',
-  SD: 'Attainer',
-  SI: 'Advisor',
-  SC: 'Peacemaker',
-  SDI: 'Attainer',
-  SDC: 'Inquirer',
-  SIC: 'Advocate',
-  SCD: 'Inquirer',
-  C: 'Logical Thinker',
-  CD: 'Designer',
-  CI: 'Assessor',
-  CS: 'Precisionist',
-  CDS: 'Contemplator',
-  CDI: 'Chancellor',
-  CSI: 'Practitioner',
-  CIS: 'Mediator'
-};
-
+import { findDiscTypeInfo } from './disc_dictionary';
 const SARAN: Record<DiscDimension, string[]> = {
   D: [
     'Beri ruang otonomi, target yang menantang, dan kewenangan mengambil keputusan.',
@@ -263,7 +230,8 @@ export function calculateDiscScore(answers: Record<number | string, { P?: number
   });
 
   const dominantCode = getDominantCode(g3); // Primary is Graph 3 (Change)
-  const dominantType = TYPE_NAMES[dominantCode] || TYPE_NAMES[dominantCode[0]] || 'DISC Profile';
+  const typeInfo = findDiscTypeInfo(dominantCode);
+  const dominantType = typeInfo?.name || 'DISC Profile';
   const dominantLabel = dominantCode;
 
   const isSuperSyndrome = ORDER.every(d => g3[d] > 0);

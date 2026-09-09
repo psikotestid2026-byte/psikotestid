@@ -138,6 +138,8 @@ const styles = StyleSheet.create({
   },
 });
 
+import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring/disc_dictionary';
+
 export function DiscPdfDocument({
   participant,
   scoring,
@@ -145,6 +147,10 @@ export function DiscPdfDocument({
   participant: any;
   scoring: DiscScoreResult;
 }) {
+  const typeInfo = findDiscTypeInfo(scoring.dominantLabel);
+  const mainDim = scoring.dominantLabel ? scoring.dominantLabel[0] : 'D';
+  const mainTrait = DISC_MAIN_TRAITS[mainDim] as DiscMainTrait | undefined;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -179,14 +185,54 @@ export function DiscPdfDocument({
         {/* Profile Result Box */}
         <View style={styles.summaryBox}>
           <Text style={styles.profileTitle}>
-            Tipe Kepribadian: {scoring.dominantLabel} — {scoring.dominantType}
+            Tipe Kepribadian: {scoring.dominantLabel} — {typeInfo?.name || scoring.dominantType}
           </Text>
-          <Text style={styles.profileDesc}>
-            Profil kepribadian utama berdasarkan Grafik 3 (Change / Perceived Self).
-            Sub-Trait Utama: {scoring.subTraits.g3}.
-            {scoring.hasStressPotential ? ' (Terdeteksi Potensi Penyesuaian Style / Stress)' : ''}
-          </Text>
+          {typeInfo ? (
+            <>
+              <Text style={styles.profileDesc}>
+                {typeInfo.description}
+              </Text>
+              <Text style={[styles.profileDesc, { marginTop: 4, fontWeight: 'bold' }]}>
+                Rekomendasi Profesi: {typeInfo.jobs}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.profileDesc}>
+              Profil kepribadian utama berdasarkan Grafik 3 (Change / Perceived Self).
+              Sub-Trait Utama: {scoring.subTraits.g3}.
+              {scoring.hasStressPotential ? ' (Terdeteksi Potensi Penyesuaian Style / Stress)' : ''}
+            </Text>
+          )}
         </View>
+
+        {/* Main Traits Section */}
+        {mainTrait && (
+          <>
+            <Text style={styles.sectionTitle}>Potret & Karakteristik Utama ({mainTrait.dimension})</Text>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCellLabel}>Potret Diri</Text>
+                <Text style={[styles.tableCell, { width: '80%', textAlign: 'left' }]}>{mainTrait.potretDiri}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCellLabel}>Kelebihan</Text>
+                <Text style={[styles.tableCell, { width: '80%', textAlign: 'left' }]}>{mainTrait.kelebihan}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCellLabel}>Kekurangan</Text>
+                <Text style={[styles.tableCell, { width: '80%', textAlign: 'left' }]}>{mainTrait.kekurangan}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCellLabel}>Kecenderungan</Text>
+                <Text style={[styles.tableCell, { width: '80%', textAlign: 'left' }]}>{mainTrait.kecenderungan}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCellLabel}>Lingkungan Cocok</Text>
+                <Text style={[styles.tableCell, { width: '80%', textAlign: 'left' }]}>{mainTrait.lingkunganCocok}</Text>
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Score Summary Table */}
         <Text style={styles.sectionTitle}>Ringkasan Skor Mentah & Grafik Nilai</Text>
@@ -250,6 +296,11 @@ export function DiscPdfDocument({
               • {rec}
             </Text>
           ))}
+          {mainTrait && (
+            <Text style={styles.bulletItem}>
+              • {mainTrait.saranPerbaikan}
+            </Text>
+          )}
         </View>
 
         {/* Footer */}

@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 import { DiscThreeCharts } from '@/components/reports/DiscCharts';
 import { DiscScoreResult } from '@/lib/scoring/disc';
-import { getDiscProfileInterpretation } from '@/lib/scoring/interpretations';
-
+import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring/disc_dictionary';
 interface ParticipantDetailViewProps {
   participantData: any;
   participantId: number;
@@ -34,6 +33,9 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
 
   const discResult = currentTestResults.find((r: any) => r.scoring_data && r.scoring_data.g1);
   const scoring: DiscScoreResult | null = discResult?.scoring_data || null;
+
+  const enneagramResult = currentTestResults.find((r: any) => r.test_code?.toLowerCase() === 'enneagram' && r.scoring_data);
+  const enneagramScoring = enneagramResult?.scoring_data || null;
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
@@ -149,7 +151,11 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
                             let isDone = false;
 
                             if (sc?.dominantLabel) {
-                              labelStr = `${sc.dominantLabel} (${sc.dominantType})`;
+                              if (r.test_code?.toLowerCase() === 'enneagram') {
+                                labelStr = `${sc.dominantLabel} (${sc.dominantInfo?.name || 'Seri'})`;
+                              } else {
+                                labelStr = `${sc.dominantLabel} (${sc.dominantType})`;
+                              }
                               isDone = true;
                             } else if (sc?.score || sc?.wptScore) {
                               labelStr = `Skor: ${sc.score || sc.wptScore}`;
@@ -290,104 +296,81 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
 
             {/* Narrative Profile & Interpretations */}
             {(() => {
-              const interp = getDiscProfileInterpretation(scoring.dominantLabel);
+              const typeInfo = findDiscTypeInfo(scoring.dominantLabel);
+              const mainDim = scoring.dominantLabel ? scoring.dominantLabel[0] : 'D';
+              const mainTrait = DISC_MAIN_TRAITS[mainDim] as DiscMainTrait | undefined;
+
+              if (!typeInfo && !mainTrait) return null;
+
               return (
                 <div className="space-y-4">
                   {/* Recommended Roles Banner */}
-                  <div className="bg-gradient-to-r from-emerald-900 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-emerald-800 space-y-3">
-                    <h4 className="font-display font-bold text-emerald-300 text-sm flex items-center gap-2">
-                      💼 Proyeksi Penempatan Posisi / Profesi / Bidang Ideal
-                    </h4>
-                    <p className="text-xs text-emerald-100/90 leading-relaxed">{interp.rolesNarrative}</p>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {interp.recommendedRoles.map((role, idx) => (
-                        <span key={idx} className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 font-semibold px-3 py-1 rounded-xl text-xs">
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 space-y-3">
-                      <h4 className="font-display font-bold text-indigo-950 text-sm flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-indigo-600" /> Deskripsi Profil & Kekuatan Kerja
+                  {typeInfo && (
+                    <div className="bg-gradient-to-r from-emerald-900 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-emerald-800 space-y-3">
+                      <h4 className="font-display font-bold text-emerald-300 text-sm flex items-center gap-2">
+                        💼 Proyeksi Penempatan Posisi / Profesi / Bidang Ideal
                       </h4>
-                      <p className="text-xs text-slate-700 leading-relaxed">{interp.generalDescription}</p>
-                      <div className="pt-2 border-t border-indigo-100 space-y-1.5">
-                        <span className="text-[11px] font-bold text-indigo-900">Uraian Kekuatan Utama:</span>
-                        <p className="text-xs text-slate-600 leading-relaxed">{interp.strengthsNarrative}</p>
-                        <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                          {interp.strengths.map((str, idx) => (
-                            <li key={idx} className="flex items-start gap-1.5">
-                              <span className="text-emerald-600 font-bold">•</span>
-                              <span>{str}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {typeInfo.jobs.split(',').map((role, idx) => (
+                          <span key={idx} className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 font-semibold px-3 py-1 rounded-xl text-xs">
+                            {role.trim()}
+                          </span>
+                        ))}
                       </div>
                     </div>
+                  )}
 
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                      <h4 className="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-slate-600" /> Gaya Komunikasi & Lingkungan Ideal
-                      </h4>
-                      <div className="space-y-2 text-xs text-slate-700">
-                        <div>
-                          <strong className="text-slate-900">Gaya Komunikasi:</strong> {interp.communicationStyle}
-                        </div>
-                        <div>
-                          <strong className="text-slate-900">Lingkungan Ideal:</strong> {interp.idealEnvironment}
-                        </div>
-                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
-                          <strong className="text-amber-800">Uraian Area Pengembangan / Risiko:</strong>
-                          <p className="text-xs text-slate-600 leading-relaxed">{interp.weaknessesNarrative}</p>
-                          <ul className="mt-1 space-y-1 text-xs text-slate-600">
-                            {interp.weaknesses.map((wk, idx) => (
-                              <li key={idx} className="flex items-start gap-1.5">
-                                <span className="text-amber-600 font-bold">•</span>
-                                <span>{wk}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Conflict Potential & Best Treatments */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 space-y-3">
-                      <h4 className="font-display font-bold text-amber-950 text-sm flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-600" /> Potensi Konflik Kerja & Solusi
-                      </h4>
-                      <p className="text-xs text-slate-700 leading-relaxed">{interp.conflictsNarrative}</p>
-                      <div className="space-y-2 text-xs">
-                        {interp.potentialConflicts.map((cnf, idx) => (
-                          <div key={idx} className="p-3 bg-white rounded-xl border border-amber-200/80 space-y-1">
-                            <p className="text-amber-900 font-semibold">⚡ Pemicu: {cnf.trigger}</p>
-                            <p className="text-slate-600">⚠️ Dampak: {cnf.impact}</p>
-                            <p className="text-emerald-700 font-medium">💡 Solusi: {cnf.solution}</p>
+                    {typeInfo && (
+                      <div className="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 space-y-3">
+                        <h4 className="font-display font-bold text-indigo-950 text-sm flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-indigo-600" /> Deskripsi Profil Utama
+                        </h4>
+                        <p className="text-xs text-slate-700 leading-relaxed">{typeInfo.description}</p>
+                      </div>
+                    )}
+
+                    {mainTrait && (
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                        <h4 className="font-display font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-slate-600" /> Potret Diri & Lingkungan Ideal ({mainTrait.dimension})
+                        </h4>
+                        <div className="space-y-2 text-xs text-slate-700">
+                          <div>
+                            <strong className="text-slate-900">Potret Diri:</strong> {mainTrait.potretDiri}
                           </div>
-                        ))}
+                          <div>
+                            <strong className="text-slate-900">Lingkungan Cocok:</strong> {mainTrait.lingkunganCocok}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Main Traits Detail */}
+                  {mainTrait && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-200 space-y-3">
+                        <h4 className="font-display font-bold text-emerald-950 text-sm flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" /> Kelebihan & Kecenderungan
+                        </h4>
+                        <div className="space-y-2 text-xs">
+                          <p className="text-slate-700"><strong className="text-emerald-800">Kelebihan:</strong> {mainTrait.kelebihan}</p>
+                          <p className="text-slate-700"><strong className="text-emerald-800">Kecenderungan:</strong> {mainTrait.kecenderungan}</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 space-y-3">
+                        <h4 className="font-display font-bold text-amber-950 text-sm flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" /> Kekurangan & Saran Perbaikan
+                        </h4>
+                        <div className="space-y-2 text-xs text-slate-700">
+                          <p className="text-slate-700"><strong className="text-amber-800">Kekurangan:</strong> {mainTrait.kekurangan}</p>
+                          <p className="text-slate-700"><strong className="text-amber-800">Saran Perbaikan:</strong> {mainTrait.saranPerbaikan}</p>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200 space-y-3">
-                      <h4 className="font-display font-bold text-blue-950 text-sm flex items-center gap-2">
-                        🌟 Treatment Terbaik (Pendekatan Efektif Atasan & HR)
-                      </h4>
-                      <p className="text-xs text-slate-700 leading-relaxed">{interp.treatmentsNarrative}</p>
-                      <ul className="space-y-2 text-xs text-slate-700">
-                        {interp.bestTreatments.map((trm, idx) => (
-                          <li key={idx} className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-blue-100">
-                            <span className="w-2 h-2 rounded-full bg-blue-600 mt-1 shrink-0" />
-                            <span>{trm}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                  )}
 
                 </div>
               );
@@ -408,16 +391,97 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
             </div>
 
           </>
-        ) : (
+        ) : !enneagramScoring ? (
           <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
             <BrainCircuit className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-bold text-slate-800 text-base">Belum Ada Hasil Tes Psikotes</h3>
+            <h3 className="font-bold text-slate-800 text-base">Belum Ada Hasil Tes DISC/Utama</h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
               Kandidat ini belum menyelesaikan tes psikotes atau sedang mengerjakan.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
+
+      {/* SECTION B2: ENNEAGRAM */}
+      {enneagramScoring && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-3">
+            <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-indigo-600" /> Detail Laporan Enneagram
+            </h3>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-900 text-white shadow-md">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-300">Hasil Analisis Enneagram</span>
+                <h3 className="text-2xl font-bold font-display text-white mt-1">
+                  Tipe {enneagramScoring.dominantLabel} — {enneagramScoring.dominantInfo?.name || 'Seri'}
+                </h3>
+                <p className="text-xs text-emerald-200 mt-1 max-w-xl">
+                  {enneagramScoring.wingCode ? `Wing: ${enneagramScoring.wingCode} — ${enneagramScoring.wingInfo?.label}` : 'Tidak ada Wing dominan'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown Skor Tipe */}
+          <div>
+            <h4 className="font-display font-bold text-slate-900 text-base mb-3">Skor Berdasarkan 9 Tipe (Maksimal 60)</h4>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full text-xs text-center">
+                <thead className="bg-slate-100 text-slate-700 font-bold">
+                  <tr>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                      <th key={n} className="py-3 px-2">Tipe {n}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
+                  <tr>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                      <td key={n} className={`py-2.5 px-2 ${enneagramScoring.scores[n] === enneagramScoring.maxScore ? 'font-bold text-indigo-600 bg-indigo-50/50' : ''}`}>
+                        {enneagramScoring.scores[n] ?? 0}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Deskripsi */}
+          {enneagramScoring.dominantInfo && (
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-900 mb-1">Deskripsi Profil Utama</h4>
+                <p className="text-xs text-slate-700 text-justify leading-relaxed">{enneagramScoring.dominantInfo.description}</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 mb-1">Ciri-ciri Utama</h4>
+                <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1">
+                  {enneagramScoring.dominantInfo.traits.map((t: string, i: number) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {enneagramScoring.wingInfo && (
+            <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 space-y-4">
+              <div>
+                <h4 className="font-bold text-emerald-900 mb-1">Pengaruh Sayap (Wing: {enneagramScoring.wingCode})</h4>
+                <p className="text-xs text-emerald-800 text-justify leading-relaxed">{enneagramScoring.wingInfo.description}</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-emerald-900 mb-1">Ciri-ciri Tambahan (Wing)</h4>
+                <ul className="list-disc pl-4 text-xs text-emerald-800 space-y-1">
+                  {enneagramScoring.wingInfo.traits.map((t: string, i: number) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

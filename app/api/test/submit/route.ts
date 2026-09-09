@@ -59,6 +59,12 @@ export async function POST(req: Request) {
       } else if (code === 'wpt') {
         const { calculateWptScore } = await import('@/lib/scoring/wpt');
         scoringData = calculateWptScore(answers || {});
+      } else if (code === 'bigfive') {
+        const { calculateBigFiveScore } = await import('@/lib/scoring/bigfive');
+        scoringData = calculateBigFiveScore(answers || {});
+      } else if (code === 'enneagram') {
+        const { calculateEnneagramScore } = await import('@/lib/scoring/enneagram');
+        scoringData = calculateEnneagramScore(answers || {});
       }
     }
 

@@ -3,7 +3,7 @@ import { renderToStream } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Line, Polyline, Circle, G } from '@react-pdf/renderer';
 import { sql } from '@/lib/neon';
-import { getDiscProfileInterpretation } from '@/lib/scoring/interpretations';
+import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring/disc_dictionary';
 
 const styles = StyleSheet.create({
   page: {
@@ -296,14 +296,16 @@ function renderSpecificTestReport(r: any, idx: number) {
     const least = sc.least || { D: 0, I: 0, S: 0, C: 0 };
     const change = sc.change || { D: 0, I: 0, S: 0, C: 0 };
 
-    const interp = getDiscProfileInterpretation(dominantLabel);
+    const typeInfo = findDiscTypeInfo(dominantLabel);
+    const mainDim = dominantLabel ? dominantLabel[0] : 'D';
+    const mainTrait = DISC_MAIN_TRAITS[mainDim] as DiscMainTrait | undefined;
 
     return (
       <View key={idx} style={styles.testCard}>
         {/* DISC Banner */}
         <View style={styles.discBanner}>
           <Text style={styles.discBannerTitle}>
-            {idx + 1}. {testName} — TIPE: {dominantLabel} ({interp.typeName})
+            {idx + 1}. {testName} — TIPE: {dominantLabel} ({typeInfo?.name || dominantType})
           </Text>
           <Text style={styles.discBannerSub}>
             Sub-Trait Utama: {sc.subTraits?.g3 || 'Balance'} (Graph 3) | Stress Potential:{' '}
@@ -374,65 +376,32 @@ function renderSpecificTestReport(r: any, idx: number) {
         </View>
 
         {/* Narrative Interpretation Section */}
-        <Text style={styles.subHeading}>1. Gambaran Umum & Karakteristik Perilaku Utama</Text>
-        <Text style={styles.testCardDesc}>{interp.generalDescription}</Text>
+        {typeInfo && (
+          <>
+            <Text style={styles.subHeading}>1. Deskripsi Profil Utama</Text>
+            <Text style={styles.testCardDesc}>{typeInfo.description}</Text>
 
-        <Text style={styles.subHeading}>2. Proyeksi Penempatan Posisi / Profesi / Bidang Ideal</Text>
-        <Text style={styles.testCardDesc}>{interp.rolesNarrative}</Text>
-        {interp.recommendedRoles.map((role, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • <Text style={{ fontWeight: 'bold' }}>{role}</Text>
-          </Text>
-        ))}
+            <Text style={styles.subHeading}>2. Proyeksi Penempatan Posisi / Profesi / Bidang Ideal</Text>
+            <Text style={styles.testCardDesc}>{typeInfo.jobs}</Text>
+          </>
+        )}
 
-        <Text style={styles.subHeading}>3. Uraian Kekuatan Utama dalam Pekerjaan</Text>
-        <Text style={styles.testCardDesc}>{interp.strengthsNarrative}</Text>
-        {interp.strengths.map((str, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • {str}
-          </Text>
-        ))}
+        {mainTrait && (
+          <>
+            <Text style={styles.subHeading}>3. Potret Diri & Lingkungan Ideal ({mainTrait.dimension})</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Potret Diri:</Text> {mainTrait.potretDiri}</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Lingkungan Cocok:</Text> {mainTrait.lingkunganCocok}</Text>
 
-        <Text style={styles.subHeading}>4. Uraian Area Pengembangan & Potensi Risiko</Text>
-        <Text style={styles.testCardDesc}>{interp.weaknessesNarrative}</Text>
-        {interp.weaknesses.map((wk, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • {wk}
-          </Text>
-        ))}
+            <Text style={styles.subHeading}>4. Kelebihan & Kecenderungan</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Kelebihan:</Text> {mainTrait.kelebihan}</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Kecenderungan:</Text> {mainTrait.kecenderungan}</Text>
 
-        <Text style={styles.subHeading}>5. Potensi Konflik Kerja & Solusi Penanganan</Text>
-        <Text style={styles.testCardDesc}>{interp.conflictsNarrative}</Text>
-        {interp.potentialConflicts.map((cnf, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • <Text style={{ fontWeight: 'bold' }}>Pemicu Konflik:</Text> {cnf.trigger}{"\n"}
-            {'  '}<Text style={{ fontWeight: 'bold' }}>Dampak Perilaku:</Text> {cnf.impact}{"\n"}
-            {'  '}<Text style={{ fontWeight: 'bold' }}>Solusi Taktis:</Text> {cnf.solution}
-          </Text>
-        ))}
+            <Text style={styles.subHeading}>5. Kekurangan & Saran Perbaikan</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Kekurangan:</Text> {mainTrait.kekurangan}</Text>
+            <Text style={styles.bulletItem}>• <Text style={{ fontWeight: 'bold' }}>Saran Perbaikan:</Text> {mainTrait.saranPerbaikan}</Text>
+          </>
+        )}
 
-        <Text style={styles.subHeading}>6. Treatment Terbaik (Pendekatan Efektif Atasan & HR)</Text>
-        <Text style={styles.testCardDesc}>{interp.treatmentsNarrative}</Text>
-        {interp.bestTreatments.map((trm, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • {trm}
-          </Text>
-        ))}
-
-        <Text style={styles.subHeading}>7. Gaya Komunikasi & Lingkungan Kerja Ideal</Text>
-        <Text style={styles.bulletItem}>
-          • <Text style={{ fontWeight: 'bold' }}>Gaya Komunikasi:</Text> {interp.communicationStyle}
-        </Text>
-        <Text style={styles.bulletItem}>
-          • <Text style={{ fontWeight: 'bold' }}>Lingkungan Ideal:</Text> {interp.idealEnvironment}
-        </Text>
-
-        <Text style={styles.subHeading}>8. Rekomendasi Pengelolaan & Pembinaan HR</Text>
-        {interp.hrManagementGuide.map((hr, i) => (
-          <Text key={i} style={styles.bulletItem}>
-            • {hr}
-          </Text>
-        ))}
 
       </View>
     );
@@ -562,33 +531,70 @@ function renderSpecificTestReport(r: any, idx: number) {
   }
 
   if (code === 'enneagram') {
+    const dominantLabel = sc.dominantLabel || 'Unknown';
+    const dominantInfo = sc.dominantInfo;
+    const wingInfo = sc.wingInfo;
+    const scores = sc.scores || {};
+
     return (
       <View key={idx} style={styles.testCard}>
-        <Text style={styles.testCardTitle}>
-          {idx + 1}. {testName} (ENNEAGRAM PERSONALITY TEST)
-        </Text>
-        <Text style={styles.testCardDesc}>
-          <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Analisis Mendalam 9 Tipe Kepribadian Enneagram</Text>{"\n"}
-          Enneagram membedah arsitektur batin (inner architecture) dan akar motivasi mendasar yang menggerakkan perilaku, ketakutan (core fears), serta hasrat terdalam (core desires) dari kandidat. Analisis ini sangat krusial untuk memahami bagaimana kandidat bereaksi terhadap tekanan ekstrem dan apa yang memicu kepuasan intrinsik mereka di tempat kerja.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>1. Motivasi Dasar & Mekanisme Pertahanan (Core Motivations)</Text>{"\n"}
-          Berdasarkan pola tanggapan, kandidat menunjukkan dorongan kuat untuk mencari keamanan struktural (security-oriented) dan keunggulan kompetitif (achievement-oriented). Mereka beroperasi dengan dorongan untuk menghindari kegagalan atau persepsi inkompetensi dari rekan kerja. Mekanisme pertahanan utama mereka saat berada dalam tekanan (stress point) adalah dengan meningkatkan volume kerja dan mengambil alih kendali secara perfeksionis, memastikan tidak ada celah kesalahan yang dapat disalahkan kepada mereka.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>2. Dinamika Integrasi (Pertumbuhan) & Disintegrasi (Stres)</Text>{"\n"}
-          Dalam kondisi lingkungan yang sehat, saling mendukung, dan stabil (Integration Point), kandidat akan berevolusi menjadi sosok yang sangat empatik, mentor yang sabar, dan perencana visioner yang tenang. Namun, jika ditempatkan dalam ekosistem kerja yang toksik, penuh intrik politik, atau manajemen yang tidak jelas (Disintegration Point), mereka berisiko memunculkan sisi manipulatif, workaholic yang merusak keseimbangan hidup (burnout), serta bersikap sangat kritis (judgmental) terhadap anggota tim yang dianggap lamban.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>3. Pola Interaksi Sosial & Kolaborasi Tim (Social Subtype)</Text>{"\n"}
-          Kandidat cenderung berperan sebagai "Sang Pemecah Masalah" di dalam dinamika kelompok. Mereka tidak segan untuk mengambil risiko atau menyuarakan pendapat yang bertentangan dengan arus utama (status quo) jika diyakini hal tersebut demi kebaikan proyek. Meskipun tampak tangguh di luar, mereka memiliki kebutuhan tersembunyi akan validasi atas kontribusi kerja keras mereka. Pengakuan (recognition) publik secara proporsional dari pimpinan tingkat atas akan melipatgandakan loyalitas dan produktivitas mereka.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>4. Proyeksi Kecocokan (Bidang & Posisi)</Text>{"\n"}
-          Kandidat profil ini sangat unggul apabila diposisikan pada area inovasi dan pengembangan bisnis (Business Development), pemulihan proyek yang bermasalah (Troubleshooter/Turnaround Specialist), serta manajemen strategis tingkat lanjut. Mereka berkembang pesat di perusahaan yang memiliki budaya meritokrasi (menghargai hasil kerja murni) dan lingkungan dengan otonomi tinggi (seperti konsultan manajemen, firma hukum ternama, atau start-up unicorn).{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>5. Proyeksi Ketidakcocokan (Area yang Dihindari)</Text>{"\n"}
-          Sangat tidak cocok ditempatkan pada perusahaan yang pergerakan karirnya didasarkan semata-mata pada senioritas umur/lama kerja (bukan performa kompetensi). Posisi sebagai staf pendukung pasif yang harus selalu menunggu instruksi detail berbulan-bulan tanpa ruang kreasi akan membunuh motivasi intrinsik mereka dan memicu pembangkangan.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>6. Saran Treatment & Pembinaan Jangka Panjang</Text>{"\n"}
-          Untuk memaksimalkan potensi kandidat ini, perusahaan diwajibkan menyediakan ruang (sandbox) bagi mereka untuk berinovasi tanpa ancaman *micromanagement* yang berlebihan. Berikan mereka otonomi dengan target akhir yang jelas. Hindari memberikan kritik tajam di hadapan publik; sebaliknya, gunakan sesi 1-on-1 yang privat dan berbasis pada fakta numerik (data-driven) agar masukan konstruktif dapat diterima tanpa memicu sikap defensif ego mereka.
-        </Text>
+        {/* Banner */}
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} — TIPE DOMINAN: {dominantLabel}
+          </Text>
+          <Text style={styles.discBannerSub}>
+            {sc.wingCode ? `Wing: ${sc.wingCode} — ${wingInfo?.label}` : 'Tidak ada wing (Hasil Seri)'}
+          </Text>
+        </View>
+
+        {/* Breakdown Table */}
+        <Text style={styles.subHeading}>Skor Berdasarkan 9 Tipe (Maksimal 60)</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T1</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T2</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T3</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T4</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T5</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T6</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T7</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T8</Text>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>T9</Text>
+          </View>
+          <View style={styles.tableRow}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+              <Text key={n} style={[styles.tableCell, { width: '10%', fontWeight: scores[n] === sc.maxScore ? 'bold' : 'normal', color: scores[n] === sc.maxScore ? '#1d4ed8' : '#334155' }]}>
+                {scores[n] ?? 0}
+              </Text>
+            ))}
+          </View>
+        </View>
+
+        {/* Narrative Interpretation Section */}
+        {dominantInfo && (
+          <>
+            <Text style={styles.subHeading}>1. Deskripsi Profil Tipe Utama ({dominantInfo.name})</Text>
+            <Text style={styles.testCardDesc}>{dominantInfo.description}</Text>
+
+            <Text style={styles.subHeading}>2. Ciri-ciri Tipe Utama</Text>
+            <Text style={styles.testCardDesc}>
+              {dominantInfo.traits.map((t: string) => `• ${t}`).join('\n')}
+            </Text>
+          </>
+        )}
+
+        {wingInfo && (
+          <>
+            <Text style={styles.subHeading}>3. Pengaruh Sayap (Wing: {sc.wingCode}) — {wingInfo.label}</Text>
+            <Text style={styles.testCardDesc}>{wingInfo.description}</Text>
+
+            <Text style={styles.subHeading}>4. Ciri-ciri Sayap (Wing)</Text>
+            <Text style={styles.testCardDesc}>
+              {wingInfo.traits.map((t: string) => `• ${t}`).join('\n')}
+            </Text>
+          </>
+        )}
       </View>
     );
   }
