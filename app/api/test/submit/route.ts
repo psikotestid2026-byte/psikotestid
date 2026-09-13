@@ -65,6 +65,29 @@ export async function POST(req: Request) {
       } else if (code === 'enneagram') {
         const { calculateEnneagramScore } = await import('@/lib/scoring/enneagram');
         scoringData = calculateEnneagramScore(answers || {});
+      } else if (code === 'papi') {
+        const { calculatePapiScore } = await import('@/lib/scoring/papi');
+        scoringData = calculatePapiScore(answers || {});
+      } else if (code === 'msdt') {
+        const { calculateMsdtScore } = await import('@/lib/scoring/msdt');
+        scoringData = calculateMsdtScore(answers || {});
+      } else if (code === 'riasec') {
+        const { calculateRiasecScore } = await import('@/lib/scoring/riasec');
+        scoringData = calculateRiasecScore(answers || {});
+      } else if (code === 'mbti') {
+        const { calculateMbtiScore } = await import('@/lib/scoring/mbti');
+        scoringData = calculateMbtiScore(answers || {});
+      } else if (code === 'msai') {
+        const { calculateMsaiScore } = await import('@/lib/scoring/msai');
+        scoringData = calculateMsaiScore(answers || {});
+      } else if (code === 'ist') {
+        // IST only scores the RA/ZR subtests (see lib/scoring/ist.ts header) — needs the
+        // stored correctIndex per question, unlike the other tests which match answer text.
+        const { calculateIstScoreFromQuestions } = await import('@/lib/scoring/ist');
+        const questions = await sql`
+          SELECT order_number, question_data FROM question_banks WHERE test_id = ${testId}
+        `;
+        scoringData = calculateIstScoreFromQuestions(answers || {}, questions as any);
       }
     }
 

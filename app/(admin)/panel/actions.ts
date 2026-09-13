@@ -1,6 +1,7 @@
 'use server';
 
 import { sql } from '@/lib/neon';
+import { invalidateQuestionsCache } from '@/lib/questionCache';
 
 export async function getSuperAdminData() {
   const [customers, tests, campaigns, topups, submissions, logs, admins, quotas] = await Promise.all([
@@ -104,6 +105,7 @@ export async function saveQuestion(id: number | null, testId: number, orderNumbe
       VALUES (${testId}, ${orderNumber}, ${parsedData}, ${type})
     `;
   }
+  await invalidateQuestionsCache(testId);
 }
 
 export async function getTestConfigAndNorms(testId: number) {

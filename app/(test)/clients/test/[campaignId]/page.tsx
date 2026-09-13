@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
+import { getQuestionsForTest } from '@/lib/questionCache';
 import AssessmentClient from './AssessmentClient';
 
 export default async function AssessmentPage({ params }: { params: Promise<{ campaignId: string }> | { campaignId: string } }) {
@@ -45,12 +46,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
       // Fetch questions for each test
       tests = await Promise.all(
         rawTests.map(async (test: any) => {
-          const questions = await sql`
-            SELECT id, test_id, question_type, question_data, order_number 
-            FROM question_banks 
-            WHERE test_id = ${test.id} 
-            ORDER BY order_number ASC
-          `;
+          const questions = await getQuestionsForTest(test.id);
           return { ...test, questions };
         })
       );

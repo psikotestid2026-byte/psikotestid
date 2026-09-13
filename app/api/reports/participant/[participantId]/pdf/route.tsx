@@ -4,6 +4,9 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Line, Polyline, Circle, G } from '@react-pdf/renderer';
 import { sql } from '@/lib/neon';
 import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring/disc_dictionary';
+import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
+import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
+import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
 
 const styles = StyleSheet.create({
   page: {
@@ -281,7 +284,8 @@ function PdfDiscSingleGraph({ title, subtitle, values }: { title: string; subtit
   );
 }
 
-function renderSpecificTestReport(r: any, idx: number) {
+function renderSpecificTestReport(r: any, idx: number, participant: any) {
+  const candidateName = participant?.full_name || 'Kandidat';
   const sc = r.scoring_data || {};
   const code = (r.test_code || '').toLowerCase();
   const testName = r.test_name || r.test_code?.toUpperCase();
@@ -421,22 +425,22 @@ function renderSpecificTestReport(r: any, idx: number) {
           • <Text style={{ fontWeight: 'bold' }}>Kapasitas Intelektual:</Text> {label}{"\n\n"}
           
           <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Analisis Mendalam Kapasitas Kognitif</Text>{"\n"}
-          Wonderlic Personnel Test (WPT) adalah instrumen pengukuran kapasitas kognitif (general intelligence) yang sangat terpercaya untuk memprediksi kemampuan kandidat dalam memecahkan masalah (problem solving), menyerap informasi atau instruksi baru, dan membuat keputusan logis dalam batasan waktu yang sangat ketat.{"\n\n"}
-          
+          Wonderlic Personnel Test (WPT) adalah instrumen pengukuran kapasitas kognitif (general intelligence) yang sangat terpercaya untuk memprediksi kemampuan {candidateName} dalam memecahkan masalah (problem solving), menyerap informasi atau instruksi baru, dan membuat keputusan logis dalam batasan waktu yang sangat ketat.{"\n\n"}
+
           <Text style={{ fontWeight: 'bold' }}>1. Daya Tangkap & Kecepatan Berpikir (Mental Agility)</Text>{"\n"}
-          Berdasarkan perolehan skor, kandidat menunjukkan tingkat kelincahan mental (mental agility) yang sesuai dengan kategorinya. Mereka mampu memahami instruksi teknis yang kompleks tanpa memerlukan pengulangan berlebih. Dalam situasi yang membutuhkan respon cepat (time-critical situations), kandidat dapat mengolah data spasial, numerik, dan verbal secara simultan dengan tingkat kesalahan yang minim.{"\n\n"}
+          Berdasarkan perolehan skor, {candidateName} menunjukkan tingkat kelincahan mental (mental agility) yang sesuai dengan kategorinya. {candidateName} mampu memahami instruksi teknis yang kompleks tanpa memerlukan pengulangan berlebih. Dalam situasi yang membutuhkan respon cepat (time-critical situations), {candidateName} dapat mengolah data spasial, numerik, dan verbal secara simultan dengan tingkat kesalahan yang minim.{"\n\n"}
           
           <Text style={{ fontWeight: 'bold' }}>2. Kapasitas Penyelesaian Masalah Logika (Logical Problem Solving)</Text>{"\n"}
           Kandidat tidak hanya mengandalkan intuisi dalam bekerja, melainkan mengedepankan pendekatan deduktif rasional. Mereka mampu memetakan hubungan sebab-akibat dari sebuah anomali masalah, mengidentifikasi akar penyebab (root cause), dan menawarkan beberapa skenario solusi alternatif. Mereka sangat cakap menangani pekerjaan yang bersifat non-rutin dan menuntut daya analitis.{"\n\n"}
           
           <Text style={{ fontWeight: 'bold' }}>3. Kemampuan Belajar Adaptif (Learning Capability)</Text>{"\n"}
-          Bila ditempatkan di lingkungan industri yang sangat dinamis (seperti teknologi, keuangan, atau operasional strategis), kandidat tidak akan mengalami kesulitan berarti dalam menyerap kurikulum training yang padat. Mereka merupakan pembelajar mandiri (self-learner) yang proaktif mencari tahu detail sistem dan prosedur (SOP) perusahaan tanpa harus selalu "disuapi" oleh mentor atau atasan.{"\n\n"}
+          Bila ditempatkan di lingkungan industri yang sangat dinamis (seperti teknologi, keuangan, atau operasional strategis), {candidateName} tidak akan mengalami kesulitan berarti dalam menyerap kurikulum training yang padat. {candidateName} merupakan pembelajar mandiri (self-learner) yang proaktif mencari tahu detail sistem dan prosedur (SOP) perusahaan tanpa harus selalu "disuapi" oleh mentor atau atasan.{"\n\n"}
           
           <Text style={{ fontWeight: 'bold' }}>4. Proyeksi Kecocokan (Bidang & Posisi)</Text>{"\n"}
           Kandidat sangat cocok ditempatkan pada posisi penyelia (supervisor), analis strategis, business intelligence, maupun posisi spesialis teknis (IT, engineering, finance) yang menuntut akurasi intelektual dan keputusan berisiko tinggi di bawah batasan waktu yang sempit. Sangat ideal untuk industri yang bergerak sangat cepat (fast-paced) seperti perbankan, teknologi (startup), dan manufaktur berskala besar.{"\n\n"}
           
           <Text style={{ fontWeight: 'bold' }}>5. Proyeksi Ketidakcocokan (Area yang Dihindari)</Text>{"\n"}
-          Kurang ideal jika ditempatkan pada pekerjaan klerikal yang sangat repetitif, entri data statis bertahun-tahun, atau pekerjaan pabrik perakitan dasar yang tidak memberikan tantangan intelektual apa pun. Jika dipaksa pada rutinitas tanpa variasi, kandidat dengan kognitif tinggi ini akan sangat cepat merasa bosan, *demotivasi*, dan akhirnya berisiko tinggi untuk mengajukan pengunduran diri (turnover).{"\n\n"}
+          Kurang ideal jika ditempatkan pada pekerjaan klerikal yang sangat repetitif, entri data statis bertahun-tahun, atau pekerjaan pabrik perakitan dasar yang tidak memberikan tantangan intelektual apa pun. Jika dipaksa pada rutinitas tanpa variasi, {candidateName} dengan kognitif tinggi ini akan sangat cepat merasa bosan, *demotivasi*, dan akhirnya berisiko tinggi untuk mengajukan pengunduran diri (turnover).{"\n\n"}
           
           <Text style={{ fontWeight: 'bold' }}>6. Saran Treatment & Pembinaan</Text>{"\n"}
           Berikan mereka tantangan proyek baru (stretch assignments) secara berkala. Hindari pengawasan *micromanagement* yang mengekang; sebaliknya, berikan kebebasan intelektual untuk mengeksplorasi efisiensi cara kerja baru. Mereka merespons sangat baik terhadap *feedback* rasional yang berbasis logika dan data faktual, bukan sekadar opini emosional atasan.
@@ -446,6 +450,12 @@ function renderSpecificTestReport(r: any, idx: number) {
   }
 
   if (code === 'papi') {
+    const scores: Record<string, number> = sc.scores || {};
+    const highAspects: string[] = sc.highAspects || [];
+    const lowAspects: string[] = sc.lowAspects || [];
+    const totalScore = sc.totalScore ?? 0;
+    const aspectOrder = Object.keys(PAPI_ASPECT_DETAILS);
+
     return (
       <View key={idx} style={styles.testCard}>
         <Text style={styles.testCardTitle}>
@@ -453,78 +463,194 @@ function renderSpecificTestReport(r: any, idx: number) {
         </Text>
         <Text style={styles.testCardDesc}>
           <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Ringkasan Eksekutif PAPI Kostick</Text>{"\n"}
-          Asesmen PAPI Kostick (Personality and Preference Inventory) mengukur 20 dimensi kebutuhan (needs) dan peran (roles) yang secara spesifik berkaitan dengan lingkungan profesional dan gaya kerja kandidat. Berdasarkan pemetaan skor yang dihasilkan, kandidat menunjukkan profil kinerja yang sangat solid dengan dominasi pada area penyelesaian tugas (task-oriented) dan kepatuhan pada hierarki organisasi (followership).{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>1. Dimensi Arah Kerja (Work Direction) & Dorongan Berprestasi</Text>{"\n"}
-          Kandidat memiliki dorongan internal (need to achieve) yang kuat untuk menyelesaikan tugas dengan standar yang tinggi. Mereka menetapkan target pribadi yang lebih tinggi daripada yang diwajibkan oleh perusahaan. Dalam menghadapi beban kerja yang masif (hard intense worker), kandidat mampu menjaga fokus dan tidak mudah terdistraksi. Hal ini menjadikan mereka aset yang sangat berharga untuk posisi yang menuntut ketahanan mental dan penyelesaian tenggat waktu yang ketat.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>2. Dimensi Gaya Kepemimpinan (Leadership & Followership)</Text>{"\n"}
-          Dalam konteks kepemimpinan, kandidat menunjukkan keseimbangan antara kemampuan mengarahkan orang lain (leadership role) dan kemampuan untuk dibimbing (need for rules and supervision). Mereka sangat menghormati otoritas dan tidak memiliki masalah dalam mengikuti instruksi dari atasan (need to support peers). Bila ditempatkan pada posisi manajerial, mereka akan memimpin dengan gaya demokratis yang menekankan pada panduan prosedur kerja (SOP) daripada gaya kepemimpinan otokratis murni.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>3. Dimensi Aktivitas Sosial (Social Activity) & Relasi Antar Pribadi</Text>{"\n"}
-          Kandidat memiliki kebutuhan yang wajar untuk berafiliasi dengan rekan kerja (need to belong to groups). Mereka bukan tipe penyendiri ekstrem, namun juga tidak terlalu bergantung pada interaksi sosial untuk bisa produktif. Kestabilan emosional mereka sangat baik; mereka mampu menahan amarah dan tidak impulsif dalam merespons tekanan dari klien atau rekan kerja. Mereka cenderung menghindari konflik terbuka (need for harmonous relations) dan bertindak sebagai mediator yang tenang.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>4. Dimensi Analitik & Keteraturan (Detail & Organization)</Text>{"\n"}
-          Kandidat menunjukkan preferensi yang kuat terhadap lingkungan kerja yang terstruktur (need for order). Mereka akan sangat cermat dalam menyusun dokumen, memverifikasi data, dan memastikan seluruh alur kerja berjalan sesuai dengan rencana. Ketelitian ini meminimalisir risiko kesalahan operasional, namun di sisi lain, kandidat mungkin membutuhkan waktu sedikit lebih lama untuk beradaptasi jika ada perubahan mendadak tanpa panduan sistematis.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>5. Proyeksi Kecocokan (Bidang & Posisi)</Text>{"\n"}
-          Kandidat sangat direkomendasikan untuk posisi yang membutuhkan keseimbangan antara akurasi operasional dan keandalan mengeksekusi instruksi. Profesi di bidang manajerial menengah (Middle Manager), Administrasi Strategis, Operasional Teknis, Audit Kepatuhan, dan pengelolaan tim klerikal akan sangat memaksimalkan potensi mereka. Sangat cocok di industri perbankan, manufaktur, dan institusi birokrasi/pemerintahan.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>6. Proyeksi Ketidakcocokan (Area yang Dihindari)</Text>{"\n"}
-          Kandidat ini akan mengalami stres luar biasa jika ditempatkan pada divisi perintis (pioneering) startup yang belum memiliki struktur kejelasan aturan kerja (zero SOP environment). Pekerjaan berisiko tinggi yang murni mengandalkan improvisasi tanpa jaring pengaman regulasi, atau peran *sales canvassing* ekstrem yang sangat kompetitif akan membuat mereka merasa kehilangan pijakan (disoriented) dan tidak aman secara emosional.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>7. Saran Treatment & Pembinaan HR</Text>{"\n"}
-          Untuk memotivasi mereka, berikan kepastian arah karier yang jelas (clear career path). Apabila ada perubahan besar di perusahaan, sediakan waktu sosialisasi (transition period) yang memadai; jangan mendadak. Atasan disarankan untuk selalu memberikan instruksi yang tertulis (SOP/Email) untuk mengurangi kecemasan mereka terhadap ambiguitas operasional.
+          Asesmen PAPI Kostick (Personality and Preference Inventory) mengukur 20 dimensi kebutuhan (needs) dan peran (roles) yang secara spesifik berkaitan dengan lingkungan profesional dan gaya kerja {candidateName}. Total skor tervalidasi: {totalScore} / 90 {sc.isValid ? '(Lengkap)' : '(Data tidak lengkap)'}.
+        </Text>
+
+        <Text style={styles.subHeading}>Tabel Skor 20 Aspek (0-9)</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>Kode</Text>
+            <Text style={[styles.tableCellHeader, { width: '50%' }]}>Aspek</Text>
+            <Text style={[styles.tableCellHeader, { width: '15%' }]}>Skor</Text>
+            <Text style={[styles.tableCellHeader, { width: '25%' }]}>Kategori</Text>
+          </View>
+          {aspectOrder.map((code2) => {
+            const s = scores[code2] ?? 0;
+            const cat = s >= 6 ? 'High' : s >= 4 ? 'Middle' : 'Low';
+            return (
+              <View key={code2} style={styles.tableRow}>
+                <Text style={[styles.tableCell, { width: '10%', fontWeight: 'bold' }]}>{code2}</Text>
+                <Text style={[styles.tableCell, { width: '50%' }]}>{PAPI_ASPECT_DETAILS[code2 as keyof typeof PAPI_ASPECT_DETAILS]?.name}</Text>
+                <Text style={[styles.tableCell, { width: '15%' }]}>{s}</Text>
+                <Text style={[styles.tableCell, { width: '25%' }]}>{cat}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <Text style={styles.subHeading}>Aspek Dominan (High, Skor ≥ 6)</Text>
+        <Text style={styles.testCardDesc}>
+          {highAspects.length === 0
+            ? 'Tidak ada aspek berkategori High.'
+            : highAspects
+                .map((a) => `• ${a} – ${PAPI_ASPECT_DETAILS[a as keyof typeof PAPI_ASPECT_DETAILS]?.name} (Skor ${scores[a]}): ${candidateName} ${PAPI_ASPECT_DETAILS[a as keyof typeof PAPI_ASPECT_DETAILS]?.high}`)
+                .join('\n')}
+        </Text>
+
+        <Text style={styles.subHeading}>Aspek Rendah (Low, Skor ≤ 3)</Text>
+        <Text style={styles.testCardDesc}>
+          {lowAspects.length === 0
+            ? 'Tidak ada aspek berkategori Low.'
+            : lowAspects
+                .map((a) => `• ${a} – ${PAPI_ASPECT_DETAILS[a as keyof typeof PAPI_ASPECT_DETAILS]?.name} (Skor ${scores[a]}): ${candidateName} ${PAPI_ASPECT_DETAILS[a as keyof typeof PAPI_ASPECT_DETAILS]?.low}`)
+                .join('\n')}
         </Text>
       </View>
     );
   }
 
   if (code === 'msdt') {
+    const dominantType = sc.dominantType || 'Ds';
+    const typeInfo = MSDT_TYPE_DETAILS[dominantType as keyof typeof MSDT_TYPE_DETAILS];
+    const scores: Record<string, number> = sc.scores || {};
+    const orientation = sc.orientation || { TO: 0, RO: 0, E: 0, O: 0 };
+    const dimOrder = Object.keys(MSDT_TYPE_DETAILS);
+
     return (
       <View key={idx} style={styles.testCard}>
-        <Text style={styles.testCardTitle}>
-          {idx + 1}. {testName} (MANAGEMENT STYLE DIAGNOSTIC TEST)
-        </Text>
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} — GAYA DOMINAN: {dominantType} ({typeInfo?.name})
+          </Text>
+          <Text style={styles.discBannerSub}>
+            TO: {orientation.TO} | RO: {orientation.RO} | E: {orientation.E} | O (Deserter check): {orientation.O}
+          </Text>
+        </View>
+
+        <Text style={styles.subHeading}>Tabel Skor 8 Dimensi Gaya Manajemen</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>Kode</Text>
+            <Text style={[styles.tableCellHeader, { width: '50%' }]}>Gaya</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Skor Akhir</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Dominan</Text>
+          </View>
+          {dimOrder.map((d) => (
+            <View key={d} style={[styles.tableRow, d === dominantType ? { backgroundColor: '#f8fafc' } : {}]}>
+              <Text style={[styles.tableCell, { width: '10%', fontWeight: 'bold' }]}>{d}</Text>
+              <Text style={[styles.tableCell, { width: '50%' }]}>{MSDT_TYPE_DETAILS[d as keyof typeof MSDT_TYPE_DETAILS].name}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{scores[d] ?? 0}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{d === dominantType ? '🏆 Ya' : ''}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.subHeading}>Interpretasi Gaya Manajemen Dominan</Text>
         <Text style={styles.testCardDesc}>
-          <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Laporan Eksekutif Gaya Kepemimpinan MSDT</Text>{"\n"}
-          Management Style Diagnostic Test (MSDT) mengevaluasi efektivitas kepemimpinan kandidat berdasarkan tiga dimensi utama: Orientasi pada Tugas (Task Orientation), Orientasi pada Hubungan (Relationship Orientation), dan Efektivitas Situasional (Effectiveness).{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>1. Profil Gaya Manajerial Dominan</Text>{"\n"}
-          Kandidat memiliki kecenderungan gaya manajerial "Executive" yang merupakan profil paling efektif dalam MSDT. Mereka mampu memberikan bobot perhatian yang seimbang antara penyelesaian tugas (task) dan kesejahteraan moral tim (relationship). Kandidat tidak menggunakan pendekatan otokratis secara membabi buta, melainkan menyesuaikan gaya instruksinya berdasarkan tingkat kematangan dan kompetensi bawahan.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>2. Orientasi Pada Tugas (Task-Oriented)</Text>{"\n"}
-          Kandidat sangat proaktif dalam menetapkan target, mendistribusikan beban kerja, dan mengukur pencapaian KPI. Mereka memastikan setiap anggota tim memahami deskripsi pekerjaannya dengan jelas. Jika terjadi deviasi dari standar, kandidat tidak segan memberikan umpan balik (feedback) yang konstruktif dan tegas demi menjaga kualitas operasional.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>3. Orientasi Pada Hubungan (Relationship-Oriented)</Text>{"\n"}
-          Di samping tuntutan kerja yang tinggi, kandidat juga memiliki kapasitas empati yang baik. Mereka memandang bawahan sebagai mitra kerja, bersedia meluangkan waktu untuk mendengarkan aspirasi tim, dan memberikan dukungan moral (coaching) saat tim mengalami krisis motivasi. Hal ini membangun budaya kerja yang aman (psychologically safe) namun tetap produktif.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>4. Efektivitas Situasional & Solusi Konflik</Text>{"\n"}
-          Tingkat efektivitas kandidat dalam beradaptasi dengan perubahan krisis sangat tinggi. Mereka tidak kaku pada satu pendekatan. Saat menghadapi situasi darurat (krisis), mereka bisa mengambil alih kendali secara cepat. Sebaliknya, saat tim sudah mapan, mereka mempraktikkan pendelegasian wewenang yang luas. Konflik dikelola secara terbuka dan kolaboratif, bukan dihindari atau ditekan.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>5. Proyeksi Kecocokan (Bidang & Posisi)</Text>{"\n"}
-          Profil MSDT "Executive" ini sangat layak ditempatkan pada jajaran eksekutif senior (C-Level), Pimpinan Departemen (Head of Division), atau Project Manager skala besar. Mereka adalah agen transformasi yang mampu meningkatkan produktivitas perusahaan berskala korporat tanpa merusak moral karyawan. Sangat diandalkan untuk memimpin tim lintas generasi, lintas divisi (cross-functional), dan mengelola manajemen perubahan (Change Management).{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>6. Proyeksi Ketidakcocokan (Area yang Dihindari)</Text>{"\n"}
-          Gaya eksekutif ini tidak akan efektif (overqualified & restricted) bila diletakkan pada posisi manajerial tingkat terendah yang tidak memberikannya keleluasaan otoritas sama sekali (micro-managed by top level). Mereka juga tidak cocok berada di lingkungan perusahaan keluarga (family business) yang amat tradisional, di mana pengambilan keputusan hanya berpusat pada satu figur absolut tanpa ruang diskusi manajerial modern.{"\n\n"}
-          
-          <Text style={{ fontWeight: 'bold' }}>7. Saran Treatment & Pembinaan Kepemimpinan</Text>{"\n"}
-          Berikan kandidat tanggung jawab otonom pada *profit and loss* (P&L) atau proyek percontohan strategis. Mereka perlu dibina (coaching) langsung oleh jajaran Direksi untuk menyelaraskan visi bisnis makro. Pastikan sistem penilaian kinerja perusahaan (Performance Appraisal) terstruktur transparan, karena kandidat ini sangat menghargai keadilan (fairness) sistem dalam mempromosikan anak buahnya.
+          {candidateName} menunjukkan kecenderungan gaya manajerial dominan "{typeInfo?.name}" ({dominantType}), ditentukan dari kombinasi kategori Task Orientation, Relationship Orientation, dan Effectiveness (bukan semata skor dimensi tertinggi).{"\n\n"}
+          {typeInfo?.narrative}
         </Text>
       </View>
     );
   }
 
   if (code === 'mbti') {
+    const type: string = sc.type || '----';
+    const percent: Record<string, number> = sc.percent || {};
+    const unanswered: number = sc.unanswered ?? 0;
+    const validityStatus: string = sc.validityStatus || 'Valid';
+    const pairs: [string, string, string][] = [
+      ['E', 'I', 'Extraversion — Introversion'],
+      ['S', 'N', 'Sensing — Intuition'],
+      ['T', 'F', 'Thinking — Feeling'],
+      ['J', 'P', 'Judging — Perceiving'],
+    ];
+
     return (
       <View key={idx} style={styles.testCard}>
-        <Text style={styles.testCardTitle}>
-          {idx + 1}. {testName} (MYERS-BRIGGS TYPE INDICATOR)
-        </Text>
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} — TIPE: {type}
+          </Text>
+          <Text style={styles.discBannerSub}>
+            Status Validitas: {validityStatus}{unanswered > 0 ? ` (${unanswered} soal tidak dijawab)` : ''}
+          </Text>
+        </View>
+
+        <Text style={styles.subHeading}>Profil 4 Dimensi Preferensi</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '40%' }]}>Dimensi</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Kutub 1</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Kutub 2</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Dominan</Text>
+          </View>
+          {pairs.map(([a, b, label]) => (
+            <View key={label} style={styles.tableRow}>
+              <Text style={[styles.tableCell, { width: '40%' }]}>{label}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{a}: {percent[a] ?? 0}%</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{b}: {percent[b] ?? 0}%</Text>
+              <Text style={[styles.tableCell, { width: '20%', fontWeight: 'bold' }]}>{(percent[a] ?? 0) >= (percent[b] ?? 0) ? a : b}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.subHeading}>Interpretasi Umum</Text>
         <Text style={styles.testCardDesc}>
-          • <Text style={{ fontWeight: 'bold' }}>Evaluasi Preferensi Kepribadian:</Text> Teridentifikasi (4 Dikotomi Psikologis Terukur){"\n"}
-          • <Text style={{ fontWeight: 'bold' }}>4 Dimensi:</Text> Extraversion/Introversion, Sensing/Intuition, Thinking/Feeling, Judging/Perceiving{"\n"}
-          • <Text style={{ fontWeight: 'bold' }}>Gaya Kerjasama:</Text> Mampu beradaptasi dengan baik di dalam tim, terbuka terhadap gagasan baru, dan menjaga keharmonisan komunikasi kerja.
+          {candidateName} menunjukkan tipe kepribadian {type} berdasarkan 4 dikotomi psikologis Myers-Briggs (Extraversion/Introversion, Sensing/Intuition, Thinking/Feeling, Judging/Perceiving), dihitung dari 70 soal forced-choice.
+        </Text>
+      </View>
+    );
+  }
+
+  if (code === 'riasec') {
+    const ranking: string[] = sc.ranking || ['R', 'I', 'A', 'S', 'E', 'C'];
+    const scores: Record<string, number> = sc.scores || {};
+    const interestCode = sc.interestCode || ranking.slice(0, 3).join('');
+    const consistency = sc.consistency || 'Tidak Diketahui';
+    const top3 = ranking.slice(0, 3);
+    const comboProfessions: string[] = sc.comboProfessions || [];
+
+    return (
+      <View key={idx} style={styles.testCard}>
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} — KODE MINAT: {interestCode}
+          </Text>
+          <Text style={styles.discBannerSub}>Tingkat Konsistensi: {consistency}</Text>
+        </View>
+
+        <Text style={styles.subHeading}>Tabel Skor 6 Tipe RIASEC (0-18)</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '10%' }]}>Kode</Text>
+            <Text style={[styles.tableCellHeader, { width: '50%' }]}>Tipe</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Skor</Text>
+            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Peringkat</Text>
+          </View>
+          {(['R', 'I', 'A', 'S', 'E', 'C'] as const).map((t) => (
+            <View key={t} style={[styles.tableRow, top3.includes(t) ? { backgroundColor: '#f8fafc' } : {}]}>
+              <Text style={[styles.tableCell, { width: '10%', fontWeight: 'bold', color: RIASEC_TYPE_DETAILS[t].color }]}>{t}</Text>
+              <Text style={[styles.tableCell, { width: '50%' }]}>{RIASEC_TYPE_DETAILS[t].name}</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>{scores[t] ?? 0} / 18</Text>
+              <Text style={[styles.tableCell, { width: '20%' }]}>Top {ranking.indexOf(t) + 1}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.subHeading}>Interpretasi 3 Tipe Dominan</Text>
+        <Text style={styles.testCardDesc}>
+          {top3
+            .map(
+              (t, i) =>
+                `${i + 1}. ${RIASEC_TYPE_DETAILS[t as keyof typeof RIASEC_TYPE_DETAILS].name} (${t}): ${RIASEC_TYPE_DETAILS[t as keyof typeof RIASEC_TYPE_DETAILS].desc} Contoh profesi: ${RIASEC_TYPE_DETAILS[t as keyof typeof RIASEC_TYPE_DETAILS].professions.join(', ')}.`
+            )
+            .join('\n\n')}
+        </Text>
+
+        <Text style={styles.subHeading}>Contoh Profesi Kombinasi ({top3[0]}{top3[1]})</Text>
+        <Text style={styles.testCardDesc}>
+          Berdasarkan kombinasi 2 tipe teratas {candidateName}, contoh profesi yang relevan: {comboProfessions.length > 0 ? comboProfessions.join(', ') : 'tidak tersedia untuk kombinasi ini'}.
         </Text>
       </View>
     );
@@ -599,6 +725,96 @@ function renderSpecificTestReport(r: any, idx: number) {
     );
   }
 
+  if (code === 'msai') {
+    const skills: { name: string; quadrant: string; actual: number | null; effectiveness: number | null; importance: number | null; gap: number | null }[] = sc.skills || [];
+    const quadrantScores: Record<string, number | null> = sc.quadrantScores || {};
+    const missingCount: number = sc.missingCount ?? 0;
+
+    return (
+      <View key={idx} style={styles.testCard}>
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} (MANAGEMENT SKILLS ASSESSMENT INSTRUMENT)
+          </Text>
+          <Text style={styles.discBannerSub}>
+            Adhocracy: {quadrantScores.Adhocracy ?? '-'} | Market: {quadrantScores.Market ?? '-'} | Hierarchy: {quadrantScores.Hierarchy ?? '-'} | Clan: {quadrantScores.Clan ?? '-'}
+            {missingCount > 0 ? ` — ⚠️ ${missingCount} item perilaku tidak terjawab` : ''}
+          </Text>
+        </View>
+
+        <Text style={styles.subHeading}>Tabel 12 Skill Manajerial (Skala 1-5)</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '34%' }]}>Skill</Text>
+            <Text style={[styles.tableCellHeader, { width: '18%' }]}>Actual</Text>
+            <Text style={[styles.tableCellHeader, { width: '18%' }]}>Effectiveness</Text>
+            <Text style={[styles.tableCellHeader, { width: '15%' }]}>Importance</Text>
+            <Text style={[styles.tableCellHeader, { width: '15%' }]}>Gap</Text>
+          </View>
+          {skills.map((s) => (
+            <View key={s.name} style={styles.tableRow}>
+              <Text style={[styles.tableCell, { width: '34%' }]}>{s.name}</Text>
+              <Text style={[styles.tableCell, { width: '18%' }]}>{s.actual ?? '-'}</Text>
+              <Text style={[styles.tableCell, { width: '18%' }]}>{s.effectiveness ?? '-'}</Text>
+              <Text style={[styles.tableCell, { width: '15%' }]}>{s.importance ?? '-'}</Text>
+              <Text style={[styles.tableCell, { width: '15%' }]}>{s.gap ?? '-'}</Text>
+            </View>
+          ))}
+        </View>
+
+        {sc.dataGapNote ? (
+          <>
+            <Text style={styles.subHeading}>Catatan Kelengkapan Data</Text>
+            <Text style={styles.testCardDesc}>{sc.dataGapNote}</Text>
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
+  if (code === 'ist') {
+    const raScore = sc.raScore ?? 0;
+    const raTotal = sc.raTotal ?? 20;
+    const zrScore = sc.zrScore ?? 0;
+    const zrTotal = sc.zrTotal ?? 20;
+    const percent = sc.numericLogicPercent ?? 0;
+
+    return (
+      <View key={idx} style={styles.testCard}>
+        <View style={styles.discBanner}>
+          <Text style={styles.discBannerTitle}>
+            {idx + 1}. {testName} — KEMAMPUAN NUMERIK & LOGIKA (Subtes RA & ZR)
+          </Text>
+          <Text style={styles.discBannerSub}>
+            Skor: {raScore + zrScore}/{raTotal + zrTotal} ({percent}%)
+          </Text>
+        </View>
+
+        <Text style={styles.subHeading}>Rincian Subtes</Text>
+        <View style={styles.table}>
+          <View style={[styles.tableRow, styles.tableHeader]}>
+            <Text style={[styles.tableCellHeader, { width: '60%' }]}>Subtes</Text>
+            <Text style={[styles.tableCellHeader, { width: '40%' }]}>Skor</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableCell, { width: '60%' }]}>RA — Rechenaufgaben (Aritmatika)</Text>
+            <Text style={[styles.tableCell, { width: '40%' }]}>{raScore}/{raTotal}</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableCell, { width: '60%' }]}>ZR — Zahlenreihen (Deret Angka)</Text>
+            <Text style={[styles.tableCell, { width: '40%' }]}>{zrScore}/{zrTotal}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.subHeading}>Catatan Cakupan Skor</Text>
+        <Text style={styles.testCardDesc}>
+          {sc.unscoredNote ||
+            'Laporan ini hanya mencakup subtes Aritmatika (RA) dan Deret Angka (ZR). Subtes verbal (SE, WA, AN, GE) tidak diskor karena instrumen berlisensi komersial tanpa kunci jawaban publik yang sah.'}
+        </Text>
+      </View>
+    );
+  }
+
   // Fallback for technical or custom tests
   return (
     <View key={idx} style={styles.testCard}>
@@ -608,7 +824,7 @@ function renderSpecificTestReport(r: any, idx: number) {
       <Text style={styles.testCardDesc}>
         • <Text style={{ fontWeight: 'bold' }}>Status Pengerjaan:</Text> Selesai ({r.scoring_data?.total_answers || 'Semua'} Jawaban Terrekam){"\n"}
         • <Text style={{ fontWeight: 'bold' }}>Waktu Selesai:</Text> {new Date(r.created_at || Date.now()).toLocaleString('id-ID')}{"\n"}
-        • <Text style={{ fontWeight: 'bold' }}>Catatan Analisis:</Text> Berkas jawaban kandidat telah tersimpan dengan aman dan memenuhi norma kriteria kualifikasi asesmen HR.
+        • <Text style={{ fontWeight: 'bold' }}>Catatan Analisis:</Text> Berkas jawaban {candidateName} telah tersimpan dengan aman dan memenuhi norma kriteria kualifikasi asesmen HR.
       </Text>
     </View>
   );
@@ -697,7 +913,7 @@ export function UniversalPdfDocument({
 
         {/* Detailed Breakdown for each test */}
         <Text style={styles.sectionTitle}>Detail Analisis & Interpretasi Per Alat Tes</Text>
-        {results.map((r, idx) => renderSpecificTestReport(r, idx))}
+        {results.map((r, idx) => renderSpecificTestReport(r, idx, participant))}
 
         {/* Footer */}
         <Text style={styles.footer}>

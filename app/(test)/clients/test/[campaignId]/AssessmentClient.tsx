@@ -69,19 +69,50 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
           setActiveIdx(parsed.activeIdx);
         }
-        if (typeof parsed.currentQ === 'number') {
-          setCurrentQ(parsed.currentQ);
-        }
-        if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
-          setStage(parsed.stage);
-        }
-        if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0) {
-          setTimeLeft(parsed.timeLeft);
+        // Guard against stale progress: if the saved question-count "fingerprint"
+        // for the active test no longer matches the freshly loaded question list
+        // (e.g. question_banks was deduped/re-seeded after the participant started),
+        // discard the mismatched saved state instead of silently desyncing indices.
+        const savedActiveIdx = typeof parsed.activeIdx === 'number' ? parsed.activeIdx : 0;
+        const savedTest = tests[savedActiveIdx];
+        const savedFingerprint = parsed.questionCounts;
+        const currentFingerprint = tests.map((t: any) => t?.questions?.length || 0);
+        const fingerprintMatches =
+          !savedFingerprint ||
+          (Array.isArray(savedFingerprint) &&
+            savedFingerprint.length === currentFingerprint.length &&
+            savedFingerprint.every((c: number, i: number) => c === currentFingerprint[i]));
+
+        if (!fingerprintMatches) {
+          console.warn('Saved progress fingerprint mismatch (question bank changed) - resetting progress.');
+          localStorage.removeItem(storageKey);
+          toast.info('Data soal telah diperbarui, progres pengerjaan Anda direset ke awal tes ini.');
+        } else {
+          if (parsed.answers && Object.keys(parsed.answers).length > 0) {
+            setAnswers(parsed.answers);
+          }
+          if (parsed.participantId) setParticipantId(parsed.participantId);
+          if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
+            setActiveIdx(parsed.activeIdx);
+          }
+          if (typeof parsed.currentQ === 'number') {
+            const maxQ = savedTest?.questions?.length ? savedTest.questions.length - 1 : 0;
+            setCurrentQ(Math.min(parsed.currentQ, Math.max(maxQ, 0)));
+          }
+          if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
+            setStage(parsed.stage);
+          }
+          if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0) {
+            setTimeLeft(parsed.timeLeft);
+          }
         }
       }
     } catch (e) {
       console.error('Failed to load localStorage progress:', e);
+      // Corrupt JSON - drop it so it doesn't keep failing on every mount.
+      try { localStorage.removeItem(storageKey); } catch {}
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, tests.length]);
 
   // Persist state to LocalStorage when changed
@@ -99,13 +130,16 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         currentQ,
         stage,
         timeLeft,
+        // Fingerprint of question-list lengths per test, used to detect
+        // question_banks changes between save and resume.
+        questionCounts: tests.map((t: any) => t?.questions?.length || 0),
         updatedAt: Date.now(),
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
     } catch (e) {
       console.error('Failed to save progress to localStorage:', e);
     }
-  }, [storageKey, answers, participantId, activeIdx, currentQ, stage, timeLeft]);
+  }, [storageKey, answers, participantId, activeIdx, currentQ, stage, timeLeft, tests]);
 
   useEffect(() => {
     if (existingParticipant?.full_name) {
@@ -226,6 +260,31 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     if (currentQ > 0) setCurrentQ(prev => prev - 1);
   };
 
+  const jumpToQuestion = (idx: number) => {
+    if (idx >= 0 && idx < totalQuestions) {
+      setCurrentQ(idx);
+    }
+  };
+
+  // A question counts as "answered" for navigator purposes; DISC requires both P & K set.
+  const isQuestionAnswered = (idx: number) => {
+    const t = tests[activeIdx];
+    const val = answers[t?.id]?.[idx];
+    const isDiscTest = t?.code?.toLowerCase() === 'disc';
+    if (isDiscTest) {
+      return (
+        val &&
+        typeof val === 'object' &&
+        val.P !== null &&
+        val.P !== undefined &&
+        val.K !== null &&
+        val.K !== undefined &&
+        val.P !== val.K
+      );
+    }
+    return val !== undefined && val !== null && String(val).trim() !== '';
+  };
+
   const finishActiveTest = async () => {
     const t = tests[activeIdx];
     try {
@@ -324,6 +383,30 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             </div>
             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div className="bg-brand-500 h-full rounded-full transition-all duration-300" style={{ width: `${((currentQ + 1) / totalQuestions) * 100}%`, backgroundColor: brandColor }}></div>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto py-2 mt-1 no-scrollbar">
+              {Array.from({ length: totalQuestions }).map((_, idx) => {
+                const isActive = idx === currentQ;
+                const answered = isQuestionAnswered(idx);
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => jumpToQuestion(idx)}
+                    title={`Soal ${idx + 1}${answered ? ' (terjawab)' : ''}`}
+                    className={`shrink-0 w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center border transition-all ${
+                      isActive
+                        ? 'text-white shadow-sm scale-105'
+                        : answered
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                    }`}
+                    style={isActive ? { backgroundColor: brandColor, borderColor: brandColor } : {}}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
