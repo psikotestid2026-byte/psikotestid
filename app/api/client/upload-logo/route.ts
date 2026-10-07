@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { put } from '@vercel/blob';
 import { sql } from '@/lib/neon';
+import { validateImageUpload, safeImageExtension } from '@/lib/uploadValidation';
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'File gambar logo perusahaan tidak ditemukan.' }, { status: 400 });
     }
 
+    const validation = validateImageUpload(file);
+    if (!validation.ok) {
+      return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
+    }
+
     // Get customer ID from DB using RAW SQL
     const customerRows = await sql`
       SELECT id FROM customers WHERE LOWER(email) = ${session.user.email.toLowerCase()} LIMIT 1
@@ -28,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     const customerId = customerRows[0].id;
-    const ext = file.name.split('.').pop() || 'png';
+    const ext = safeImageExtension(file.name, file.type);
     const blobFilename = `company-logos/logo_${customerId}_${Date.now()}.${ext}`;
 
     // Upload file directly to Vercel Blob Storage

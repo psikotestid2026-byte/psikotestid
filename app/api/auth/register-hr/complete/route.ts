@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/neon';
+import { getOtpSecret } from '@/lib/otpSecret';
 
 export async function POST(req: Request) {
   try {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     const [expiryStr, expectedSignature] = parts;
-    const secret = process.env.OTP_SECRET || 'psikotest_stateless_secret_fallback_key';
+    const secret = getOtpSecret();
 
     const computedSignature = createHmac('sha256', secret)
       .update(`VERIFIED:${cleanEmail}:${expiryStr}`)

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/authGuards';
 import { sql } from '@/lib/neon';
 
 // GET: Fetch all notification & email templates using RAW SQL
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const templates = await sql`
       SELECT id, event_trigger, channel, message_content, is_active
       FROM notification_templates
@@ -22,6 +26,9 @@ export async function GET() {
 // POST: Add new notification template using RAW SQL
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const body = await req.json();
     const { event_trigger, channel, message_content, is_active } = body;
 
@@ -65,6 +72,9 @@ export async function POST(req: Request) {
 // PUT: Update notification template using RAW SQL
 export async function PUT(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const body = await req.json();
     const { id, event_trigger, channel, message_content, is_active } = body;
 

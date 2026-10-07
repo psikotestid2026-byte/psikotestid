@@ -1,9 +1,12 @@
 'use server';
 
+import { assertAdmin } from '@/lib/authGuards';
 import { sql } from '@/lib/neon';
 
 // Fetch list of participants for Superadmin Panel
 export async function getAdminParticipants() {
+  await assertAdmin();
+
   const participantsList = await sql`
     SELECT 
       p.id,

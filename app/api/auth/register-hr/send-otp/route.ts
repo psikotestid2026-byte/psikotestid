@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { sql } from '@/lib/neon';
 import { sendOtpEmail } from '@/lib/email';
+import { getOtpSecret } from '@/lib/otpSecret';
 
 export async function POST(req: Request) {
   try {
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
 
-    const secret = process.env.OTP_SECRET || 'psikotest_stateless_secret_fallback_key';
+    const secret = getOtpSecret();
     const signature = createHmac('sha256', secret)
       .update(`${cleanEmail}:${otp}:${expiry}`)
       .digest('hex');
