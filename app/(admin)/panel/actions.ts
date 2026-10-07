@@ -2,8 +2,11 @@
 
 import { sql } from '@/lib/neon';
 import { invalidateQuestionsCache } from '@/lib/questionCache';
+import { assertAdmin } from '@/lib/authGuards';
 
 export async function getSuperAdminData() {
+  await assertAdmin();
+
   const [customers, tests, campaigns, topups, submissions, logs, admins, quotas] = await Promise.all([
     sql`SELECT id, company_name, email, created_at FROM customers ORDER BY created_at DESC`,
     sql`SELECT * FROM master_tests`,
@@ -19,6 +22,8 @@ export async function getSuperAdminData() {
 }
 
 export async function approveOrder(orderId: number) {
+  await assertAdmin();
+
   // Simple transaction flow simulation with raw SQL
   await sql`UPDATE test_orders SET status = 'PAID', paid_at = NOW() WHERE id = ${orderId}`;
   
@@ -44,6 +49,8 @@ export async function approveOrder(orderId: number) {
 }
 
 export async function createAdmin(data: { name: string; email: string; role: string; status: string }) {
+  await assertAdmin();
+
   await sql`
     INSERT INTO admins (name, email, role, status)
     VALUES (${data.name}, ${data.email}, ${data.role}, ${data.status})
@@ -51,6 +58,8 @@ export async function createAdmin(data: { name: string; email: string; role: str
 }
 
 export async function updateAdmin(id: number, data: { name: string; email: string; role: string; status: string }) {
+  await assertAdmin();
+
   await sql`
     UPDATE admins 
     SET name = ${data.name}, email = ${data.email}, role = ${data.role}, status = ${data.status}
@@ -59,10 +68,14 @@ export async function updateAdmin(id: number, data: { name: string; email: strin
 }
 
 export async function deleteAdmin(id: number) {
+  await assertAdmin();
+
   await sql`DELETE FROM admins WHERE id = ${id}`;
 }
 
 export async function adjustQuotaManual(customerId: number, testId: number, diff: number) {
+  await assertAdmin();
+
   const type = diff >= 0 ? 'CREDIT' : 'DEBIT';
   await sql`
     INSERT INTO customer_test_quotas (customer_id, test_id, quota)
@@ -77,6 +90,8 @@ export async function adjustQuotaManual(customerId: number, testId: number, diff
 }
 
 export async function updateTestParams(id: number, data: { price: number; duration_sec: number; is_active: boolean; instructions: string }) {
+  await assertAdmin();
+
   await sql`
     UPDATE master_tests
     SET price = ${data.price}, duration_sec = ${data.duration_sec}, is_active = ${data.is_active}, instructions = ${data.instructions}
@@ -85,6 +100,8 @@ export async function updateTestParams(id: number, data: { price: number; durati
 }
 
 export async function getTestQuestions(testId: number) {
+  await assertAdmin();
+
   const questions = await sql`
     SELECT * FROM question_banks WHERE test_id = ${testId} ORDER BY order_number ASC
   `;
@@ -92,6 +109,8 @@ export async function getTestQuestions(testId: number) {
 }
 
 export async function saveQuestion(id: number | null, testId: number, orderNumber: number, questionData: string, type: string) {
+  await assertAdmin();
+
   const parsedData = JSON.parse(questionData);
   if (id) {
     await sql`
@@ -109,6 +128,8 @@ export async function saveQuestion(id: number | null, testId: number, orderNumbe
 }
 
 export async function getTestConfigAndNorms(testId: number) {
+  await assertAdmin();
+
   const [config, norms] = await Promise.all([
     sql`SELECT * FROM scoring_configs WHERE test_id = ${testId} LIMIT 1`,
     sql`SELECT * FROM test_norms WHERE test_id = ${testId} ORDER BY id ASC`
@@ -117,6 +138,8 @@ export async function getTestConfigAndNorms(testId: number) {
 }
 
 export async function saveScoringConfig(testId: number, formulaType: string) {
+  await assertAdmin();
+
   await sql`
     INSERT INTO scoring_configs (test_id, formula_type, config_data)
     VALUES (${testId}, ${formulaType}, '{}'::jsonb)
@@ -126,6 +149,8 @@ export async function saveScoringConfig(testId: number, formulaType: string) {
 }
 
 export async function saveNorm(id: number | null, testId: number, rawScore: string, normScore: string, label: string, description: string) {
+  await assertAdmin();
+
   if (id) {
     await sql`
       UPDATE test_norms 
@@ -141,6 +166,8 @@ export async function saveNorm(id: number | null, testId: number, rawScore: stri
 }
 
 export async function batchInsertNorms(testId: number, norms: any[]) {
+  await assertAdmin();
+
   // Simple clear and insert for bulk import
   await sql`DELETE FROM test_norms WHERE test_id = ${testId}`;
   

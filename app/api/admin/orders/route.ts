@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/authGuards';
 import { sql } from '@/lib/neon';
 
 // GET: Fetch all orders for Superadmin Panel using RAW SQL
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const orders = await sql`
       SELECT 
         o.id,
@@ -37,6 +41,9 @@ export async function GET() {
 // PUT: Confirm & Set Order Status to PAID with wallet crediting via RAW SQL
 export async function PUT(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const body = await req.json();
     const { order_id } = body;
 

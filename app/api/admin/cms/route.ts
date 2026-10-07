@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/authGuards';
 import { sql } from '@/lib/neon';
 
 // GET: Fetch all landing page CMS contents using RAW SQL
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const contents = await sql`
       SELECT id, section_key, title, subtitle, content, is_active, updated_at
       FROM landing_page_contents
@@ -22,6 +26,9 @@ export async function GET() {
 // PUT: Update landing page CMS content section using RAW SQL
 export async function PUT(req: Request) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const body = await req.json();
     const { section_key, title, subtitle, content, is_active } = body;
 

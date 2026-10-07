@@ -1,6 +1,7 @@
 'use server';
 
 import { sql } from '@/lib/neon';
+import { requireSession } from '@/lib/authGuards';
 
 export async function submitBiodata(
   campaignId: number,
@@ -131,9 +132,11 @@ export async function submitBiodata(
 }
 
 export async function submitTestResult(participantId: number, testId: number, answers: any) {
-  // Check if participant exists and get customer ID through campaign
+  const auth = await requireSession();
+  if (!auth.ok) throw new Error('Unauthorized');
+
   const participantData = await sql`
-    SELECT c.customer_id 
+    SELECT c.customer_id, LOWER(p.email) AS participant_email
     FROM participants p
     JOIN campaigns c ON p.campaign_id = c.id
     WHERE p.id = ${participantId}
@@ -141,6 +144,9 @@ export async function submitTestResult(participantId: number, testId: number, an
   
   const customerId = participantData[0]?.customer_id;
   if (!customerId) throw new Error('Participant not found');
+  if (participantData[0].participant_email !== auth.email) {
+    throw new Error('Unauthorized');
+  }
 
   // Note: Quota was already reserved at participant registration (via submitBiodata or addCandidateToCampaign).
 
@@ -174,6 +180,16 @@ export async function submitTestResult(participantId: number, testId: number, an
 }
 
 export async function markTestCompleted(participantId: number) {
+  const auth = await requireSession();
+  if (!auth.ok) throw new Error('Unauthorized');
+
+  const rows = await sql`
+    SELECT LOWER(email) AS email FROM participants WHERE id = ${participantId} LIMIT 1
+  `;
+  if (!rows.length || rows[0].email !== auth.email) {
+    throw new Error('Unauthorized');
+  }
+
   await sql`
     UPDATE participants 
     SET status = 'COMPLETED', completed_at = NOW() 

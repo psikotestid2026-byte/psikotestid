@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { put } from '@vercel/blob';
 import { sql } from '@/lib/neon';
+import { validateImageUpload, safeImageExtension } from '@/lib/uploadValidation';
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +28,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'File gambar favicon tidak ditemukan.' }, { status: 400 });
     }
 
-    const ext = file.name.split('.').pop() || 'ico';
+    const validation = validateImageUpload(file, {
+      allowedTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml'],
+    });
+    if (!validation.ok) {
+      return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
+    }
+
+    const ext = safeImageExtension(file.name, file.type);
     const blobFilename = `site-branding/favicon_${Date.now()}.${ext}`;
 
     // Upload favicon to Vercel Blob Storage

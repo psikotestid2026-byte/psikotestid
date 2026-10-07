@@ -3,6 +3,7 @@ import { renderToStream } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { sql } from '@/lib/neon';
+import { requireParticipantAccess } from '@/lib/authGuards';
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
@@ -151,6 +152,10 @@ export async function GET(
     const resolvedParams = await params;
     const resultId = Number(resolvedParams.resultId);
 
+    if (!resultId) {
+      return NextResponse.json({ error: 'Invalid result ID' }, { status: 400 });
+    }
+
     const resultRows = await sql`
       SELECT tr.*, p.full_name, p.email, c.title as campaign_title
       FROM test_results tr
@@ -165,6 +170,8 @@ export async function GET(
     }
 
     const row = resultRows[0];
+    const auth = await requireParticipantAccess(Number(row.participant_id));
+    if (!auth.ok) return auth.response;
     let scoring = row.scoring_data;
 
     if (!scoring && row.raw_answers) {

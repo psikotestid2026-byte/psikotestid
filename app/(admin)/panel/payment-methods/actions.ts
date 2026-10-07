@@ -1,9 +1,12 @@
 'use server';
 
+import { assertAdmin } from '@/lib/authGuards';
 import { sql } from '@/lib/neon';
 
 // Fetch payment methods & instructions for admin
 export async function getAdminPaymentMethods() {
+  await assertAdmin();
+
   const paymentMethods = await sql`
     SELECT 
       pm.id,
@@ -40,6 +43,8 @@ export async function savePaymentMethod(data: {
   instruction_title?: string;
   instruction_content?: string;
 }) {
+  await assertAdmin();
+
   if (data.id) {
     // Update payment method
     await sql`
@@ -92,6 +97,8 @@ export async function savePaymentMethod(data: {
 
 // Toggle active status
 export async function togglePaymentMethodStatus(id: number, isActive: boolean) {
+  await assertAdmin();
+
   await sql`
     UPDATE payment_methods
     SET is_active = ${isActive}, updated_at = NOW()
@@ -101,5 +108,7 @@ export async function togglePaymentMethodStatus(id: number, isActive: boolean) {
 
 // Delete payment method
 export async function deletePaymentMethod(id: number) {
+  await assertAdmin();
+
   await sql`DELETE FROM payment_methods WHERE id = ${id}`;
 }

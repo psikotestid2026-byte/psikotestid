@@ -1,14 +1,55 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/neon';
+import { requireSession } from '@/lib/authGuards';
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireSession();
+    if (!auth.ok) return auth.response;
+
     const body = await req.json();
     const { action, participant_id, test_id, answers } = body;
 
     const participantId = Number(participant_id);
     if (!participantId) {
       return NextResponse.json({ error: 'Participant ID is required' }, { status: 400 });
+    }
+
+    // Authorize: participant themself, owning customer, or admin
+    const accessRows = await sql`
+      SELECT
+        p.id,
+        LOWER(p.email) AS participant_email,
+        LOWER(cust.email) AS customer_email,
+        p.status AS participant_status
+      FROM participants p
+      JOIN campaigns c ON p.campaign_id = c.id
+      JOIN customers cust ON c.customer_id = cust.id
+      WHERE p.id = ${participantId}
+      LIMIT 1
+    `;
+
+    if (!accessRows.length) {
+      return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
+    }
+
+    const access = accessRows[0];
+    const admins = await sql`
+      SELECT id, role FROM admins WHERE LOWER(email) = ${auth.email} LIMIT 1
+    `;
+    const isAdmin =
+      admins.length > 0 &&
+      (admins[0].role === 'SUPERADMIN' || admins[0].role === 'ADMIN');
+    const isParticipant = access.participant_email === auth.email;
+    const isOwnerCustomer = access.customer_email === auth.email;
+
+    if (!isAdmin && !isParticipant && !isOwnerCustomer) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Only the participant (or admin) may submit answers / mark completed
+    if (!isAdmin && !isParticipant) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     if (action === 'mark_completed') {
@@ -18,7 +59,6 @@ export async function POST(req: Request) {
         WHERE id = ${participantId}
       `;
 
-      // Asynchronously trigger HR Email notification
       try {
         const { sendParticipantCompletedEmailToHr } = await import('@/lib/email');
         sendParticipantCompletedEmailToHr(participantId).catch((err) => {
@@ -31,13 +71,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'Participant marked as COMPLETED' });
     }
 
-    // Default action: Submit individual test result
     const testId = Number(test_id);
     if (!testId) {
       return NextResponse.json({ error: 'Test ID is required' }, { status: 400 });
     }
 
-    // Check participant existence
     const participantData = await sql`
       SELECT c.customer_id 
       FROM participants p
@@ -48,7 +86,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
     }
 
-    // Calculate scoring data if test is DISC or WPT
     const testInfo = await sql`SELECT code FROM master_tests WHERE id = ${testId}`;
     let scoringData: any = null;
     if (testInfo[0]) {
@@ -81,8 +118,6 @@ export async function POST(req: Request) {
         const { calculateMsaiScore } = await import('@/lib/scoring/msai');
         scoringData = calculateMsaiScore(answers || {});
       } else if (code === 'ist') {
-        // IST only scores the RA/ZR subtests (see lib/scoring/ist.ts header) — needs the
-        // stored correctIndex per question, unlike the other tests which match answer text.
         const { calculateIstScoreFromQuestions } = await import('@/lib/scoring/ist');
         const questions = await sql`
           SELECT order_number, question_data FROM question_banks WHERE test_id = ${testId}

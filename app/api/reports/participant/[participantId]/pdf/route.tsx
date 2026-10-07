@@ -3,6 +3,7 @@ import { renderToStream } from '@react-pdf/renderer';
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Line, Polyline, Circle, G } from '@react-pdf/renderer';
 import { sql } from '@/lib/neon';
+import { requireParticipantAccess } from '@/lib/authGuards';
 import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring/disc_dictionary';
 import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
@@ -931,6 +932,13 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const participantId = Number(resolvedParams.participantId);
+
+    if (!participantId) {
+      return NextResponse.json({ error: 'Invalid participant ID' }, { status: 400 });
+    }
+
+    const auth = await requireParticipantAccess(participantId);
+    if (!auth.ok) return auth.response;
 
     const participantRows = await sql`
       SELECT p.*, c.title as campaign_title, cust.company_name, cust.logo_url

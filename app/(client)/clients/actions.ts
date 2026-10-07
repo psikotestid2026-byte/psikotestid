@@ -2,8 +2,14 @@
 
 import { sql } from '@/lib/neon';
 import crypto from 'crypto';
+import { assertCustomer } from '@/lib/authGuards';
 
 export async function getClientData(customerId: number) {
+  const auth = await assertCustomer();
+  if (Number(auth.customer.id) !== Number(customerId)) {
+    throw new Error('Unauthorized');
+  }
+
   const [customerInfo, quotas, campaigns, participants, tests, transactions, orders] = await Promise.all([
     sql`SELECT * FROM customers WHERE id = ${customerId}`,
     sql`
@@ -67,6 +73,10 @@ export async function getClientData(customerId: number) {
 }
 
 export async function getCampaignDetails(campaignId: number) {
+  const auth = await assertCustomer();
+  const own = await sql`SELECT id FROM campaigns WHERE id = ${campaignId} AND customer_id = ${auth.customer.id} LIMIT 1`;
+  if (own.length === 0) throw new Error('Unauthorized');
+
   const [campaignRows, selectedTests, candidates, customerRows] = await Promise.all([
     sql`SELECT * FROM campaigns WHERE id = ${campaignId} LIMIT 1`,
     sql`
@@ -94,6 +104,8 @@ export async function getCampaignDetails(campaignId: number) {
 }
 
 export async function getParticipantFullDetails(participantId: number) {
+  const auth = await assertCustomer();
+
   const targetParticipant = await sql`
     SELECT p.*, c.title as campaign_title, c.customer_id, cust.company_name
     FROM participants p
@@ -106,6 +118,9 @@ export async function getParticipantFullDetails(participantId: number) {
   if (targetParticipant.length === 0) return null;
 
   const candidate = targetParticipant[0];
+  if (Number(candidate.customer_id) !== Number(auth.customer.id)) {
+    throw new Error('Unauthorized');
+  }
   const candidateEmail = candidate.email ? candidate.email.trim().toLowerCase() : '';
 
   // Fetch test results for current participant
@@ -148,6 +163,11 @@ export async function getParticipantFullDetails(participantId: number) {
 }
 
 export async function updateCustomerBranding(customerId: number, data: { company_name: string; logo_url: string; brand_color: string }) {
+  const auth = await assertCustomer();
+  if (Number(auth.customer.id) !== Number(customerId)) {
+    throw new Error('Unauthorized');
+  }
+
   await sql`
     UPDATE customers 
     SET company_name = ${data.company_name}, logo_url = ${data.logo_url}, brand_color = ${data.brand_color}
@@ -161,6 +181,11 @@ export async function createCampaign(
   testIds: number[], 
   registrationType: string = 'OPEN_LINK'
 ) {
+  const auth = await assertCustomer();
+  if (Number(auth.customer.id) !== Number(customerId)) {
+    throw new Error('Unauthorized');
+  }
+
   if (!title || title.trim().length === 0) {
     throw new Error('Nama Campaign harus diisi.');
   }
@@ -199,10 +224,18 @@ export async function createCampaign(
 }
 
 export async function closeCampaign(campaignId: number) {
-  await sql`UPDATE campaigns SET is_active = FALSE WHERE id = ${campaignId}`;
+  const auth = await assertCustomer();
+  const own = await sql`SELECT id FROM campaigns WHERE id = ${campaignId} AND customer_id = ${auth.customer.id} LIMIT 1`;
+  if (own.length === 0) throw new Error('Unauthorized');
+
+  await sql`UPDATE campaigns SET is_active = FALSE, updated_at = NOW() WHERE id = ${campaignId} AND customer_id = ${auth.customer.id}`;
 }
 
 export async function addCandidateToCampaign(campaignId: number, data: { full_name: string; email: string; phone_number?: string; nik?: string }) {
+  const auth = await assertCustomer();
+  const ownCamp = await sql`SELECT id FROM campaigns WHERE id = ${campaignId} AND customer_id = ${auth.customer.id} LIMIT 1`;
+  if (ownCamp.length === 0) throw new Error('Unauthorized');
+
   if (!data.full_name || !data.email) {
     throw new Error('Nama lengkap dan Email kandidat wajib diisi.');
   }
@@ -293,6 +326,10 @@ export async function bulkImportCandidates(
   campaignId: number,
   candidates: Array<{ full_name: string; email: string; phone_number?: string }>
 ) {
+  const auth = await assertCustomer();
+  const ownCamp = await sql`SELECT id FROM campaigns WHERE id = ${campaignId} AND customer_id = ${auth.customer.id} LIMIT 1`;
+  if (ownCamp.length === 0) throw new Error('Unauthorized');
+
   if (!candidates || candidates.length === 0) {
     throw new Error('Daftar kandidat kosong.');
   }
@@ -381,6 +418,11 @@ export async function bulkImportCandidates(
 }
 
 export async function createOrder(customerId: number, testId: number, quantity: number) {
+  const auth = await assertCustomer();
+  if (Number(auth.customer.id) !== Number(customerId)) {
+    throw new Error('Unauthorized');
+  }
+
   const test = await sql`SELECT price FROM master_tests WHERE id = ${testId}`;
   if (!test[0]) throw new Error('Test not found');
   
