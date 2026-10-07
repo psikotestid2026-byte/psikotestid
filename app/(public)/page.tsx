@@ -302,7 +302,6 @@ export default function PublicPage() {
           <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
             <span>© 2026 RuangTes — Hak Cipta Dilindungi.</span>
             <div className="flex items-center gap-4">
-              <Link href="/panel" className="hover:text-slate-400 transition-colors">Portal Super Admin</Link>
               <span>Syarat & Ketentuan</span>
               <span>Kebijakan Privasi</span>
             </div>
