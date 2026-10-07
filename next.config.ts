@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://*.googleusercontent.com",
+              "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://*.googleusercontent.com https://images.unsplash.com",
               "font-src 'self' data:",
               "connect-src 'self' https://*.neon.tech https://api.xendit.co https://api.midtrans.com https://*.upstash.io https://accounts.google.com",
               "frame-src https://accounts.google.com",

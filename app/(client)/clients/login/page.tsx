@@ -263,7 +263,7 @@ function LoginAndRegisterContent() {
               <Loader2 className="w-4.5 h-4.5 animate-spin mr-2 text-indigo-600" />
             ) : (
               <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                src="/icons/google-color.svg"
                 className="w-4.5 h-4.5 mr-2.5"
                 alt="Google SSO"
               />
@@ -491,7 +491,7 @@ function LoginAndRegisterContent() {
             }}
             className="w-full flex justify-center items-center py-2.5 px-3 border border-slate-300 rounded-xl shadow-sm text-xs font-extrabold text-slate-800 bg-white hover:bg-slate-50 transition-all"
           >
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-4 h-4 mr-2" alt="Google SSO" />
+            <img src="/icons/google-color.svg" className="w-4 h-4 mr-2" alt="Google SSO" />
             Masuk via Google SSO Sekarang
           </button>
         </div>
