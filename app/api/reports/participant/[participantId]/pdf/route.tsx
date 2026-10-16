@@ -8,6 +8,7 @@ import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring
 import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
+import { getResultSummary } from '@/lib/reportSummary';
 
 const styles = StyleSheet.create({
   page: {
@@ -889,14 +890,7 @@ export function UniversalPdfDocument({
           ) : (
             results.map((r, idx) => {
               const sc = r.scoring_data;
-              let scoreSummary = 'Selesai';
-              if (sc?.dominantLabel) {
-                scoreSummary = `${sc.dominantLabel} (${sc.dominantType})`;
-              } else if (sc?.score !== undefined || sc?.wptScore !== undefined) {
-                scoreSummary = `Skor Kognitif: ${sc.score || sc.wptScore}`;
-              } else if (sc?.total_answers) {
-                scoreSummary = `${sc.total_answers} Terjawab`;
-              }
+              const scoreSummary = getResultSummary(r.test_code, sc);
 
               return (
                 <View key={idx} style={styles.tableRow}>
