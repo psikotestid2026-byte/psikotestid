@@ -46,4 +46,13 @@ describe('Security regressions (source)', () => {
     const src = read('app/api/reports/participant/[participantId]/pdf/route.tsx');
     expect(src).toMatch(/requireParticipantAccess/);
   });
+
+  it('bulk PDF route checks admin and client ownership', () => {
+    const src = read('app/api/reports/bulk/pdf/route.tsx');
+    expect(src).toMatch(/requireAdmin/);
+    expect(src).toMatch(/requireCustomer/);
+    expect(src).toMatch(/resolveBulkCustomer/);
+    expect(src).toMatch(/assertCampaignOwnership/);
+    expect(src).toMatch(/maxDuration/);
+  });
 });
