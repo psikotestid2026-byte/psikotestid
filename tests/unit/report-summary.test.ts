@@ -27,4 +27,19 @@ describe('getResultSummary (combined report summary table)', () => {
     expect(getResultSummary('tech_js', { total_answers: 3 })).toBe('3 Terjawab');
     expect(getResultSummary('x', null)).toBe('Selesai');
   });
+
+  it('bigfive summary lists dimension categories and never undefined', () => {
+    const summary = getResultSummary('bigfive', {
+      dimensions: {
+        E: { category: 'Tinggi' },
+        A: { category: 'Sedang' },
+        C: { category: 'Tinggi' },
+        N: { category: 'Rendah' },
+        O: { category: 'Sedang' },
+      },
+    });
+    expect(summary).toBe('E Tinggi · A Sedang · C Tinggi · N Rendah · O Sedang');
+    expect(summary).not.toContain('undefined');
+    expect(getResultSummary('BIGFIVE', {})).toBe('Selesai');
+  });
 });

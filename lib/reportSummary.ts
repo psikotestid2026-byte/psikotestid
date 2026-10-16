@@ -11,6 +11,7 @@ export interface SummaryScoring {
   score?: string | number;
   wptScore?: string | number;
   total_answers?: number;
+  dimensions?: Record<string, { category?: string | null }> | null;
 }
 
 export function getResultSummary(
@@ -19,6 +20,16 @@ export function getResultSummary(
 ): string {
   if (!sc) return 'Selesai';
   const c = (code || '').toLowerCase();
+
+  if (c === 'bigfive' && sc.dimensions) {
+    const parts = ['E', 'A', 'C', 'N', 'O']
+      .map((dim) => {
+        const category = sc.dimensions?.[dim]?.category;
+        return category ? `${dim} ${category}` : null;
+      })
+      .filter((part): part is string => Boolean(part));
+    if (parts.length > 0) return parts.join(' · ');
+  }
 
   if (c === 'enneagram' && sc.dominantLabel) {
     const label = /^\d+$/.test(String(sc.dominantLabel)) ? `Tipe ${sc.dominantLabel}` : String(sc.dominantLabel);

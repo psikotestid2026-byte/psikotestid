@@ -8,6 +8,7 @@ import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Eye, FileDown, Search, Users } from 'lucide-react';
+import { BulkPdfExportButton } from '@/components/reports/BulkPdfExportButton';
 
 interface ParticipantsTabProps {
   data: any;
@@ -23,10 +24,17 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
 
   const activeData = clientData || data;
   const [searchQuery, setSearchQuery] = useState('');
+  const [campaignFilter, setCampaignFilter] = useState('ALL');
 
   const participants = activeData?.participants || [];
+  const campaigns = Array.isArray(activeData?.campaigns) ? activeData.campaigns : [];
+  const customerId = Number(activeData?.customer?.id);
+  const selectedCampaignId =
+    campaignFilter === 'ALL' ? null : Number(campaignFilter) || null;
 
   const filteredParticipants = participants.filter((p: any) => {
+    const matchesCampaign = campaignFilter === 'ALL' || String(p.campaign_id) === campaignFilter;
+    if (!matchesCampaign) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -45,6 +53,28 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
           <p className="text-xs text-slate-500 mt-0.5">
             Lihat laporan individu kandidat, riwayat pengerjaan tes per orang, serta unduh PDF report.
           </p>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <select
+            aria-label="Sesi untuk unduhan ZIP"
+            value={campaignFilter}
+            onChange={(event) => setCampaignFilter(event.target.value)}
+            className="py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="ALL">Semua sesi (batch)</option>
+            {campaigns.map((campaign: { id: number | string; title?: string }) => (
+              <option key={campaign.id} value={String(campaign.id)}>
+                {campaign.title || `Sesi ${campaign.id}`}
+              </option>
+            ))}
+          </select>
+          <BulkPdfExportButton
+            customerId={Number.isFinite(customerId) && customerId > 0 ? customerId : null}
+            campaignId={selectedCampaignId}
+            label="Unduh ZIP Laporan"
+            title="Unduh ZIP laporan PDF peserta pada sesi yang dipilih"
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm disabled:opacity-60"
+          />
         </div>
       </div>
 
