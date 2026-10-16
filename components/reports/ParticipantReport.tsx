@@ -4,7 +4,7 @@ import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring
 import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
-import { getResultSummary } from '@/lib/reportSummary';
+import { getResultSummary, readWptReportFigures } from '@/lib/reportSummary';
 import { calculateBigFiveScore } from '@/lib/scoring/bigfive';
 import { BigFiveReportPage } from '@/components/reports/BigFiveReport';
 import { isSkippedDetailTest, normalizeTestCode, partitionReportResults, resolveBigFiveScoring } from '@/lib/combinedReport';
@@ -413,8 +413,10 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
   }
 
   if (code === 'wpt') {
-    const score = sc.score !== undefined ? sc.score : sc.wptScore !== undefined ? sc.wptScore : (sc.total_answers || 0);
-    const label = sc.label || (score >= 30 ? 'Superior Intelektual' : score >= 20 ? 'Rata-rata Atas (Average)' : 'Cukup');
+    const wpt = readWptReportFigures(sc);
+    const rawText = wpt.rawScore == null ? '-' : String(wpt.rawScore);
+    const iqText = wpt.iq == null ? '-' : String(wpt.iq);
+    const iqWithLabel = wpt.label ? `${iqText} (${wpt.label})` : iqText;
 
     return (
       <View key={idx} style={styles.testCard}>
@@ -422,8 +424,8 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
           {idx + 1}. {testName} (WONDERLIC PERSONNEL TEST - COGNITIVE)
         </Text>
         <Text style={styles.testCardDesc}>
-          • <Text style={{ fontWeight: 'bold' }}>Skor Mentah Kognitif:</Text> {score} / 50 Poin Pilihan Benar{"\n"}
-          • <Text style={{ fontWeight: 'bold' }}>Kapasitas Intelektual:</Text> {label}{"\n\n"}
+          • <Text style={{ fontWeight: 'bold' }}>Skor Mentah Kognitif:</Text> {rawText} / 50 Poin Pilihan Benar{"\n"}
+          • <Text style={{ fontWeight: 'bold' }}>Skor IQ:</Text> {iqWithLabel}{"\n\n"}
           
           <Text style={{ fontWeight: 'bold', fontSize: 10 }}>Analisis Mendalam Kapasitas Kognitif</Text>{"\n"}
           Wonderlic Personnel Test (WPT) adalah instrumen pengukuran kapasitas kognitif (general intelligence) yang sangat terpercaya untuk memprediksi kemampuan {candidateName} dalam memecahkan masalah (problem solving), menyerap informasi atau instruksi baru, dan membuat keputusan logis dalam batasan waktu yang sangat ketat.{"\n\n"}
@@ -846,7 +848,14 @@ function renderDetailPage(r: any, idx: number, participant: any) {
   if (code === 'bigfive') {
     const scoring = resolveBigFiveScoring(r.scoring_data, r.raw_answers, calculateBigFiveScore);
     if (scoring?.dimensions) {
-      return <BigFiveReportPage key={pageKey} participant={participant} scoring={scoring} />;
+      return (
+        <BigFiveReportPage
+          key={pageKey}
+          participant={participant}
+          scoring={scoring}
+          sectionNumber={idx + 1}
+        />
+      );
     }
     return (
       <Page key={pageKey} size="A4" style={styles.page}>

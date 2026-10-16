@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { BIG_FIVE_SECTION_TITLE, numberedSectionTitle } from '@/lib/reportSummary';
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
@@ -47,13 +48,21 @@ function getCategoryColor(dim: string, category: string) {
   return '#dc2626';
 }
 
-export function BigFiveReportPage({ participant, scoring }: { participant: any; scoring: any }) {
+export function BigFiveReportPage({
+  participant,
+  scoring,
+  sectionNumber,
+}: {
+  participant: any;
+  scoring: any;
+  sectionNumber?: number;
+}) {
   const dims = ['E', 'A', 'C', 'N', 'O'];
 
   return (
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.title}>LAPORAN BIG FIVE INVENTORY (BFI)</Text>
+        <Text style={styles.title}>{numberedSectionTitle(sectionNumber, BIG_FIVE_SECTION_TITLE)}</Text>
         <Text style={styles.subtitle}>RuangTes Enterprise · Laporan Asesmen Kepribadian</Text>
       </View>
 
