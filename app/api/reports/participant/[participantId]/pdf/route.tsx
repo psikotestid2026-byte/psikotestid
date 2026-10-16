@@ -8,6 +8,7 @@ import { findDiscTypeInfo, DISC_MAIN_TRAITS, DiscMainTrait } from '@/lib/scoring
 import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
+import { getResultSummary } from '@/lib/reportSummary';
 
 const styles = StyleSheet.create({
   page: {
@@ -489,7 +490,7 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
           })}
         </View>
 
-        <Text style={styles.subHeading}>Aspek Dominan (High, Skor ≥ 6)</Text>
+        <Text style={styles.subHeading}>Aspek Dominan (High, Skor {'>='} 6)</Text>
         <Text style={styles.testCardDesc}>
           {highAspects.length === 0
             ? 'Tidak ada aspek berkategori High.'
@@ -498,7 +499,7 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
                 .join('\n')}
         </Text>
 
-        <Text style={styles.subHeading}>Aspek Rendah (Low, Skor ≤ 3)</Text>
+        <Text style={styles.subHeading}>Aspek Rendah (Low, Skor {'<='} 3)</Text>
         <Text style={styles.testCardDesc}>
           {lowAspects.length === 0
             ? 'Tidak ada aspek berkategori Low.'
@@ -889,14 +890,7 @@ export function UniversalPdfDocument({
           ) : (
             results.map((r, idx) => {
               const sc = r.scoring_data;
-              let scoreSummary = 'Selesai';
-              if (sc?.dominantLabel) {
-                scoreSummary = `${sc.dominantLabel} (${sc.dominantType})`;
-              } else if (sc?.score !== undefined || sc?.wptScore !== undefined) {
-                scoreSummary = `Skor Kognitif: ${sc.score || sc.wptScore}`;
-              } else if (sc?.total_answers) {
-                scoreSummary = `${sc.total_answers} Terjawab`;
-              }
+              const scoreSummary = getResultSummary(r.test_code, sc);
 
               return (
                 <View key={idx} style={styles.tableRow}>
