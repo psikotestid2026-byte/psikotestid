@@ -490,7 +490,7 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
           })}
         </View>
 
-        <Text style={styles.subHeading}>Aspek Dominan (High, Skor ≥ 6)</Text>
+        <Text style={styles.subHeading}>Aspek Dominan (High, Skor {'>='} 6)</Text>
         <Text style={styles.testCardDesc}>
           {highAspects.length === 0
             ? 'Tidak ada aspek berkategori High.'
@@ -499,7 +499,7 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
                 .join('\n')}
         </Text>
 
-        <Text style={styles.subHeading}>Aspek Rendah (Low, Skor ≤ 3)</Text>
+        <Text style={styles.subHeading}>Aspek Rendah (Low, Skor {'<='} 3)</Text>
         <Text style={styles.testCardDesc}>
           {lowAspects.length === 0
             ? 'Tidak ada aspek berkategori Low.'
