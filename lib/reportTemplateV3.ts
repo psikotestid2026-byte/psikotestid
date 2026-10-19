@@ -47,20 +47,47 @@ function round1(value: number): number {
   return rounded / 10;
 }
 
-/** One decimal place, comma separator. Non-numeric values render as "-". */
+/** Integers print without a decimal. Other values keep one decimal and a comma. */
 export function formatDecimal(value: unknown): string {
   const parsed = finiteNumber(value);
   if (parsed == null) return '-';
   const rounded = round1(parsed);
   const sign = rounded < 0 ? '-' : '';
   const [whole, frac] = Math.abs(rounded).toFixed(1).split('.');
+  if (frac === '0') return `${sign}${whole}`;
   return `${sign}${whole},${frac}`;
 }
 
-/** Percentage with one decimal and no space before the percent sign. */
+/** Percentage with no space before the percent sign. Integers omit the decimal. */
 export function formatPercent(value: unknown): string {
   const text = formatDecimal(value);
   return text === '-' ? '-' : `${text}%`;
+}
+
+/** Indonesian calendar date, for example "19 Oktober 2026". */
+export function formatReportDate(value: unknown): string {
+  if (value == null || value === '') return '-';
+  const date = new Date(value as string | number | Date);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).format(date);
+}
+
+/** "Kota, 19 Oktober 2026" when a city is stored, otherwise the date alone. */
+export function reportValidationLine(
+  participant: Record<string, unknown> | null | undefined,
+  issuedAt: Date = new Date()
+): string {
+  const source = participant || {};
+  const city = String(source.city || source.kota || source.report_city || '').trim();
+  const raw = source.completed_at ?? source.report_date;
+  const fromSession = raw == null || raw === '' ? '-' : formatReportDate(raw);
+  const dateText = fromSession === '-' ? formatReportDate(issuedAt) : fromSession;
+  return city ? `${city}, ${dateText}` : dateText;
 }
 
 export function formatIdDateTime(value: unknown): string {
@@ -429,8 +456,9 @@ export function papiSectionModel(scoring: Record<string, any> | null | undefined
     for (const row of group.rows) {
       const detail = PAPI_ASPECT_DETAILS[row.code];
       if (!detail) continue;
-      const zone = papiZone(row.score);
-      const template = zone === 'Tinggi' ? detail.high : zone === 'Rendah' ? detail.low : detail.desc;
+      // PAPI_ASPECT_DETAILS: high when score >= 6, low when score <= 3. Scores 4-5 have no narrative.
+      // Bar zones stay Rendah 1-3 / Sedang 4-6 / Tinggi 7-9, so a score of 6 is Sedang on the bar and still uses high.
+      const template = row.score >= 6 ? detail.high : row.score <= 3 ? detail.low : '';
       if (template) parts.push(withPeriod(`${row.name} (${row.code}): ${template}`));
     }
   }

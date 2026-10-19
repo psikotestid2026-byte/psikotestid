@@ -1,10 +1,9 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { papiSectionModel } from '@/lib/reportTemplateV3';
-import { IconHeading, ReportPage, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#0f9d74';
-const SOFT = '#e3f7ef';
 
 const styles = StyleSheet.create({
   head: {
@@ -42,46 +41,58 @@ export function PapiSection({
   sectionNumber: number;
 }) {
   const model = papiSectionModel(scoring);
+  const tableHead = (
+    <View style={styles.head}>
+      <Text style={[styles.headText, { width: 68 }]}>Kategori</Text>
+      <Text style={[styles.headText, { width: 168 }]}>Aspek</Text>
+      <View style={styles.zoneRow}>
+        <Text style={[styles.zone, { color: '#dc2626' }]}>Rendah (1-3)</Text>
+        <Text style={[styles.zone, { color: '#d97706' }]}>Sedang (4-6)</Text>
+        <Text style={[styles.zone, { color: '#16a34a' }]}>Tinggi (7-9)</Text>
+      </View>
+      <Text style={[styles.headText, { width: 36, textAlign: 'center' }]}>Skor</Text>
+    </View>
+  );
+  const groupRows = (group: (typeof model.groups)[number]) =>
+    group.rows.map((row, index) => (
+      <View key={row.code} style={[styles.row, index === 0 ? styles.groupStart : {}]}>
+        <Text style={[styles.cat, { color: group.color }]}>{index === 0 ? group.category : ''}</Text>
+        <Text style={styles.name}>{row.name}</Text>
+        <View style={styles.barCell}>
+          <View style={styles.barTrack}>
+            <View style={[styles.tick, { left: '33.3%' }]} />
+            <View style={[styles.tick, { left: '66.6%' }]} />
+            <View style={[styles.barFill, { width: `${row.fraction * 100}%`, backgroundColor: group.color }]} />
+          </View>
+        </View>
+        <Text style={styles.score}>{row.scoreText}</Text>
+      </View>
+    ));
+
   return (
-    <ReportPage
+    <SectionBlock
       accent={ACCENT}
-      soft={SOFT}
       kicker={`Bagian Tes ${sectionNumber}`}
       title="PAPI Kostick"
       subtitle={model.ringkasan}
-    >
-      <View style={styles.head}>
-        <Text style={[styles.headText, { width: 68 }]}>Kategori</Text>
-        <Text style={[styles.headText, { width: 168 }]}>Aspek</Text>
-        <View style={styles.zoneRow}>
-          <Text style={[styles.zone, { color: '#dc2626' }]}>Rendah (1-3)</Text>
-          <Text style={[styles.zone, { color: '#d97706' }]}>Sedang (4-6)</Text>
-          <Text style={[styles.zone, { color: '#16a34a' }]}>Tinggi (7-9)</Text>
+      lead={
+        <View>
+          {tableHead}
+          {model.groups[0] ? groupRows(model.groups[0]) : null}
         </View>
-        <Text style={[styles.headText, { width: 36, textAlign: 'center' }]}>Skor</Text>
-      </View>
-      {model.groups.map((group) =>
-        group.rows.map((row, index) => (
-          <View key={row.code} style={[styles.row, index === 0 ? styles.groupStart : {}]} wrap={false}>
-            <Text style={[styles.cat, { color: group.color }]}>{index === 0 ? group.category : ''}</Text>
-            <Text style={styles.name}>{row.name}</Text>
-            <View style={styles.barCell}>
-              <View style={styles.barTrack}>
-                <View style={[styles.tick, { left: '33.3%' }]} />
-                <View style={[styles.tick, { left: '66.6%' }]} />
-                <View style={[styles.barFill, { width: `${row.fraction * 100}%`, backgroundColor: group.color }]} />
-              </View>
-            </View>
-            <Text style={styles.score}>{row.scoreText}</Text>
-          </View>
-        ))
-      )}
+      }
+    >
+      {model.groups.slice(1).map((group) => (
+        <View key={group.category} wrap={false}>
+          {groupRows(group)}
+        </View>
+      ))}
       {model.narrative ? (
         <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: ACCENT, marginTop: 6 }]}>
           <IconHeading accent={ACCENT} icon="i" title="Interpretasi" />
           <Text style={cardStyles.body}>{model.narrative}</Text>
         </View>
       ) : null}
-    </ReportPage>
+    </SectionBlock>
   );
 }

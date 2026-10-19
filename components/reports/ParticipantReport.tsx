@@ -1,17 +1,13 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
 import { normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
-import { isV3TestCode, orderDetailResults, REPORT_FOOTER } from '@/lib/reportTemplateV3';
-import { ClosingPage, CoverPage } from '@/components/reports/v3/CoverAndClosing';
+import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
+import { ClosingBlock, CoverPage } from '@/components/reports/v3/CoverAndClosing';
+import { FlowPage } from '@/components/reports/v3/ReportShell';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
 
 const styles = StyleSheet.create({
-  page: {
-    padding: 32,
-    fontFamily: 'Helvetica',
-    backgroundColor: '#ffffff',
-  },
   header: {
     marginBottom: 12,
     borderBottomWidth: 2,
@@ -174,18 +170,6 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
     marginBottom: 3,
     textAlign: 'justify',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 16,
-    left: 32,
-    right: 32,
-    textAlign: 'center',
-    fontSize: 7.5,
-    color: '#94a3b8',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    paddingTop: 4,
   },
 });
 
@@ -471,29 +455,6 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
   );
 }
 
-function ReportFooter() {
-  return (
-    <Text style={styles.footer} fixed render={({ pageNumber, totalPages }) => `${REPORT_FOOTER} | Halaman ${pageNumber} / ${totalPages}`} />
-  );
-}
-
-function renderDetailPage(r: any, idx: number, participant: any) {
-  const code = normalizeTestCode(r.test_code);
-  const pageKey = r.id || `${code}-${idx}`;
-  const sectionNumber = idx + 1;
-
-  if (isV3TestCode(code)) {
-    return <V3TestSection key={pageKey} result={r} sectionNumber={sectionNumber} />;
-  }
-
-  return (
-    <Page key={pageKey} size="A4" style={styles.page} wrap>
-      {renderSpecificTestReport(r, idx, participant)}
-      <ReportFooter />
-    </Page>
-  );
-}
-
 export function UniversalPdfDocument({
   participant,
   results,
@@ -507,9 +468,18 @@ export function UniversalPdfDocument({
 
   return (
     <Document>
-      <CoverPage participant={participant} results={list} />
-      {ordered.map((r, idx) => renderDetailPage(r, idx, participant))}
-      <ClosingPage participant={participant} results={ordered} />
+      <CoverPage participant={participant} />
+      <FlowPage>
+        {ordered.map((r, idx) => {
+          const code = normalizeTestCode(r.test_code);
+          const pageKey = r.id || `${code}-${idx}`;
+          if (isV3TestCode(code)) {
+            return <V3TestSection key={pageKey} result={r} sectionNumber={idx + 1} />;
+          }
+          return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
+        })}
+        <ClosingBlock participant={participant} results={ordered} />
+      </FlowPage>
     </Document>
   );
 }

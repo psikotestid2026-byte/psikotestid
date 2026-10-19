@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { msdtSectionModel } from '@/lib/reportTemplateV3';
-import { IconHeading, ReportPage, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#d6336c';
 const SOFT = '#ffe9f1';
@@ -32,25 +32,26 @@ export function MsdtSection({
 }) {
   const model = msdtSectionModel(scoring);
   return (
-    <ReportPage
+    <SectionBlock
       accent={ACCENT}
-      soft={SOFT}
       kicker={`Bagian Tes ${sectionNumber}`}
       title="Management Style Diagnostic Test"
-    >
-      <View style={styles.banner}>
-        <Text style={styles.code}>{model.code}</Text>
-        <View>
-          <Text style={styles.caption}>GAYA DOMINAN</Text>
-          <Text style={styles.name}>{model.name}</Text>
+      lead={
+        <View style={styles.banner}>
+          <Text style={styles.code}>{model.code}</Text>
+          <View>
+            <Text style={styles.caption}>GAYA DOMINAN</Text>
+            <Text style={styles.name}>{model.name}</Text>
+          </View>
         </View>
-      </View>
+      }
+    >
       {model.narrative ? (
-        <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: ACCENT }]}>
+        <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: ACCENT }]} wrap={false}>
           <IconHeading accent={ACCENT} icon="i" title="Interpretasi" />
           <Text style={cardStyles.body}>{model.narrative}</Text>
         </View>
       ) : null}
-    </ReportPage>
+    </SectionBlock>
   );
 }

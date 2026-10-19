@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { bigFiveBars } from '@/lib/reportTemplateV3';
-import { IconHeading, ReportPage, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#2563eb';
 const SOFT = '#e8f0ff';
@@ -30,27 +30,33 @@ export function BigFiveSection({
 }) {
   const bars = bigFiveBars(scoring?.dimensions);
   return (
-    <ReportPage accent={ACCENT} soft={SOFT} kicker={`Bagian Tes ${sectionNumber}`} title="Big Five Personality Test">
-      <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]}>
-        <Text style={[cardStyles.cardTitle, { marginBottom: 6 }]}>Profil lima dimensi</Text>
-        {bars.map((bar) => (
-          <View key={bar.code} style={styles.row}>
-            <View style={styles.labelWrap}>
-              <Text style={styles.name}>
-                {bar.name} ({bar.code})
-              </Text>
-              <Text style={styles.hint}>{bar.hint}</Text>
+    <SectionBlock
+      accent={ACCENT}
+      kicker={`Bagian Tes ${sectionNumber}`}
+      title="Big Five Personality Test"
+      lead={
+        <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]}>
+          <Text style={[cardStyles.cardTitle, { marginBottom: 6 }]}>Profil lima dimensi</Text>
+          {bars.map((bar) => (
+            <View key={bar.code} style={styles.row}>
+              <View style={styles.labelWrap}>
+                <Text style={styles.name}>
+                  {bar.name} ({bar.code})
+                </Text>
+                <Text style={styles.hint}>{bar.hint}</Text>
+              </View>
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${bar.barWidth}%` }]} />
+              </View>
+              <View style={styles.valueWrap}>
+                <Text style={styles.percent}>{bar.percentText}</Text>
+                <Text style={styles.category}>{bar.category}</Text>
+              </View>
             </View>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${bar.barWidth}%` }]} />
-            </View>
-            <View style={styles.valueWrap}>
-              <Text style={styles.percent}>{bar.percentText}</Text>
-              <Text style={styles.category}>{bar.category}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      }
+    >
       <View style={styles.grid}>
         {bars.map((bar) => (
           <View
@@ -60,12 +66,13 @@ export function BigFiveSection({
               bar.code === 'O' ? styles.full : styles.half,
               { backgroundColor: SOFT, borderTopColor: ACCENT },
             ]}
+            wrap={false}
           >
             <IconHeading accent={ACCENT} icon={bar.code} title={bar.name} />
             {bar.narrative ? <Text style={cardStyles.body}>{bar.narrative}</Text> : null}
           </View>
         ))}
       </View>
-    </ReportPage>
+    </SectionBlock>
   );
 }

@@ -1,6 +1,12 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import React from 'react';
-import { Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Image, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { REPORT_FOOTER } from '@/lib/reportTemplateV3';
+
+const LOGO_PATH = path.join(process.cwd(), 'public', 'brand', 'theaim-logo-full-color.png');
+const LOGO_HEIGHT = 32;
+const LOGO_WIDTH = (LOGO_HEIGHT * 791) / 484;
 
 export const theme = {
   ink: '#1f2933',
@@ -11,7 +17,7 @@ export const theme = {
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 44,
+    paddingTop: 56,
     paddingBottom: 46,
     paddingHorizontal: 32,
     fontFamily: 'Helvetica',
@@ -28,7 +34,7 @@ const styles = StyleSheet.create({
   },
   top: {
     position: 'absolute',
-    top: 16,
+    top: 12,
     left: 32,
     right: 32,
     flexDirection: 'row',
@@ -85,6 +91,30 @@ const styles = StyleSheet.create({
   },
 });
 
+function headerBrand() {
+  if (fs.existsSync(LOGO_PATH)) {
+    return <Image src={LOGO_PATH} style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }} />;
+  }
+  return <Text style={[styles.brand, { color: '#B61213' }]}>theaim.id</Text>;
+}
+
+function ReportChrome({ badgeColor }: { badgeColor: string }) {
+  return (
+    <>
+      <View style={styles.top} fixed>
+        {headerBrand()}
+        <Text
+          style={[styles.badge, { backgroundColor: badgeColor }]}
+          render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} / ${totalPages}`}
+        />
+      </View>
+      <Text style={styles.footer} fixed>
+        {REPORT_FOOTER}
+      </Text>
+    </>
+  );
+}
+
 export function ReportPage({
   accent,
   soft,
@@ -103,13 +133,7 @@ export function ReportPage({
   return (
     <Page size="A4" style={styles.page} wrap>
       <View style={[styles.blob, { backgroundColor: soft }]} />
-      <View style={styles.top} fixed>
-        <Text style={[styles.brand, { color: accent }]}>theaim.id</Text>
-        <Text
-          style={[styles.badge, { backgroundColor: accent }]}
-          render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} / ${totalPages}`}
-        />
-      </View>
+      <ReportChrome badgeColor={accent} />
       <View>
         <Text style={[styles.kicker, { color: accent }]}>{kicker}</Text>
         <Text style={styles.title}>{title}</Text>
@@ -117,10 +141,47 @@ export function ReportPage({
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       <View style={{ marginTop: 8 }}>{children}</View>
-      <Text style={styles.footer} fixed>
-        {REPORT_FOOTER}
-      </Text>
     </Page>
+  );
+}
+
+/** Continuing page for every test section and the closing block. */
+export function FlowPage({ children }: { children: React.ReactNode }) {
+  return (
+    <Page size="A4" style={styles.page} wrap>
+      <ReportChrome badgeColor="#1D1D1D" />
+      {children}
+    </Page>
+  );
+}
+
+export function SectionBlock({
+  accent,
+  kicker,
+  title,
+  subtitle,
+  lead,
+  children,
+}: {
+  accent: string;
+  kicker: string;
+  title: string;
+  subtitle?: string | null;
+  /** Small block kept with the title so the heading is not left alone. */
+  lead?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View style={{ marginTop: 8, marginBottom: 4 }}>
+      <View wrap={lead ? false : undefined} minPresenceAhead={lead ? undefined : 72}>
+        <Text style={[styles.kicker, { color: accent }]}>{kicker}</Text>
+        <Text style={styles.title}>{title}</Text>
+        <View style={[styles.accent, { backgroundColor: accent }]} />
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        {lead ? <View style={{ marginTop: 6 }}>{lead}</View> : null}
+      </View>
+      {children ? <View style={{ marginTop: 6 }}>{children}</View> : null}
+    </View>
   );
 }
 

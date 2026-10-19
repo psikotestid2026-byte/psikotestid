@@ -12,6 +12,8 @@ import {
   formatDecimal,
   formatIdDateTime,
   formatPercent,
+  formatReportDate,
+  reportValidationLine,
   hasilUtama,
   msdtSectionModel,
   orderCoverResults,
@@ -26,12 +28,14 @@ import {
 } from '@/lib/reportTemplateV3';
 
 describe('report number formatting', () => {
-  it('renders one decimal with a comma', () => {
+  it('drops the decimal on integers and keeps one comma decimal otherwise', () => {
     expect(formatDecimal(57.5)).toBe('57,5');
     expect(formatDecimal(57.54)).toBe('57,5');
     expect(formatDecimal(57.55)).toBe('57,6');
-    expect(formatDecimal(120)).toBe('120,0');
-    expect(formatDecimal(-8)).toBe('-8,0');
+    expect(formatDecimal(120)).toBe('120');
+    expect(formatDecimal(7)).toBe('7');
+    expect(formatDecimal(-8)).toBe('-8');
+    expect(formatDecimal(-8.2)).toBe('-8,2');
     expect(formatDecimal('33.33')).toBe('33,3');
     expect(formatDecimal(null)).toBe('-');
     expect(formatDecimal('')).toBe('-');
@@ -41,8 +45,19 @@ describe('report number formatting', () => {
   it('renders percentages without a space', () => {
     expect(formatPercent(57.5)).toBe('57,5%');
     expect(formatPercent(33.333)).toBe('33,3%');
-    expect(formatPercent(100)).toBe('100,0%');
+    expect(formatPercent(100)).toBe('100%');
+    expect(formatPercent(50)).toBe('50%');
     expect(formatPercent(undefined)).toBe('-');
+  });
+
+  it('formats the validation date and prefixes a stored city', () => {
+    expect(formatReportDate('2026-10-19T02:00:00.000Z')).toBe('19 Oktober 2026');
+    expect(formatReportDate(null)).toBe('-');
+    expect(reportValidationLine({ city: 'Bandung', completed_at: '2026-10-19T02:00:00.000Z' })).toBe(
+      'Bandung, 19 Oktober 2026'
+    );
+    expect(reportValidationLine({ completed_at: '2026-10-16T01:42:00.000Z' })).toBe('16 Oktober 2026');
+    expect(reportValidationLine({}, new Date('2026-10-19T02:00:00.000Z'))).toBe('19 Oktober 2026');
   });
 
   it('formats Jakarta session times', () => {
@@ -98,7 +113,7 @@ describe('report v3 view model', () => {
     });
     const bars = bigFiveBars(scoring.dimensions);
     expect(bars.map((bar) => bar.code)).toEqual(['E', 'A', 'C', 'N', 'O']);
-    expect(bars[0].percentText).toMatch(/^\d+,\d%$/);
+    expect(bars[0].percentText).toMatch(/^\d+(,\d)?%$/);
     expect(bars[0].category).toBe(scoring.dimensions.E.category);
     expect(bars[0].narrative).toBe(scoring.dimensions.E.narrative);
     expect(bars.some((bar) => 'raw' in bar)).toBe(false);
@@ -120,13 +135,18 @@ describe('report v3 view model', () => {
     ]);
     const leadership = model.groups[1].rows[0];
     expect(leadership.name).toBe('Peran Kepemimpinan');
-    expect(leadership.scoreText).toBe('8,0');
+    expect(leadership.scoreText).toBe('8');
     expect(leadership.fraction).toBeCloseTo(8 / 9);
     expect(papiZone(3)).toBe('Rendah');
     expect(papiZone(4)).toBe('Sedang');
     expect(papiZone(7)).toBe('Tinggi');
     expect(papiZone(0)).toBe('Rendah');
-    expect(model.narrative).toContain('Peran Kepemimpinan (L):');
+    expect(model.narrative).toContain('Peran Kepemimpinan (L): Cenderung dominan');
+    expect(model.narrative).toContain('Tipe Enerjik (V): Memiliki energi fisik yang besar');
+    expect(model.narrative).toContain('Ambisi Pencapaian Target (A): Kurang terdorong');
+    expect(model.narrative).not.toContain('Peran Pekerja Keras');
+    expect(model.narrative).not.toContain('Pengendalian Orang Lain');
+    expect(model.narrative).not.toContain('Kecenderungan bekerja keras');
     expect(model.narrative).not.toContain('90');
     expect(model.ringkasan).not.toMatch(/90/);
   });
@@ -142,10 +162,10 @@ describe('report v3 view model', () => {
     expect(wptGaugeAngle(200)).toBeCloseTo(90);
 
     const model = wptSectionModel({ score: '120', raw_score: 30, iq: 120, label: 'Superior', description: 'Kapasitas analitis sangat baik.' });
-    expect(model.scoreText).toBe('120,0');
+    expect(model.scoreText).toBe('120');
     expect(model.narrative).toBe('Kapasitas analitis sangat baik.');
     expect(JSON.stringify(model)).not.toMatch(/IQ|Superior|30/);
-    expect(hasilUtama('wpt', { score: '120', iq: 120 })).toBe('Skor Kognitif: 120,0');
+    expect(hasilUtama('wpt', { score: '120', iq: 120 })).toBe('Skor Kognitif: 120');
     expect(hasilUtama('msdt', { dominantType: 'Ds', dominantLabel: 'Ds - Deserter' })).toBe('Ds - Deserter');
     expect(hasilUtama('papi', { dominantLabel: 'L - Leadership Role', dominantType: 'Leadership Role' })).toBe(
       'L - Leadership Role'

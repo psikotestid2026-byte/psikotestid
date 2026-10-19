@@ -1,7 +1,7 @@
 import React from 'react';
 import { Circle, G, Line, Polyline, Svg, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { DISC_AXIS_MAX, DISC_AXIS_MIN, DISC_COLORS, DISC_ORDER, discSectionModel, formatDecimal } from '@/lib/reportTemplateV3';
-import { IconHeading, ReportPage, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#e8590c';
 const SOFT = '#fff1e6';
@@ -131,56 +131,65 @@ export function DiscSection({
   const model = discSectionModel(scoring);
   const kicker = `Bagian Tes ${sectionNumber}`;
 
+  const narratives = model.graphs.map((graph, index) => (
+    <View key={graph.key} style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]} wrap={false}>
+      <IconHeading accent={ACCENT} icon={String(index + 1)} title={graph.cardTitle} />
+      <Text style={cardStyles.body}>Sub-trait: {graph.subTrait}</Text>
+      {graph.narrative ? <Text style={[cardStyles.body, { marginTop: 2 }]}>{graph.narrative}</Text> : null}
+    </View>
+  ));
+
   return (
     <>
-      <ReportPage accent={ACCENT} soft={SOFT} kicker={kicker} title="Analisis Perilaku & Gaya Komunikasi Kerja (DISC)">
-        <View style={chart.chipRow}>
-          <Text style={chart.chip}>Tipe {model.kode}</Text>
-          <Text style={chart.chip}>Label {model.label}</Text>
-          <Text style={chart.chip}>Sub-trait utama {model.subtrait}</Text>
-          <Text style={chart.chip}>Stress potential {model.stress}</Text>
-        </View>
-        <View style={chart.row}>
-          {model.graphs.map((graph) => (
-            <DiscGraph
-              key={graph.key}
-              title={graph.title}
-              subtitle={graph.subtitle}
-              howToRead={graph.howToRead}
-              values={graph.values}
-            />
-          ))}
-        </View>
-        <View style={chart.legend}>
-          {DISC_ORDER.map((letter) => (
-            <Text key={letter} style={[chart.legendItem, { color: DISC_COLORS[letter] }]}>
-              {letter} {letter === 'D' ? 'Dominance' : letter === 'I' ? 'Influence' : letter === 'S' ? 'Steadiness' : 'Compliance'}
-            </Text>
-          ))}
-        </View>
-      </ReportPage>
+      <SectionBlock
+        accent={ACCENT}
+        kicker={kicker}
+        title="Analisis Perilaku & Gaya Komunikasi Kerja (DISC)"
+        lead={
+          <>
+            <View style={chart.chipRow}>
+              <Text style={chart.chip}>Tipe {model.kode}</Text>
+              <Text style={chart.chip}>Label {model.label}</Text>
+              <Text style={chart.chip}>Sub-trait utama {model.subtrait}</Text>
+              <Text style={chart.chip}>Stress potential {model.stress}</Text>
+            </View>
+            <View style={chart.row}>
+              {model.graphs.map((graph) => (
+                <DiscGraph
+                  key={graph.key}
+                  title={graph.title}
+                  subtitle={graph.subtitle}
+                  howToRead={graph.howToRead}
+                  values={graph.values}
+                />
+              ))}
+            </View>
+            <View style={chart.legend}>
+              {DISC_ORDER.map((letter) => (
+                <Text key={letter} style={[chart.legendItem, { color: DISC_COLORS[letter] }]}>
+                  {letter} {letter === 'D' ? 'Dominance' : letter === 'I' ? 'Influence' : letter === 'S' ? 'Steadiness' : 'Compliance'}
+                </Text>
+              ))}
+            </View>
+          </>
+        }
+      />
 
-      <ReportPage accent={ACCENT} soft={SOFT} kicker={kicker} title="Deskripsi Perilaku DISC">
-        {model.graphs.map((graph, index) => (
-          <View key={graph.key} style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]}>
-            <IconHeading accent={ACCENT} icon={String(index + 1)} title={graph.cardTitle} />
-            <Text style={cardStyles.body}>Sub-trait: {graph.subTrait}</Text>
-            {graph.narrative ? <Text style={[cardStyles.body, { marginTop: 2 }]}>{graph.narrative}</Text> : null}
-          </View>
-        ))}
+      <SectionBlock accent={ACCENT} kicker={kicker} title="Deskripsi Perilaku DISC" lead={narratives[0]}>
+        {narratives.slice(1)}
         {model.profil ? (
-          <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]}>
+          <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]} wrap={false}>
             <IconHeading accent={ACCENT} icon="P" title="Deskripsi profil utama" />
             <Text style={cardStyles.body}>{model.profil}</Text>
           </View>
         ) : null}
         {model.penempatan ? (
-          <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]}>
+          <View style={[cardStyles.card, { backgroundColor: SOFT, borderTopColor: ACCENT }]} wrap={false}>
             <IconHeading accent={ACCENT} icon="P" title="Proyeksi penempatan posisi, profesi, dan bidang" />
             <Text style={cardStyles.body}>{model.penempatan}</Text>
           </View>
         ) : null}
-      </ReportPage>
+      </SectionBlock>
     </>
   );
 }
