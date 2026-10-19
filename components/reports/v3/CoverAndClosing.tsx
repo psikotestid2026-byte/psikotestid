@@ -7,10 +7,9 @@ import {
   reportValidationLine,
   sectionSummaries,
 } from '@/lib/reportTemplateV3';
-import { IconHeading, ReportPage, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const COVER = '#1d4ed8';
-const COVER_SOFT = '#e8f0ff';
 const CLOSE = '#0f172a';
 const CLOSE_SOFT = '#eef2f6';
 
@@ -44,27 +43,29 @@ const styles = StyleSheet.create({
   expert: { fontSize: 10, fontWeight: 'bold', color: '#1D1D1D' },
 });
 
-export function CoverPage({ participant }: { participant: Record<string, any> }) {
+export function CoverBlock({ participant }: { participant: Record<string, any> }) {
   const fields = coverFields(participant);
 
   return (
-    <ReportPage
+    <SectionBlock
       accent={COVER}
-      soft={COVER_SOFT}
       kicker="Laporan Hasil Asesmen Psikotes"
       title={String(participant?.full_name || 'Kandidat')}
       subtitle="Laporan lengkap evaluasi talenta"
-    >
-      <Text style={cardStyles.sectionLabel}>Informasi Kandidat</Text>
-      <View style={styles.info}>
-        {fields.map((field) => (
-          <View key={field.label} style={styles.infoCell}>
-            <Text style={styles.infoLabel}>{field.label}</Text>
-            <Text style={styles.infoValue}>{field.value}</Text>
+      lead={
+        <View>
+          <Text style={cardStyles.sectionLabel}>Informasi Kandidat</Text>
+          <View style={styles.info}>
+            {fields.map((field) => (
+              <View key={field.label} style={styles.infoCell}>
+                <Text style={styles.infoLabel}>{field.label}</Text>
+                <Text style={styles.infoValue}>{field.value}</Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
-    </ReportPage>
+        </View>
+      }
+    />
   );
 }
 

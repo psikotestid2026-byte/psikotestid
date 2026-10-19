@@ -3,7 +3,7 @@ import { Document, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
 import { normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
 import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
-import { ClosingBlock, CoverPage } from '@/components/reports/v3/CoverAndClosing';
+import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
 
@@ -468,8 +468,8 @@ export function UniversalPdfDocument({
 
   return (
     <Document>
-      <CoverPage participant={participant} />
       <FlowPage>
+        <CoverBlock participant={participant} />
         {ordered.map((r, idx) => {
           const code = normalizeTestCode(r.test_code);
           const pageKey = r.id || `${code}-${idx}`;
