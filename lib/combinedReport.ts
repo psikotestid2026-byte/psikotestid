@@ -3,6 +3,9 @@
  * Pure functions only — no database or PDF rendering — so they can be unit tested.
  */
 
+import { PAPI_ASPECT_DETAILS } from '@/lib/scoring/papi';
+import { MSDT_TYPE_DETAILS } from '@/lib/scoring/msdt';
+
 export const INCLUDED_DETAIL_CODES = [
   'mbti',
   'disc',
@@ -107,6 +110,127 @@ export function resolveBigFiveScoring(
   } catch {
     return null;
   }
+}
+
+const PAPI_SCORE_CODES = Object.keys(PAPI_ASPECT_DETAILS);
+const MSDT_SCORE_CODES = Object.keys(MSDT_TYPE_DETAILS);
+
+type AnswerScoreCalculator = (
+  answers: Record<string, any>
+) => { scores?: unknown; dominantType?: unknown } | null | undefined;
+
+function isFiniteScore(value: unknown): boolean {
+  if (typeof value === 'boolean' || value == null || value === '') return false;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value === 'string' && value.trim() !== '') return Number.isFinite(Number(value));
+  return false;
+}
+
+function readScoreMap(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function hasEveryScore(scores: unknown, codes: readonly string[]): boolean {
+  const map = readScoreMap(scores);
+  if (!map) return false;
+  return codes.every((code) => isFiniteScore(map[code]));
+}
+
+/**
+ * Stored PAPI is usable only when every aspect has a numeric score.
+ * Rows submitted before scoring was added keep {completed, total_answers, submitted_at}.
+ */
+export function hasCompletePapiScores(scoring: unknown): boolean {
+  const parsed = parseJsonObject(scoring);
+  return hasEveryScore(parsed?.scores, PAPI_SCORE_CODES);
+}
+
+/**
+ * Stored MSDT is usable when the dominant style is a known code and every dimension is numeric.
+ */
+export function hasCompleteMsdtScores(scoring: unknown): boolean {
+  const parsed = parseJsonObject(scoring);
+  if (!parsed) return false;
+  const dominant = String(parsed.dominantType ?? '').trim();
+  if (!MSDT_SCORE_CODES.includes(dominant)) return false;
+  return hasEveryScore(parsed.scores, MSDT_SCORE_CODES);
+}
+
+function answerRecord(rawAnswers: unknown): Record<string, any> | null {
+  const answers = parseJsonObject(rawAnswers);
+  if (!answers || Object.keys(answers).length === 0) return null;
+  return answers;
+}
+
+function resolveStoredOrComputed(
+  scoring: unknown,
+  rawAnswers: unknown,
+  isComplete: (value: unknown) => boolean,
+  calculate: AnswerScoreCalculator
+): Record<string, any> | null {
+  const parsed = parseJsonObject(scoring);
+  if (parsed && isComplete(parsed)) return parsed;
+
+  const answers = answerRecord(rawAnswers);
+  if (!answers) return parsed;
+
+  try {
+    const computed = calculate(answers);
+    if (computed && typeof computed === 'object' && isComplete(computed)) {
+      return computed as Record<string, any>;
+    }
+    return parsed;
+  } catch {
+    return parsed;
+  }
+}
+
+/** In-memory PAPI score. Keeps a complete stored payload; otherwise scores raw answers. Never writes. */
+export function resolvePapiScoring(
+  scoring: unknown,
+  rawAnswers: unknown,
+  calculate: AnswerScoreCalculator
+): Record<string, any> | null {
+  return resolveStoredOrComputed(scoring, rawAnswers, hasCompletePapiScores, calculate);
+}
+
+/** In-memory MSDT score. Same contract as resolvePapiScoring. */
+export function resolveMsdtScoring(
+  scoring: unknown,
+  rawAnswers: unknown,
+  calculate: AnswerScoreCalculator
+): Record<string, any> | null {
+  return resolveStoredOrComputed(scoring, rawAnswers, hasCompleteMsdtScores, calculate);
+}
+
+export interface ReportScoreCalculators {
+  papi: AnswerScoreCalculator;
+  msdt: AnswerScoreCalculator;
+}
+
+/**
+ * Copy report rows with PAPI/MSDT scoring filled in memory when the stored payload is incomplete.
+ * Other instruments are returned as-is. The input rows are not mutated.
+ */
+export function hydrateReportScores<T extends { test_code?: string | null; scoring_data?: unknown; raw_answers?: unknown }>(
+  results: T[] | null | undefined,
+  calculators: ReportScoreCalculators
+): T[] {
+  if (!Array.isArray(results)) return [];
+  return results.map((result) => {
+    if (!result || typeof result !== 'object') return result;
+    const code = normalizeTestCode(result.test_code);
+    if (code !== 'papi' && code !== 'msdt') return result;
+
+    const resolved =
+      code === 'papi'
+        ? resolvePapiScoring(result.scoring_data, result.raw_answers, calculators.papi)
+        : resolveMsdtScoring(result.scoring_data, result.raw_answers, calculators.msdt);
+
+    if (!resolved || resolved === result.scoring_data) return result;
+    return { ...result, scoring_data: resolved };
+  });
 }
 
 export function resolveBulkBatchSize(

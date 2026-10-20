@@ -1,7 +1,9 @@
 import React from 'react';
 import { Document, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
-import { normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
+import { calculatePapiScore } from '@/lib/scoring/papi';
+import { calculateMsdtScore } from '@/lib/scoring/msdt';
+import { hydrateReportScores, normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
 import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
 import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
@@ -462,7 +464,10 @@ export function UniversalPdfDocument({
   participant: any;
   results: any[];
 }) {
-  const list = Array.isArray(results) ? results : [];
+  const list = hydrateReportScores(Array.isArray(results) ? results : [], {
+    papi: calculatePapiScore,
+    msdt: calculateMsdtScore,
+  });
   const { detail } = partitionReportResults(list);
   const ordered = orderDetailResults(detail);
 
