@@ -182,6 +182,16 @@ function getDominantCode(graph: DiscGraphValues): string {
   return sorted[0];
 }
 
+/** Same dominant-code rule the scorer uses for each DISC graph. */
+export function dominantDiscCode(graph: DiscGraphValues): string {
+  return getDominantCode(graph);
+}
+
+/** Same sub-trait rule the scorer stores on subTraits.g1 / g2 / g3. */
+export function discSubTrait(graph: DiscGraphValues): string {
+  return getSubTrait(graph);
+}
+
 export function calculateDiscScore(answers: Record<number | string, { P?: number | null; K?: number | null }>): DiscScoreResult {
   const most: DiscRawScore = { D: 0, I: 0, S: 0, C: 0 };
   const least: DiscRawScore = { D: 0, I: 0, S: 0, C: 0 };
