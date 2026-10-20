@@ -18,6 +18,7 @@ import {
   FileText
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { BulkPdfExportButton } from '@/components/reports/BulkPdfExportButton';
 
 interface ParticipantItem {
   id: number;
@@ -28,8 +29,10 @@ interface ParticipantItem {
   birth_date: string | null;
   status: string;
   created_at: string;
+  customer_id: number | string | null;
   company_name: string | null;
   company_email: string | null;
+  campaign_id: number | string | null;
   campaign_title: string | null;
   completed_tests_count: number | string;
 }
@@ -54,6 +57,24 @@ export default function ParticipantsAdminPage() {
   const companies = Array.from(
     new Set(participants.map((p) => p.company_name).filter(Boolean))
   ) as string[];
+
+  const selectedCustomerIds = Array.from(
+    new Set(
+      participants
+        .filter((p) => companyFilter !== 'ALL' && p.company_name === companyFilter && p.customer_id != null)
+        .map((p) => Number(p.customer_id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    )
+  );
+  const selectedCustomerId = selectedCustomerIds.length === 1 ? selectedCustomerIds[0] : null;
+  const bulkBlockedMessage =
+    companyFilter === 'ALL'
+      ? 'Pilih satu perusahaan terlebih dahulu.'
+      : selectedCustomerIds.length > 1
+        ? 'Nama perusahaan ini tertaut ke lebih dari satu akun. Saring data lebih spesifik.'
+        : !selectedCustomerId
+          ? 'Perusahaan tidak ditemukan.'
+          : null;
 
   // Advanced Filtering
   const filteredParticipants = participants.filter((p) => {
@@ -116,6 +137,13 @@ export default function ParticipantsAdminPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <BulkPdfExportButton
+            customerId={selectedCustomerId}
+            blockedMessage={bulkBlockedMessage}
+            label="Unduh ZIP PDF"
+            title={bulkBlockedMessage || 'Unduh ZIP laporan PDF seluruh peserta perusahaan ini yang sudah punya hasil tes'}
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-60"
+          />
           <button
             onClick={handleExportExcel}
             className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"

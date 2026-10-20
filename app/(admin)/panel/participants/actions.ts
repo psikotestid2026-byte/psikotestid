@@ -17,15 +17,17 @@ export async function getAdminParticipants() {
       p.date_of_birth as birth_date,
       p.status,
       p.created_at,
+      c.id as customer_id,
       c.company_name,
       c.email as company_email,
+      camp.id as campaign_id,
       camp.title as campaign_title,
       COUNT(tr.id) as completed_tests_count
     FROM participants p
     LEFT JOIN campaigns camp ON p.campaign_id = camp.id
     LEFT JOIN customers c ON camp.customer_id = c.id
     LEFT JOIN test_results tr ON tr.participant_id = p.id
-    GROUP BY p.id, c.company_name, c.email, camp.title
+    GROUP BY p.id, c.id, camp.id
     ORDER BY p.id DESC
   `;
 
