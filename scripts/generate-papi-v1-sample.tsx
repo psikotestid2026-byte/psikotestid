@@ -27,7 +27,7 @@ async function main() {
   );
   const dir = '/opt/cursor/artifacts';
   mkdirSync(dir, { recursive: true });
-  const filePath = path.join(dir, 'contoh-papi-v3.pdf');
+  const filePath = path.join(dir, 'contoh-papi-v4.pdf');
   writeFileSync(filePath, buffer);
   console.log(filePath, buffer.length);
 }

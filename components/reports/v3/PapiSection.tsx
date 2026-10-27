@@ -32,10 +32,9 @@ const styles = StyleSheet.create({
   barFill: { height: 7, borderRadius: 3 },
   tick: { position: 'absolute', top: 0, bottom: 0, width: 0.6, backgroundColor: '#d1d5db' },
   score: { width: 36, fontSize: 7.5, fontWeight: 'bold', textAlign: 'center', color: theme.ink },
-  lists: { marginTop: 4 },
-  listTitle: { fontSize: 9, fontWeight: 'bold', color: theme.ink, marginTop: 3, marginBottom: 1 },
-  body: { fontSize: 8, color: theme.ink, lineHeight: 1.3 },
-  empty: { fontSize: 8, fontStyle: 'italic', color: theme.ink },
+  paragraphs: { marginTop: 8 },
+  body: { fontSize: 8, color: theme.ink, lineHeight: 1.35 },
+  following: { marginTop: 6 },
 });
 
 export function PapiSection({
@@ -94,12 +93,14 @@ export function PapiSection({
           {groupRows(group)}
         </View>
       ))}
-      <View style={styles.lists}>
-        <Text style={styles.listTitle}>Aspek Dominan (High)</Text>
-        <Text style={model.high.length === 0 ? styles.empty : styles.body}>{model.highParagraph}</Text>
-        <Text style={styles.listTitle}>Aspek Rendah (Low)</Text>
-        <Text style={model.low.length === 0 ? styles.empty : styles.body}>{model.lowParagraph}</Text>
-      </View>
+      {model.highParagraph || model.lowParagraph ? (
+        <View style={styles.paragraphs}>
+          {model.highParagraph ? <Text style={styles.body}>{model.highParagraph}</Text> : null}
+          {model.lowParagraph ? (
+            <Text style={model.highParagraph ? [styles.body, styles.following] : styles.body}>{model.lowParagraph}</Text>
+          ) : null}
+        </View>
+      ) : null}
     </SectionBlock>
   );
 }

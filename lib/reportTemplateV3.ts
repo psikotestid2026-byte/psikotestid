@@ -286,9 +286,6 @@ export interface PapiNarrativeItem {
   narrative: string;
 }
 
-export const PAPI_HIGH_EMPTY = 'Tidak ada aspek berkategori High.';
-export const PAPI_LOW_EMPTY = 'Tidak ada aspek berkategori Low.';
-
 export interface PapiGroupView {
   category: string;
   color: string;
@@ -360,17 +357,17 @@ function papiPredicate(narrative: string): string {
  */
 export function papiNarrativeParagraph(
   items: PapiNarrativeItem[],
-  empty: string,
   participantName: string,
-  band: 'High' | 'Low'
+  band: 'High' | 'Low',
+  contrastLow = false
 ): string {
-  if (items.length === 0) return empty;
+  if (items.length === 0) return '';
   const name = participantName.trim() || 'Kandidat';
   const besidesIndex = items.length >= 4 ? 2 : -1;
   return items.map((item, index) => {
     const body = papiPredicate(item.narrative);
     if (index === 0) {
-      return band === 'Low' ? `Di sisi lain, ${name} ${body}` : `${name} ${body}`;
+      return band === 'Low' && contrastLow ? `Di sisi lain, ${name} ${body}` : `${name} ${body}`;
     }
     if (index === besidesIndex) return `Selain itu, ia ${body}`;
     return `Ia ${body}`;
@@ -408,10 +405,8 @@ export function papiSectionModel(
     groups,
     high,
     low,
-    highParagraph: papiNarrativeParagraph(high, PAPI_HIGH_EMPTY, name, 'High'),
-    lowParagraph: papiNarrativeParagraph(low, PAPI_LOW_EMPTY, name, 'Low'),
-    highEmpty: PAPI_HIGH_EMPTY,
-    lowEmpty: PAPI_LOW_EMPTY,
+    highParagraph: papiNarrativeParagraph(high, name, 'High'),
+    lowParagraph: papiNarrativeParagraph(low, name, 'Low', high.length > 0),
   };
 }
 

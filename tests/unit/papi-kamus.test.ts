@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PAPI_ASPECT_DETAILS, type PapiAspect } from '@/lib/scoring/papi';
-import { PAPI_HIGH_EMPTY, PAPI_LOW_EMPTY, papiSectionModel, papiZone } from '@/lib/reportTemplateV3';
+import { papiSectionModel, papiZone } from '@/lib/reportTemplateV3';
 
 const ORDER: PapiAspect[] = ['N', 'G', 'A', 'L', 'P', 'I', 'T', 'V', 'X', 'S', 'B', 'O', 'R', 'D', 'C', 'Z', 'E', 'K', 'F', 'W'];
 
@@ -96,23 +96,23 @@ describe('PAPI kamus section 5', () => {
       'Selasmawati bersifat taat aturan, patuh, dan merasa aman dengan instruksi yang jelas.'
     );
     expect(papiSectionModel({ scores: { ...middleScores, X: 0 } }, 'Selasmawati').lowParagraph).toBe(
-      'Di sisi lain, Selasmawati bersifat rendah hati dan tidak terlalu membutuhkan perhatian atau panggung.'
+      'Selasmawati bersifat rendah hati dan tidak terlalu membutuhkan perhatian atau panggung.'
     );
     expect(papiSectionModel({ scores: { ...middleScores, B: 1 } }, 'Selasmawati').lowParagraph).toBe(
-      'Di sisi lain, Selasmawati bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.'
+      'Selasmawati bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.'
     );
+    expect(papiSectionModel({ scores: { ...middleScores, X: 0 } }, 'Selasmawati').highParagraph).toBe('');
+    expect(papiSectionModel({ scores: { ...middleScores, N: 9 } }, 'Selasmawati').lowParagraph).toBe('');
     for (const code of ['V', 'X', 'S', 'B', 'O', 'R'] as PapiAspect[]) {
       expect(papiZone(scores[code])).toBe('Middle');
       expect(model.high.some((item) => item.code === code)).toBe(false);
       expect(model.low.some((item) => item.code === code)).toBe(false);
     }
-    expect(model.highEmpty).toBe(PAPI_HIGH_EMPTY);
-    expect(model.lowEmpty).toBe(PAPI_LOW_EMPTY);
     const middleOnly = papiSectionModel({ scores: Object.fromEntries(ORDER.map((code) => [code, 5])) });
     expect(middleOnly.high).toEqual([]);
     expect(middleOnly.low).toEqual([]);
-    expect(middleOnly.highParagraph).toBe(PAPI_HIGH_EMPTY);
-    expect(middleOnly.lowParagraph).toBe(PAPI_LOW_EMPTY);
+    expect(middleOnly.highParagraph).toBe('');
+    expect(middleOnly.lowParagraph).toBe('');
     expect(papiSectionModel({ scores: { N: 5 } }).high).toEqual([]);
     expect(papiSectionModel({ scores: { N: 5 } }).low.map((item) => item.code)).not.toContain('N');
   });
