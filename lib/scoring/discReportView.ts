@@ -1,98 +1,120 @@
-import type { DiscGraphValues } from '@/lib/scoring/disc';
-import { discGraphPatternCode, discSubTraitPair } from '@/lib/scoring/discPatternCode';
+import type { DiscDimension, DiscGraphValues } from '@/lib/scoring/disc';
+import {
+  calcDiscType,
+  checkDiscStatus,
+  discMainDimension,
+  discPositiveDimensions,
+  formatDiscKode,
+  type DiscSpecialStatusName,
+} from '@/lib/scoring/discPatternCode';
 import {
   bundledDiscReportDictionary,
-  fillDiscName,
+  discStatusKey,
+  findDiscTypeInfo,
   type DiscGraphKey,
   type DiscReportDictionary,
+  type DiscTraitDimension,
 } from '@/lib/scoring/discReportDictionary';
 
 export interface DiscGraphCardModel {
   key: DiscGraphKey;
   title: string;
-  subtitle: string;
+  label: string;
   values: DiscGraphValues;
   code: string;
+  kodeText: string | null;
+  status: DiscSpecialStatusName | null;
   patternName: string;
-  subTraitLabel: string;
-  meaning: string;
-  blockTitle: string;
-  pairKey: string;
-}
-
-export interface DiscSubTraitSection {
-  pairKey: string;
-  heading: string;
-  narrative: string;
+  matchedCode: string | null;
 }
 
 export interface DiscDescriptionBlock {
   graphKeys: DiscGraphKey[];
   header: string;
-  meanings: string[];
+  kind: 'type' | 'status';
   code: string;
+  kodeText: string | null;
   patternName: string;
   description: string;
-  subTraits: DiscSubTraitSection[];
   jobs: string[];
+  status: DiscSpecialStatusName | null;
+  arti: string;
+  context: string;
 }
 
-const GRAPH_FACE: Record<DiscGraphKey, { title: string; subtitle: string; marker: string; mode: string }> = {
-  g1: {
-    title: 'GRAPH 1',
-    subtitle: 'MOST Mask, Public Self',
-    marker: '1',
-    mode: 'MOST',
-  },
-  g2: {
-    title: 'GRAPH 2',
-    subtitle: 'LEAST Core, Private Self',
-    marker: '2',
-    mode: 'LEAST',
-  },
-  g3: {
-    title: 'GRAPH 3',
-    subtitle: 'CHANGE Mirror, Perceived Self',
-    marker: '3',
-    mode: 'CHANGE',
-  },
+export interface DiscTraitAspect {
+  label: string;
+  items: string[];
+}
+
+export interface DiscTraitSummary {
+  heading: string;
+  dims: DiscTraitDimension[];
+  aspects: DiscTraitAspect[];
+}
+
+export interface DiscDevelopmentAdvice {
+  items: string[];
+}
+
+const GRAPH_FACE: Record<DiscGraphKey, { title: string; label: string }> = {
+  g1: { title: 'Grafik I', label: 'Adaptif / Public Self / MOST' },
+  g2: { title: 'Grafik II', label: 'Alami / Private Self / LEAST' },
+  g3: { title: 'Grafik III', label: 'Gabungan / Perceived Self / CHANGE' },
 };
 
-function readValues(source: Record<string, any> | null | undefined): DiscGraphValues {
+const GRAPH_KEYS: DiscGraphKey[] = ['g1', 'g2', 'g3'];
+const TRAIT_ORDER: DiscTraitDimension[] = ['D', 'I', 'S', 'C'];
+
+const TRAIT_ASPECTS: { key: 'potretDiri' | 'kelebihan' | 'kekurangan' | 'kecenderungan' | 'lingkunganCocok'; label: string }[] = [
+  { key: 'potretDiri', label: 'Potret Diri' },
+  { key: 'kelebihan', label: 'Kelebihan' },
+  { key: 'kekurangan', label: 'Kekurangan' },
+  { key: 'kecenderungan', label: 'Kecenderungan' },
+  { key: 'lingkunganCocok', label: 'Lingkungan Cocok' },
+];
+
+function readValues(source: Record<string, unknown> | null | undefined): DiscGraphValues {
+  const record = source || {};
   return {
-    D: Number.isFinite(Number(source?.D)) ? Number(source?.D) : 0,
-    I: Number.isFinite(Number(source?.I)) ? Number(source?.I) : 0,
-    S: Number.isFinite(Number(source?.S)) ? Number(source?.S) : 0,
-    C: Number.isFinite(Number(source?.C)) ? Number(source?.C) : 0,
+    D: Number.isFinite(Number(record.D)) ? Number(record.D) : 0,
+    I: Number.isFinite(Number(record.I)) ? Number(record.I) : 0,
+    S: Number.isFinite(Number(record.S)) ? Number(record.S) : 0,
+    C: Number.isFinite(Number(record.C)) ? Number(record.C) : 0,
   };
 }
 
-export function buildDiscGraphCards(
-  scoring: Record<string, any> | null | undefined,
-  dictionary: DiscReportDictionary = bundledDiscReportDictionary()
-): DiscGraphCardModel[] {
-  const keys: DiscGraphKey[] = ['g1', 'g2', 'g3'];
-  return keys.map((key) => {
-    const face = GRAPH_FACE[key];
-    const values = readValues(scoring?.[key]);
-    const code = discGraphPatternCode(values);
-    const pair = discSubTraitPair(values);
-    const pattern = dictionary.patterns[code];
-    const subTrait = dictionary.subTraits[pair.pairKey];
-    const meaning = dictionary.graphMeanings[key];
-    return {
-      key,
-      title: face.title,
-      subtitle: face.subtitle,
-      values,
-      code,
-      patternName: pattern?.name || code,
-      subTraitLabel: subTrait?.pairLabel || pair.pairKey,
-      meaning: meaning.meaning,
-      blockTitle: meaning.title,
-      pairKey: pair.pairKey,
-    };
-  });
+function readGraphs(scoring: Record<string, unknown> | null | undefined): Record<DiscGraphKey, DiscGraphValues> {
+  const source = scoring || {};
+  return {
+    g1: readValues(source.g1 as Record<string, unknown> | undefined),
+    g2: readValues(source.g2 as Record<string, unknown> | undefined),
+    g3: readValues(source.g3 as Record<string, unknown> | undefined),
+  };
+}
+
+/** Status replaces the type code, so that graph contributes no dimensions. */
+function contributedDimensions(values: DiscGraphValues): DiscDimension[] {
+  if (checkDiscStatus(values)) return [];
+  return discPositiveDimensions(values);
+}
+
+export function discCoreDimensions(graphs: Record<DiscGraphKey, DiscGraphValues>): DiscTraitDimension[] {
+  const lists = GRAPH_KEYS.map((key) => contributedDimensions(graphs[key]));
+  const intersection = TRAIT_ORDER.filter((dimension) => lists.every((list) => list.includes(dimension)));
+  if (intersection.length > 0) return intersection;
+  if (lists[0].length > 0) return lists[0];
+  return [discMainDimension(graphs.g3)];
+}
+
+export function discDevelopmentDimensions(graphs: Record<DiscGraphKey, DiscGraphValues>): DiscTraitDimension[] {
+  const result: DiscTraitDimension[] = [];
+  for (const key of GRAPH_KEYS) {
+    for (const dimension of contributedDimensions(graphs[key])) {
+      if (!result.includes(dimension)) result.push(dimension);
+    }
+  }
+  return result;
 }
 
 function uniqueInOrder(values: string[]): string[] {
@@ -106,62 +128,124 @@ function uniqueInOrder(values: string[]): string[] {
   return result;
 }
 
-export function discDescriptionHeader(cards: DiscGraphCardModel[], patternName: string): string {
-  const titles = uniqueInOrder(cards.map((card) => card.blockTitle.replace(/^DESKRIPSI /, '')));
-  const title = `DESKRIPSI ${titles.join(' & ')}`;
-  const graphList = `GRAPH ${cards.map((card) => GRAPH_FACE[card.key].marker).join(' & ')}`;
-  const modes = cards.map((card) => GRAPH_FACE[card.key].mode).join(' & ');
-  return `${title} — ${graphList} (${modes}) (${patternName})`;
+export function buildDiscGraphCards(
+  scoring: Record<string, unknown> | null | undefined,
+  dictionary: DiscReportDictionary = bundledDiscReportDictionary()
+): DiscGraphCardModel[] {
+  const graphs = readGraphs(scoring);
+  return GRAPH_KEYS.map((key) => {
+    const face = GRAPH_FACE[key];
+    const values = graphs[key];
+    const code = calcDiscType(values);
+    const status = checkDiscStatus(values);
+    const found = findDiscTypeInfo(dictionary, code);
+    return {
+      key,
+      title: face.title,
+      label: face.label,
+      values,
+      code,
+      kodeText: status ? null : formatDiscKode(code),
+      status,
+      patternName: status ? '' : found.pattern?.name || '',
+      matchedCode: status ? null : found.matchedCode,
+    };
+  });
+}
+
+function blockHeader(cards: DiscGraphCardModel[], patternName: string, kodeText: string | null, status: string | null): string {
+  const faces = cards.map((card) => `${card.title} (${card.label})`).join(' & ');
+  if (status) return `${faces} · ${status}`;
+  const parts = [faces];
+  if (kodeText) parts.push(`KODE: ${kodeText}`);
+  if (patternName) parts.push(patternName);
+  return parts.join(' · ');
 }
 
 /**
- * Graphs that share a pattern code become one description block.
- * Order follows the first time each code appears from Graph 1 to Graph 3,
- * so Graph 1 and Graph 3 can merge even when Graph 2 sits between them.
+ * Graphs that share a calcType code become one block.
+ * A special status replaces the code. Transisi stays separate per graph
+ * because section 4.5 gives each graph its own context sentence.
+ * Super Syndrom and Undershift share one explanation, so those graphs merge.
  */
 export function mergeDiscDescriptionBlocks(
   cards: DiscGraphCardModel[],
-  dictionary: DiscReportDictionary,
-  participantName: string | null | undefined
+  dictionary: DiscReportDictionary = bundledDiscReportDictionary()
 ): DiscDescriptionBlock[] {
   const order: string[] = [];
   const groups = new Map<string, DiscGraphCardModel[]>();
   for (const card of cards) {
-    const existing = groups.get(card.code);
+    const statusRecord = card.status ? dictionary.statuses[discStatusKey(card.status, card.key)] : undefined;
+    const groupKey = card.status
+      ? `status:${card.status}:${statusRecord?.arti || ''}:${statusRecord?.context || ''}`
+      : `code:${card.code}`;
+    const existing = groups.get(groupKey);
     if (!existing) {
-      groups.set(card.code, [card]);
-      order.push(card.code);
+      groups.set(groupKey, [card]);
+      order.push(groupKey);
     } else {
       existing.push(card);
     }
   }
 
-  return order.map((code) => {
-    const group = groups.get(code) || [];
-    const pattern = dictionary.patterns[code];
-    const patternName = pattern?.name || group[0]?.patternName || code;
-    const subTraits: DiscSubTraitSection[] = [];
-    const seenPairs = new Set<string>();
-    for (const card of group) {
-      if (seenPairs.has(card.pairKey)) continue;
-      seenPairs.add(card.pairKey);
-      const record = dictionary.subTraits[card.pairKey];
-      const label = record?.pairLabel || card.subTraitLabel;
-      subTraits.push({
-        pairKey: card.pairKey,
-        heading: `SUB TRAIT — ${label.toLocaleUpperCase('id-ID')}`,
-        narrative: fillDiscName(record?.narrative || '', participantName),
-      });
+  return order.map((groupKey) => {
+    const group = groups.get(groupKey) || [];
+    const first = group[0];
+    if (first.status) {
+      const record = dictionary.statuses[discStatusKey(first.status, first.key)];
+      return {
+        graphKeys: group.map((card) => card.key),
+        header: blockHeader(group, '', null, first.status),
+        kind: 'status',
+        code: first.code,
+        kodeText: null,
+        patternName: '',
+        description: '',
+        jobs: [],
+        status: first.status,
+        arti: record?.arti || '',
+        context: record?.context || '',
+      };
     }
+    const found = findDiscTypeInfo(dictionary, first.code);
+    const patternName = found.pattern?.name || '';
     return {
       graphKeys: group.map((card) => card.key),
-      header: discDescriptionHeader(group, patternName),
-      meanings: group.map((card) => card.meaning),
-      code,
+      header: blockHeader(group, patternName, first.kodeText, null),
+      kind: 'type',
+      code: first.code,
+      kodeText: first.kodeText,
       patternName,
-      description: fillDiscName(pattern?.description || '', participantName),
-      subTraits,
-      jobs: pattern?.jobs || [],
+      description: found.pattern?.description || '',
+      jobs: found.pattern?.jobs || [],
+      status: null,
+      arti: '',
+      context: '',
     };
   });
+}
+
+export function buildDiscTraitSummary(
+  scoring: Record<string, unknown> | null | undefined,
+  dictionary: DiscReportDictionary = bundledDiscReportDictionary()
+): DiscTraitSummary {
+  const graphs = readGraphs(scoring);
+  const dims = discCoreDimensions(graphs);
+  const heading = ['Kamus Trait Dimensi Utama', ...dims.map((dim) => dictionary.traits[dim].heading)].join(' · ');
+  const aspects = TRAIT_ASPECTS.map((aspect) => ({
+    label: aspect.label,
+    items: uniqueInOrder(dims.flatMap((dim) => dictionary.traits[dim][aspect.key])),
+  }));
+  return { heading, dims, aspects };
+}
+
+export function buildDiscDevelopmentAdvice(
+  scoring: Record<string, unknown> | null | undefined,
+  dictionary: DiscReportDictionary = bundledDiscReportDictionary()
+): DiscDevelopmentAdvice {
+  const graphs = readGraphs(scoring);
+  const dims = discDevelopmentDimensions(graphs);
+  return {
+    items: uniqueInOrder(dims.flatMap((dim) => dictionary.traits[dim].saranPerbaikan)),
+  };
 }

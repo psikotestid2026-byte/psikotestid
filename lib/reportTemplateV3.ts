@@ -6,9 +6,10 @@
 
 import { bundledDiscReportDictionary, type DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
 import {
+  buildDiscDevelopmentAdvice,
   buildDiscGraphCards,
+  buildDiscTraitSummary,
   mergeDiscDescriptionBlocks,
-  type DiscDescriptionBlock,
   type DiscGraphCardModel,
 } from '@/lib/scoring/discReportView';
 import { PAPI_ASPECT_DETAILS, type PapiAspect } from '@/lib/scoring/papi';
@@ -238,12 +239,14 @@ export type DiscGraphView = DiscGraphCardModel;
 
 export function discSectionModel(
   scoring: Record<string, any> | null | undefined,
-  options?: { participantName?: string | null; dictionary?: DiscReportDictionary | null }
+  options?: { dictionary?: DiscReportDictionary | null }
 ) {
   const dictionary = options?.dictionary || bundledDiscReportDictionary();
   const graphs = buildDiscGraphCards(scoring, dictionary);
-  const blocks = mergeDiscDescriptionBlocks(graphs, dictionary, options?.participantName);
-  return { graphs, blocks };
+  const blocks = mergeDiscDescriptionBlocks(graphs, dictionary);
+  const traits = buildDiscTraitSummary(scoring, dictionary);
+  const development = buildDiscDevelopmentAdvice(scoring, dictionary);
+  return { graphs, blocks, traits, development };
 }
 
 export const BIG_FIVE_DIMENSIONS = [

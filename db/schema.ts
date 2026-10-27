@@ -322,10 +322,12 @@ export const disc_subtraits = pgTable('disc_subtraits', {
   label_id: varchar('label_id', { length: 80 }).notNull(),
   pair_label: varchar('pair_label', { length: 120 }).notNull(),
   narrative: text('narrative').notNull(),
+  is_active: boolean('is_active').notNull().default(true),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => {
   return {
     pair_uq: uniqueIndex('uq_disc_subtraits_pair_key').on(table.pair_key),
+    active_idx: index('idx_disc_subtraits_is_active').on(table.is_active),
   };
 });
 
@@ -334,10 +336,42 @@ export const disc_graph_meanings = pgTable('disc_graph_meanings', {
   graph_key: varchar('graph_key', { length: 8 }).notNull(),
   title: varchar('title', { length: 160 }).notNull(),
   meaning: text('meaning').notNull(),
+  is_active: boolean('is_active').notNull().default(true),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => {
   return {
     graph_uq: uniqueIndex('uq_disc_graph_meanings_graph_key').on(table.graph_key),
+    active_idx: index('idx_disc_graph_meanings_is_active').on(table.is_active),
+  };
+});
+
+export const disc_dimension_traits = pgTable('disc_dimension_traits', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  dim: varchar('dim', { length: 1 }).notNull(),
+  heading: varchar('heading', { length: 80 }).notNull(),
+  potret_diri: jsonb('potret_diri').notNull(),
+  kelebihan: jsonb('kelebihan').notNull(),
+  kekurangan: jsonb('kekurangan').notNull(),
+  kecenderungan: jsonb('kecenderungan').notNull(),
+  lingkungan_cocok: jsonb('lingkungan_cocok').notNull(),
+  saran_perbaikan: jsonb('saran_perbaikan').notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    dim_uq: uniqueIndex('uq_disc_dimension_traits_dim').on(table.dim),
+  };
+});
+
+export const disc_special_statuses = pgTable('disc_special_statuses', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  status: varchar('status', { length: 32 }).notNull(),
+  graph_key: varchar('graph_key', { length: 8 }).notNull(),
+  arti: text('arti').notNull(),
+  context: text('context').notNull().default(''),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    status_graph_uq: uniqueIndex('uq_disc_special_statuses_status_graph').on(table.status, table.graph_key),
   };
 });
 

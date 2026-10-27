@@ -18,26 +18,17 @@ import { MsdtSection } from '@/components/reports/v3/MsdtSection';
 export function V3TestSection({
   result,
   sectionNumber,
-  participantName,
   discDictionary,
 }: {
   result: { test_code?: string | null; scoring_data?: any; raw_answers?: unknown };
   sectionNumber: number;
-  participantName?: string | null;
   discDictionary?: DiscReportDictionary | null;
 }) {
   const code = normalizeTestCode(result.test_code);
   const scoring = result.scoring_data || {};
 
   if (code === 'disc') {
-    return (
-      <DiscSection
-        scoring={scoring}
-        sectionNumber={sectionNumber}
-        participantName={participantName}
-        dictionary={discDictionary}
-      />
-    );
+    return <DiscSection scoring={scoring} sectionNumber={sectionNumber} dictionary={discDictionary} />;
   }
   if (code === 'bigfive') {
     const resolved = resolveBigFiveScoring(result.scoring_data, result.raw_answers, calculateBigFiveScore);
