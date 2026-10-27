@@ -455,17 +455,13 @@ function readPlatformText(source: Record<string, unknown> | null | undefined, ke
 }
 
 export function buildClosingContent(
-  participant: Record<string, unknown> | null | undefined,
-  summaries: { title: string; summary: string }[]
+  participant: Record<string, unknown> | null | undefined
 ): { executive: string | null; recommendation: string | null } {
-  const platformExecutive = readPlatformText(participant, [
+  const executive = readPlatformText(participant, [
     'ringkasan_eksekutif',
     'executive_summary',
     'executiveSummary',
   ]);
-  const executive =
-    platformExecutive ||
-    (summaries.length > 0 ? summaries.map((item) => `${item.title}: ${item.summary}`).join('\n') : null);
 
   const platformRecommendation = readPlatformText(participant, ['rekomendasi', 'recommendation']);
   let recommendation = platformRecommendation;

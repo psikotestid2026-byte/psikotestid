@@ -5,7 +5,6 @@ import {
   CATATAN_KETERBATASAN,
   coverFields,
   reportValidationLine,
-  sectionSummaries,
 } from '@/lib/reportTemplateV3';
 import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
@@ -71,12 +70,10 @@ export function CoverBlock({ participant }: { participant: Record<string, any> }
 
 export function ClosingBlock({
   participant,
-  results,
 }: {
   participant: Record<string, any>;
-  results: { test_code?: string | null; test_name?: string | null; scoring_data?: any }[];
 }) {
-  const closing = buildClosingContent(participant, sectionSummaries(results));
+  const closing = buildClosingContent(participant);
   return (
     <SectionBlock accent={CLOSE} kicker="Bagian Tambahan" title="Ringkasan & Rekomendasi">
       {closing.executive ? (

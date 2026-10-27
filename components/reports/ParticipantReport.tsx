@@ -233,7 +233,6 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
 
   if (code === 'riasec') {
     const ranking: string[] = sc.ranking || ['R', 'I', 'A', 'S', 'E', 'C'];
-    const scores: Record<string, number> = sc.scores || {};
     const interestCode = sc.interestCode || ranking.slice(0, 3).join('');
     const consistency = sc.consistency || 'Tidak Diketahui';
     const top3 = ranking.slice(0, 3);
@@ -246,24 +245,6 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
             {idx + 1}. {testName} — KODE MINAT: {interestCode}
           </Text>
           <Text style={styles.discBannerSub}>Tingkat Konsistensi: {consistency}</Text>
-        </View>
-
-        <Text style={styles.subHeading}>Tabel Skor 6 Tipe RIASEC (0-18)</Text>
-        <View style={styles.table}>
-          <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={[styles.tableCellHeader, { width: '10%' }]}>Kode</Text>
-            <Text style={[styles.tableCellHeader, { width: '50%' }]}>Tipe</Text>
-            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Skor</Text>
-            <Text style={[styles.tableCellHeader, { width: '20%' }]}>Peringkat</Text>
-          </View>
-          {(['R', 'I', 'A', 'S', 'E', 'C'] as const).map((t) => (
-            <View key={t} style={[styles.tableRow, top3.includes(t) ? { backgroundColor: '#f8fafc' } : {}]}>
-              <Text style={[styles.tableCell, { width: '10%', fontWeight: 'bold', color: RIASEC_TYPE_DETAILS[t].color }]}>{t}</Text>
-              <Text style={[styles.tableCell, { width: '50%' }]}>{RIASEC_TYPE_DETAILS[t].name}</Text>
-              <Text style={[styles.tableCell, { width: '20%' }]}>{scores[t] ?? 0} / 18</Text>
-              <Text style={[styles.tableCell, { width: '20%' }]}>Top {ranking.indexOf(t) + 1}</Text>
-            </View>
-          ))}
         </View>
 
         <Text style={styles.subHeading}>Interpretasi 3 Tipe Dominan</Text>
@@ -494,7 +475,7 @@ export function UniversalPdfDocument({
           }
           return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
         })}
-        {showsClosingSection(ordered) ? <ClosingBlock participant={participant} results={ordered} /> : null}
+        {showsClosingSection(ordered) ? <ClosingBlock participant={participant} /> : null}
       </FlowPage>
     </Document>
   );
