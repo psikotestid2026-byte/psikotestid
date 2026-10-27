@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
-import { papiSectionModel, type PapiNarrativeItem } from '@/lib/reportTemplateV3';
+import { papiSectionModel } from '@/lib/reportTemplateV3';
 import { SectionBlock, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#0f9d74';
@@ -33,35 +33,10 @@ const styles = StyleSheet.create({
   tick: { position: 'absolute', top: 0, bottom: 0, width: 0.6, backgroundColor: '#d1d5db' },
   score: { width: 36, fontSize: 7.5, fontWeight: 'bold', textAlign: 'center', color: theme.ink },
   lists: { marginTop: 4 },
-  listTitle: { fontSize: 9, fontWeight: 'bold', color: theme.ink, marginTop: 4, marginBottom: 2 },
-  item: { marginBottom: 2 },
-  heading: { fontSize: 8, fontWeight: 'bold', color: theme.ink },
-  body: { fontSize: 8, color: theme.ink, lineHeight: 1.25 },
-  empty: { fontSize: 8, fontStyle: 'italic', color: theme.ink, marginBottom: 1 },
+  listTitle: { fontSize: 9, fontWeight: 'bold', color: theme.ink, marginTop: 3, marginBottom: 1 },
+  body: { fontSize: 8, color: theme.ink, lineHeight: 1.3 },
+  empty: { fontSize: 8, fontStyle: 'italic', color: theme.ink },
 });
-
-function NarrativeList({
-  title,
-  items,
-  empty,
-}: {
-  title: string;
-  items: PapiNarrativeItem[];
-  empty: string;
-}) {
-  return (
-    <View>
-      <Text style={styles.listTitle}>{title}</Text>
-      {items.length === 0 ? <Text style={styles.empty}>{empty}</Text> : null}
-      {items.map((item) => (
-        <View key={item.code} style={styles.item}>
-          <Text style={styles.heading}>{item.heading}</Text>
-          <Text style={styles.body}>{item.narrative}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 export function PapiSection({
   scoring,
@@ -118,8 +93,10 @@ export function PapiSection({
         </View>
       ))}
       <View style={styles.lists}>
-        <NarrativeList title="Aspek Dominan (High)" items={model.high} empty={model.highEmpty} />
-        <NarrativeList title="Aspek Rendah (Low)" items={model.low} empty={model.lowEmpty} />
+        <Text style={styles.listTitle}>Aspek Dominan (High)</Text>
+        <Text style={model.high.length === 0 ? styles.empty : styles.body}>{model.highParagraph}</Text>
+        <Text style={styles.listTitle}>Aspek Rendah (Low)</Text>
+        <Text style={model.low.length === 0 ? styles.empty : styles.body}>{model.lowParagraph}</Text>
       </View>
     </SectionBlock>
   );

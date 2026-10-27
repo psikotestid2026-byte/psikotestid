@@ -63,13 +63,24 @@ describe('PAPI kamus section 5', () => {
     for (const item of model.high) {
       expect(item.name).toBe(PAPI_ASPECT_DETAILS[item.code].name);
       expect(item.narrative).toBe(PAPI_ASPECT_DETAILS[item.code].high);
-      expect(item.heading).toBe(`${item.code} – ${item.name} (Skor ${item.score})`);
       expect(papiZone(item.score)).toBe('High');
+      const lowered = item.narrative.charAt(0).toLowerCase() + item.narrative.slice(1);
+      expect(model.highParagraph).toContain(`(${item.code}, skor ${item.scoreText}), ${lowered}`);
     }
     for (const item of model.low) {
       expect(item.narrative).toBe(PAPI_ASPECT_DETAILS[item.code].low);
       expect(papiZone(item.score)).toBe('Low');
+      const lowered = item.narrative.charAt(0).toLowerCase() + item.narrative.slice(1);
+      expect(model.lowParagraph).toContain(`(${item.code}, skor ${item.scoreText}), ${lowered}`);
     }
+    expect(model.highParagraph).toBe(
+      'Pada aspek Need to Finish a Task (N, skor 9), sangat berkomitmen dan berorientasi pada penyelesaian tugas secara tuntas. Pada aspek Hard Intense Worker (G, skor 8), memiliki etos kerja yang kuat, gigih, dan pekerja keras. Selain itu, pada aspek Need for Achievement (A, skor 7), memiliki motivasi berprestasi tinggi dan ingin selalu menghasilkan karya terbaik. Pada aspek Leadership Role (L, skor 7), cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok. Di sisi lain, pada aspek Need to Control Others (P, skor 6), suka memegang kendali, mengarahkan, dan mengontrol pekerjaan orang lain. Pada aspek Ease in Decision Making (I, skor 6), sangat tanggap, cepat, dan percaya diri dalam mengambil keputusan. Pada aspek Pace / Tempo (T, skor 6), bekerja dengan tempo dan dinamika yang cepat serta cekatan.'
+    );
+    expect(model.lowParagraph).toBe(
+      'Pada aspek Need for Support & Dependence (F, skor 0), sangat mandiri dan tidak terlalu membutuhkan validasi dari otoritas. Pada aspek Need for Change (Z, skor 1), lebih menyukai rutinitas yang stabil dan cenderung menolak perubahan mendadak. Selain itu, pada aspek Organized Type (C, skor 2), spontan, kurang terstruktur, dan fleksibel dalam penataan. Pada aspek Need for Aggression (K, skor 2), pasif, menghindari konflik, dan cenderung mengalah demi kedamaian. Di sisi lain, pada aspek Detail Conscious (D, skor 3), lebih berfokus pada gambaran besar (big picture) dan cenderung abai detail. Pada aspek Emotional Restraint (E, skor 3), ekspresif, reaktif secara emosional, atau mudah terpancing stres. Pada aspek Need for Rules & Supervision (W, skor 3), lebih suka kebebasan dalam bertindak dan tidak menyukai birokrasi ketat.'
+    );
+    expect((model.highParagraph.match(/Pada aspek|pada aspek/g) || []).length).toBe(model.high.length);
+    expect((model.lowParagraph.match(/Pada aspek|pada aspek/g) || []).length).toBe(model.low.length);
     for (const code of ['V', 'X', 'S', 'B', 'O', 'R'] as PapiAspect[]) {
       expect(papiZone(scores[code])).toBe('Middle');
       expect(model.high.some((item) => item.code === code)).toBe(false);
@@ -77,6 +88,11 @@ describe('PAPI kamus section 5', () => {
     }
     expect(model.highEmpty).toBe(PAPI_HIGH_EMPTY);
     expect(model.lowEmpty).toBe(PAPI_LOW_EMPTY);
+    const middleOnly = papiSectionModel({ scores: Object.fromEntries(ORDER.map((code) => [code, 5])) });
+    expect(middleOnly.high).toEqual([]);
+    expect(middleOnly.low).toEqual([]);
+    expect(middleOnly.highParagraph).toBe(PAPI_HIGH_EMPTY);
+    expect(middleOnly.lowParagraph).toBe(PAPI_LOW_EMPTY);
     expect(papiSectionModel({ scores: { N: 5 } }).high).toEqual([]);
     expect(papiSectionModel({ scores: { N: 5 } }).low.map((item) => item.code)).not.toContain('N');
   });

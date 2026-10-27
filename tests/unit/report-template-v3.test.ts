@@ -162,22 +162,12 @@ describe('report v3 view model', () => {
     expect(papiZone(5)).toBe('Middle');
     expect(papiZone(6)).toBe('High');
     expect(papiZone(0)).toBe('Low');
-    expect(model.high.map((item) => item.heading)).toEqual([
-      'L – Leadership Role (Skor 8)',
-      'N – Need to Finish a Task (Skor 7)',
-      'X – Need for Recognition (Skor 7)',
-      'V – Vigour (Skor 6)',
-      'O – Need for Closeness & Affection (Skor 6)',
-      'K – Need for Aggression (Skor 6)',
-    ]);
-    expect(model.low.map((item) => item.heading)).toEqual([
-      'I – Ease in Decision Making (Skor 1)',
-      'B – Need to Belong to Groups (Skor 1)',
-      'A – Need for Achievement (Skor 3)',
-      'T – Pace / Tempo (Skor 3)',
-      'R – Theoretical Type (Skor 3)',
-      'W – Need for Rules & Supervision (Skor 3)',
-    ]);
+    expect(model.high.map((item) => item.code)).toEqual(['L', 'N', 'X', 'V', 'O', 'K']);
+    expect(model.low.map((item) => item.code)).toEqual(['I', 'B', 'A', 'T', 'R', 'W']);
+    expect(model.highParagraph.startsWith('Pada aspek Leadership Role (L, skor 8), cenderung dominan')).toBe(true);
+    expect(model.highParagraph).toContain('Selain itu, pada aspek Need for Recognition (X, skor 7), sangat termotivasi');
+    expect(model.highParagraph).toContain('Di sisi lain, pada aspek Need for Closeness & Affection (O, skor 6), membutuhkan hubungan');
+    expect(model.lowParagraph.startsWith('Pada aspek Ease in Decision Making (I, skor 1), cenderung ragu-ragu')).toBe(true);
     expect(model.high.find((item) => item.code === 'L')?.narrative).toBe(
       'Cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.'
     );
@@ -186,7 +176,7 @@ describe('report v3 view model', () => {
     );
     expect(model.high.some((item) => item.code === 'G')).toBe(false);
     expect(model.low.some((item) => item.code === 'P')).toBe(false);
-    const rendered = [...model.high, ...model.low].map((item) => `${item.heading} ${item.narrative}`).join('\n');
+    const rendered = `${model.highParagraph}\n${model.lowParagraph}`;
     expect(rendered).not.toContain('Peran Kepemimpinan');
     expect(rendered).not.toContain('Ketekunan Menyelesaikan Tugas');
     expect(rendered).not.toContain('90');

@@ -284,7 +284,6 @@ export interface PapiNarrativeItem {
   score: number;
   scoreText: string;
   narrative: string;
-  heading: string;
 }
 
 export const PAPI_HIGH_EMPTY = 'Tidak ada aspek berkategori High.';
@@ -328,7 +327,6 @@ function papiNarratives(scores: Record<string, unknown>, band: 'High' | 'Low'): 
       score,
       scoreText,
       narrative: band === 'High' ? detail.high : detail.low,
-      heading: `${code} – ${detail.name} (Skor ${scoreText})`,
     }];
   });
   items.sort((left, right) => {
@@ -337,6 +335,23 @@ function papiNarratives(scores: Record<string, unknown>, band: 'High' | 'Low'): 
     return PAPI_ASPECT_ORDER.indexOf(left.code) - PAPI_ASPECT_ORDER.indexOf(right.code);
   });
   return items;
+}
+
+function lowerFirstLetter(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+}
+
+/** Joins kamus sentences with a neutral lead. No extra interpretation. */
+export function papiNarrativeParagraph(items: PapiNarrativeItem[], empty: string): string {
+  if (items.length === 0) return empty;
+  return items.map((item, index) => {
+    let lead = 'Pada aspek';
+    if (items.length >= 4 && index === 2) lead = 'Selain itu, pada aspek';
+    else if (items.length >= 6 && index === 4) lead = 'Di sisi lain, pada aspek';
+    return `${lead} ${item.name} (${item.code}, skor ${item.scoreText}), ${lowerFirstLetter(item.narrative)}`;
+  }).join(' ');
 }
 
 export function papiSectionModel(scoring: Record<string, any> | null | undefined) {
@@ -358,12 +373,16 @@ export function papiSectionModel(scoring: Record<string, any> | null | undefined
     }),
   }));
 
+  const high = papiNarratives(scores, 'High');
+  const low = papiNarratives(scores, 'Low');
   return {
     ringkasan:
       'Asesmen PAPI Kostick mengukur 20 dimensi kebutuhan dan peran yang berkaitan dengan lingkungan profesional dan gaya kerja.',
     groups,
-    high: papiNarratives(scores, 'High'),
-    low: papiNarratives(scores, 'Low'),
+    high,
+    low,
+    highParagraph: papiNarrativeParagraph(high, PAPI_HIGH_EMPTY),
+    lowParagraph: papiNarrativeParagraph(low, PAPI_LOW_EMPTY),
     highEmpty: PAPI_HIGH_EMPTY,
     lowEmpty: PAPI_LOW_EMPTY,
   };
