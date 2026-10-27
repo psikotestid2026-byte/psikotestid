@@ -277,7 +277,7 @@ export function renderDiscDictionarySeedSql(): string {
   const codeList = DISC_PATTERN_CODES.map((code) => sqlLiteral(code)).join(', ');
 
   return [
-    '-- Idempotent DISC kamus seed. Strings are copied from refs/disc.md and refs/kamus-tambahan-ID-ICD.md.',
+    '-- Idempotent DISC kamus seed. Strings are copied from refs/disc.md, refs/kamus-tambahan-ID-ICD.md, and refs/kamus-profesi-ID-ICD.md.',
     '-- Re-running updates section 5 patterns, section 6 traits, section 4.5 statuses, and the I-D / I-C-D supplement.',
     '-- Pattern codes outside the bundled list are marked inactive. Sub-trait and graph-meaning rows are marked inactive.',
     '',

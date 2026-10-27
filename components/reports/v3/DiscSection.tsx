@@ -57,8 +57,6 @@ const chart = StyleSheet.create({
     color: CODE_BLUE,
     marginTop: 1,
   },
-  legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2, marginBottom: 6 },
-  legendItem: { fontSize: 7, fontFamily: 'Poppins', fontWeight: 'bold' },
   block: {
     borderWidth: 1,
     borderColor: '#D9D9D9',
@@ -230,28 +228,19 @@ export function DiscSection({
       kicker={kicker}
       title="Analisis Perilaku dan Gaya Komunikasi Kerja (DISC)"
       lead={
-        <>
-          <View style={chart.row}>
-            {model.graphs.map((graph) => (
-              <DiscGraph
-                key={graph.key}
-                title={graph.title}
-                subtitle={graph.label}
-                patternName={graph.patternName}
-                kodeText={graph.kodeText}
-                status={graph.status}
-                values={graph.values}
-              />
-            ))}
-          </View>
-          <View style={chart.legend}>
-            {DISC_ORDER.map((letter) => (
-              <Text key={letter} style={[chart.legendItem, { color: DISC_COLORS[letter] }]}>
-                {letter} {letter === 'D' ? 'Dominance' : letter === 'I' ? 'Influence' : letter === 'S' ? 'Steadiness' : 'Compliance'}
-              </Text>
-            ))}
-          </View>
-        </>
+        <View style={chart.row}>
+          {model.graphs.map((graph) => (
+            <DiscGraph
+              key={graph.key}
+              title={graph.title}
+              subtitle={graph.label}
+              patternName={graph.patternName}
+              kodeText={graph.kodeText}
+              status={graph.status}
+              values={graph.values}
+            />
+          ))}
+        </View>
       }
     >
       {model.blocks.map((block) => (
