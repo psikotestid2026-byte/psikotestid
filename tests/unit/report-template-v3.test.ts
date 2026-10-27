@@ -234,15 +234,15 @@ describe('report v3 view model', () => {
     expect(orderCoverResults(rows).map((row) => row.test_code)).toEqual(['disc', 'papi', 'wpt', 'mbti', 'ist']);
   });
 
-  it('builds the closing from platform text, otherwise from summaries, and omits a missing recommendation', () => {
-    const fromSummaries = buildClosingContent({}, [{ title: 'DISC', summary: 'SC (PEACEMAKER)' }]);
-    expect(fromSummaries.executive).toBe('DISC: SC (PEACEMAKER)');
+  it('keeps one platform executive summary and does not invent one per test', () => {
+    const fromSummaries = buildClosingContent({});
+    expect(fromSummaries.executive).toBeNull();
     expect(fromSummaries.recommendation).toBeNull();
 
-    const fromPlatform = buildClosingContent(
-      { ringkasan_eksekutif: 'Narasi platform.', rekomendasi: 'Rekomendasi platform.' },
-      [{ title: 'DISC', summary: 'SC (PEACEMAKER)' }]
-    );
+    const fromPlatform = buildClosingContent({
+      ringkasan_eksekutif: 'Narasi platform.',
+      rekomendasi: 'Rekomendasi platform.',
+    });
     expect(fromPlatform.executive).toBe('Narasi platform.');
     expect(fromPlatform.recommendation).toBe('Rekomendasi platform.');
     expect(CATATAN_KETERBATASAN).toMatch(/satu-satunya dasar keputusan/);
