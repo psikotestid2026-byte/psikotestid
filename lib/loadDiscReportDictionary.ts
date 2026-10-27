@@ -14,7 +14,7 @@ export async function loadDiscReportDictionary(): Promise<DiscReportDictionary> 
   try {
     const { sql } = await import('@/lib/neon');
     const patterns = await sql`
-      SELECT code, name, description, jobs
+      SELECT code, name, description, jobs, characteristics, cautions, motivators
       FROM disc_patterns
       WHERE is_active = TRUE
     `;
@@ -27,11 +27,24 @@ export async function loadDiscReportDictionary(): Promise<DiscReportDictionary> 
       FROM disc_special_statuses
     `;
     return mergeDiscDictionary(fallback, {
-      patterns: (patterns as { code: string; name: string; description: string; jobs: unknown }[]).map((row) => ({
+      patterns: (
+        patterns as {
+          code: string;
+          name: string;
+          description: string;
+          jobs: unknown;
+          characteristics: unknown;
+          cautions: unknown;
+          motivators: string | null;
+        }[]
+      ).map((row) => ({
         code: row.code,
         name: row.name,
         description: row.description,
         jobs: row.jobs,
+        characteristics: row.characteristics,
+        cautions: row.cautions,
+        motivators: row.motivators,
       })),
       traits: (
         traits as {

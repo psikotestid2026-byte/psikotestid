@@ -268,6 +268,35 @@ export function DiscSection({
             ) : (
               <>
                 {block.description ? <Text style={chart.paragraph}>{block.description}</Text> : null}
+                {block.characteristics.length > 0 ? (
+                  <>
+                    <View style={chart.divider} />
+                    <Text style={chart.aspectLabel}>Karakteristik Utama</Text>
+                    {block.characteristics.map((item) => (
+                      <Text key={item.label} style={chart.bullet}>
+                        • <Text style={{ fontWeight: 'bold' }}>{item.label}:</Text> {item.text}
+                      </Text>
+                    ))}
+                  </>
+                ) : null}
+                {block.cautions.length > 0 ? (
+                  <>
+                    <View style={chart.divider} />
+                    <Text style={chart.aspectLabel}>Hal yang Perlu Diperhatikan</Text>
+                    {block.cautions.map((item) => (
+                      <Text key={item} style={chart.bullet}>
+                        • {item}
+                      </Text>
+                    ))}
+                  </>
+                ) : null}
+                {block.motivators ? (
+                  <>
+                    <View style={chart.divider} />
+                    <Text style={chart.aspectLabel}>Faktor yang Memotivasi</Text>
+                    <Text style={chart.paragraph}>{block.motivators}</Text>
+                  </>
+                ) : null}
                 {block.jobs.length > 0 ? (
                   <>
                     <View style={chart.divider} />

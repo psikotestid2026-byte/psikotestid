@@ -256,6 +256,78 @@ export const DISC_PATTERN_ROWS = [
       "Quality Controller",
       "Planner"
     ]
+  },
+  {
+    "code": "I-D",
+    "name": "PERSUADER / CONVINCER",
+    "description": "Persuader / Convincer atau dominan I-D (Influence-Dominance) adalah individu yang cenderung supel, persuasif, dan tertarik membangun relasi. Mereka berusaha memengaruhi orang lain dengan pendekatan yang bersahabat agar orang lain menerima sudut pandangnya.",
+    "jobs": [],
+    "characteristics": [
+      {
+        "label": "Mudah membangun hubungan",
+        "text": "Tertarik berinteraksi dengan beragam tipe orang dan mampu mendapatkan rasa hormat serta kekaguman."
+      },
+      {
+        "label": "Pandai meyakinkan orang",
+        "text": "Menggunakan komunikasi yang bersahabat untuk menyampaikan pendapat dan memengaruhi orang lain."
+      },
+      {
+        "label": "Menyukai variasi dan tantangan",
+        "text": "Kurang menyukai rutinitas serta menyukai aktivitas yang dinamis dan penuh mobilitas."
+      },
+      {
+        "label": "Mampu memotivasi",
+        "text": "Optimistis dan cukup andal dalam mendorong orang lain untuk mencapai tujuan."
+      },
+      {
+        "label": "Fleksibel dalam peran",
+        "text": "Dapat berperan sebagai pendukung maupun penolong, bergantung pada situasi."
+      }
+    ],
+    "cautions": [
+      "Bisa terlihat terlalu percaya diri, agresif, atau terlalu menuntut.",
+      "Dapat menggunakan pengaruh terhadap orang lain untuk mencapai tujuan pribadinya.",
+      "Membutuhkan komunikasi yang efektif serta data analitis untuk mendukung pekerjaannya."
+    ],
+    "motivators": "Tipe ini membutuhkan kebebasan dari rutinitas, otoritas, prestise, dan aktivitas yang beragam."
+  },
+  {
+    "code": "I-C-D",
+    "name": "LEADER / DECISIVE",
+    "description": "Leader / Decisive atau kombinasi I-C-D (Influence-Compliance-Dominance) menggabungkan kemampuan bersosialisasi dan berkomunikasi dengan fokus pada tugas, ketelitian, serta keinginan agar pekerjaan diselesaikan dengan baik.",
+    "jobs": [],
+    "characteristics": [
+      {
+        "label": "Ramah dan mudah melibatkan orang lain",
+        "text": "Menikmati interaksi sosial serta mampu mengajak orang bergabung dalam kelompok atau organisasi."
+      },
+      {
+        "label": "Berorientasi pada tugas",
+        "text": "Tidak hanya membangun hubungan, tetapi juga ingin memastikan tujuan dan pekerjaan tercapai dengan baik."
+      },
+      {
+        "label": "Mampu meyakinkan secara logis",
+        "text": "Menggunakan keterampilan personal, komunikasi verbal, dan alasan yang logis untuk mendorong orang lain."
+      },
+      {
+        "label": "Memperhatikan kualitas",
+        "text": "Menginginkan hasil yang baik dan sempurna, termasuk ketika berada di bawah tekanan."
+      },
+      {
+        "label": "Terlibat secara aktif",
+        "text": "Tidak sekadar ingin mendapat pengakuan atas nama atau posisinya, tetapi juga ikut berkontribusi secara langsung."
+      },
+      {
+        "label": "Menyukai hal baru",
+        "text": "Antusias terhadap petualangan dan kesempatan bertemu orang baru."
+      }
+    ],
+    "cautions": [
+      "Bisa menjadi dominan atau agresif ketika berada di bawah tekanan.",
+      "Perlu lebih fokus mendengarkan dan memperhatikan kebutuhan orang lain, terutama dalam situasi sulit.",
+      "Perlu menjaga keseimbangan antara tuntutan menyelesaikan tugas dan kebutuhan orang-orang yang terlibat."
+    ],
+    "motivators": null
   }
 ];
 

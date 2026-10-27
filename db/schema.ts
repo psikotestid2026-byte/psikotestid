@@ -307,6 +307,9 @@ export const disc_patterns = pgTable('disc_patterns', {
   name: varchar('name', { length: 160 }).notNull(),
   description: text('description').notNull(),
   jobs: jsonb('jobs').notNull(),
+  characteristics: jsonb('characteristics'),
+  cautions: jsonb('cautions'),
+  motivators: text('motivators'),
   is_active: boolean('is_active').notNull().default(true),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => {
