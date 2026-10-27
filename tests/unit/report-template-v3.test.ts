@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { calculateBigFiveScore } from '@/lib/scoring/bigfive';
-import { findDiscTypeInfo } from '@/lib/scoring/disc_dictionary';
 import {
   buildClosingContent,
   bigFiveBars,
@@ -20,6 +19,7 @@ import {
   orderDetailResults,
   papiSectionModel,
   papiZone,
+  showsClosingSection,
   sessionStatusLabel,
   wptGaugeAngle,
   wptSectionModel,
@@ -79,28 +79,47 @@ describe('report v3 view model', () => {
     expect(DISC_AXIS_MAX).toBe(18);
   });
 
-  it('uses the stored DISC graph values and existing dictionary narratives', () => {
+  it('builds DISC cards from the kamus calcType and section 5 fallback', () => {
     const model = discSectionModel({
-      dominantLabel: 'SC',
-      dominantType: 'PEACEMAKER',
-      hasStressPotential: true,
-      subTraits: { g1: 'Patience', g2: 'Accuracy', g3: 'Cooperativeness' },
-      g1: { D: -8, I: 2, S: 8, C: 1 },
-      g2: { D: -2, I: 0, S: 1, C: 12 },
-      g3: { D: -4, I: 0, S: 6, C: 8 },
+      g1: { D: 1, I: 5, S: -1, C: -6 },
+      g2: { D: 1, I: 7, S: -2, C: 2 },
+      g3: { D: -0.5, I: 1, S: -4, C: -4 },
     });
 
-    expect(model.kode).toBe('SC');
-    expect(model.label).toBe('PEACEMAKER');
-    expect(model.subtrait).toBe('Cooperativeness');
-    expect(model.stress).toBe('Ya (Terindikasi Penyesuaian Style)');
-    expect(model.graphs[0].values).toEqual({ D: -8, I: 2, S: 8, C: 1 });
-    expect(model.graphs[0].narrative).toBe(findDiscTypeInfo('S')?.description);
-    expect(model.graphs[1].narrative).toBe(findDiscTypeInfo('C')?.description);
-    expect(model.graphs[2].narrative).toBe(findDiscTypeInfo('CS')?.description);
-    expect(model.penempatan).toBe(findDiscTypeInfo('SC')?.jobs);
-    expect(model.profil).toBe(findDiscTypeInfo('SC')?.description);
-    expect(JSON.stringify(model)).not.toMatch(/potret diri|kelebihan|kekurangan/i);
+    expect(model.graphs.map((graph) => graph.code)).toEqual(['I-D', 'I-C-D', 'I']);
+    expect(model.graphs.map((graph) => graph.kodeText)).toEqual(['I-D', 'I-C-D', 'I MURNI']);
+    expect(model.graphs.map((graph) => graph.patternName)).toEqual([
+      'PERSUADER / CONVINCER',
+      'LEADER / DECISIVE',
+      'COMMUNICATOR',
+    ]);
+    expect(model.graphs.map((graph) => graph.matchedCode)).toEqual(['I-D', 'I-C-D', 'I']);
+    expect(model.graphs[0].values).toEqual({ D: 1, I: 5, S: -1, C: -6 });
+    expect(model.blocks.map((block) => block.code)).toEqual(['I-D', 'I-C-D', 'I']);
+    expect(model.blocks[0].description.startsWith('Persuader / Convincer atau dominan I-D')).toBe(true);
+    expect(model.blocks[0].jobs).toEqual([
+      'Manajer Toko Retail',
+      'Manajer Gedung Pertunjukan',
+      'Petugas Bantuan Hukum',
+      'Public Relations Representative',
+      'Pengacara',
+      'Manajer Sales & Service',
+    ]);
+    expect(model.blocks[0].characteristics).toEqual([]);
+    expect(model.blocks[1].jobs).toEqual([
+      'Manajer teknik',
+      'Manajer keuangan',
+      'Konsultan',
+      'Project Engineer',
+      'Sales Engineer',
+      'Trainer atau dosen',
+    ]);
+    expect(model.blocks[1].cautions).toEqual([]);
+    expect(model.blocks[2].patternName).toBe('COMMUNICATOR');
+    expect(model.traits.dims).toEqual(['I']);
+    expect(model.development.items[0]).toBe('Berkonsentrasi pada tugas');
+    expect(JSON.stringify(model)).not.toContain('Selasmawati');
+    expect(JSON.stringify(model)).not.toContain('{nama}');
   });
 
   it('formats Big Five bars from platform percent, category, and narrative', () => {
@@ -123,7 +142,7 @@ describe('report v3 view model', () => {
     const model = papiSectionModel({
       scores: { N: 7, G: 5, A: 3, L: 8, P: 4, I: 1, T: 3, V: 6, X: 7, S: 5, B: 1, O: 6, R: 3, D: 5, C: 5, Z: 4, E: 4, K: 6, F: 4, W: 3 },
       totalScore: 90,
-    });
+    }, 'Selasmawati');
     expect(model.groups.map((group) => group.category)).toEqual([
       'Arah Kerja',
       'Kepemimpinan',
@@ -134,20 +153,37 @@ describe('report v3 view model', () => {
       'Kepatuhan',
     ]);
     const leadership = model.groups[1].rows[0];
-    expect(leadership.name).toBe('Peran Kepemimpinan');
+    expect(leadership.name).toBe('Leadership Role');
+    expect(leadership.zone).toBe('High');
     expect(leadership.scoreText).toBe('8');
     expect(leadership.fraction).toBeCloseTo(8 / 9);
-    expect(papiZone(3)).toBe('Rendah');
-    expect(papiZone(4)).toBe('Sedang');
-    expect(papiZone(7)).toBe('Tinggi');
-    expect(papiZone(0)).toBe('Rendah');
-    expect(model.narrative).toContain('Peran Kepemimpinan (L): Cenderung dominan');
-    expect(model.narrative).toContain('Tipe Enerjik (V): Memiliki energi fisik yang besar');
-    expect(model.narrative).toContain('Ambisi Pencapaian Target (A): Kurang terdorong');
-    expect(model.narrative).not.toContain('Peran Pekerja Keras');
-    expect(model.narrative).not.toContain('Pengendalian Orang Lain');
-    expect(model.narrative).not.toContain('Kecenderungan bekerja keras');
-    expect(model.narrative).not.toContain('90');
+    expect(papiZone(3)).toBe('Low');
+    expect(papiZone(4)).toBe('Middle');
+    expect(papiZone(5)).toBe('Middle');
+    expect(papiZone(6)).toBe('High');
+    expect(papiZone(0)).toBe('Low');
+    expect(model.high.map((item) => item.code)).toEqual(['L', 'N', 'X', 'V', 'O', 'K']);
+    expect(model.low.map((item) => item.code)).toEqual(['I', 'B', 'A', 'T', 'R', 'W']);
+    expect(model.highParagraph.startsWith('Selasmawati cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.')).toBe(true);
+    expect(model.highParagraph).toContain('Selain itu, ia sangat termotivasi oleh apresiasi, pujian, dan sorotan publik.');
+    expect(model.highParagraph).toContain('Ia bersifat asertif, kompetitif, dan berani bersikap konfrontatif demi keyakinannya.');
+    expect(model.lowParagraph.startsWith('Di sisi lain, Selasmawati cenderung ragu-ragu atau membutuhkan waktu lama untuk mempertimbangkan keputusan.')).toBe(true);
+    expect(model.lowParagraph).toContain('Ia bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.');
+    expect(model.highParagraph).not.toMatch(/skor|Pada aspek/);
+    expect(model.lowParagraph).not.toMatch(/skor|Pada aspek/);
+    expect(model.high.find((item) => item.code === 'L')?.narrative).toBe(
+      'Cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.'
+    );
+    expect(model.low.find((item) => item.code === 'A')?.narrative).toBe(
+      'Kurang terdorong untuk bersaing secara performa atau berprestasi menonjol.'
+    );
+    expect(model.high.some((item) => item.code === 'G')).toBe(false);
+    expect(model.low.some((item) => item.code === 'P')).toBe(false);
+    const rendered = `${model.highParagraph}\n${model.lowParagraph}`;
+    expect(rendered).not.toContain('Peran Kepemimpinan');
+    expect(rendered).not.toContain('Ketekunan Menyelesaikan Tugas');
+    expect(rendered).not.toContain('90');
+    expect(model.groups.flatMap((group) => group.rows).map((row) => row.name)).not.toContain('Peran Kepemimpinan');
     expect(model.ringkasan).not.toMatch(/90/);
   });
 
@@ -210,6 +246,10 @@ describe('report v3 view model', () => {
     expect(fromPlatform.executive).toBe('Narasi platform.');
     expect(fromPlatform.recommendation).toBe('Rekomendasi platform.');
     expect(CATATAN_KETERBATASAN).toMatch(/satu-satunya dasar keputusan/);
+    expect(showsClosingSection([{ test_code: 'papi' }])).toBe(false);
+    expect(showsClosingSection([{ test_code: 'PAPI' }, { test_code: 'disc' }])).toBe(true);
+    expect(showsClosingSection([{ test_code: 'wpt' }])).toBe(true);
+    expect(showsClosingSection([])).toBe(true);
   });
 
   it('reads cover fields that exist and leaves missing ones blank', () => {

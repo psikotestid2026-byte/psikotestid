@@ -1,11 +1,17 @@
 /**
  * View-model for the theaim.id participant report (v3).
- * Formatting and narrative selection only. Narratives are copied from the
- * scoring dictionaries already on the platform; this module does not author new ones.
+ * Formatting and narrative selection only. DISC pattern text comes from the
+ * report dictionary (database when seeded, bundled copy otherwise).
  */
 
-import { discSubTrait, dominantDiscCode, type DiscGraphValues } from '@/lib/scoring/disc';
-import { findDiscTypeInfo } from '@/lib/scoring/disc_dictionary';
+import { bundledDiscReportDictionary, type DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
+import {
+  buildDiscDevelopmentAdvice,
+  buildDiscGraphCards,
+  buildDiscTraitSummary,
+  mergeDiscDescriptionBlocks,
+  type DiscGraphCardModel,
+} from '@/lib/scoring/discReportView';
 import { PAPI_ASPECT_DETAILS, type PapiAspect } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS, type MsdtDimension } from '@/lib/scoring/msdt';
 import { WPT_CATEGORIES } from '@/lib/scoring/wpt';
@@ -202,12 +208,6 @@ export function summaryIcon(code: string | null | undefined): string {
   return letter ? letter.toUpperCase() : 'T';
 }
 
-function withPeriod(text: string): string {
-  const trimmed = text.trim();
-  if (!trimmed) return '';
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
 export function hasilUtama(code: string | null | undefined, scoring: Record<string, any> | null | undefined): string {
   const normalized = normalizeTestCode(code);
   if (normalized === 'wpt') {
@@ -229,98 +229,18 @@ export function coverStatus(code: string | null | undefined): string {
   return isSkippedDetailTest(code) ? 'Selesai (tanpa lampiran)' : 'Selesai';
 }
 
-export interface DiscGraphView {
-  key: 'g1' | 'g2' | 'g3';
-  title: string;
-  subtitle: string;
-  howToRead: string;
-  values: DiscGraphValues;
-  subTrait: string;
-  narrative: string | null;
-}
+export type DiscGraphView = DiscGraphCardModel;
 
-function readGraph(scoring: Record<string, any> | null | undefined, key: 'g1' | 'g2' | 'g3'): DiscGraphValues {
-  const source = scoring?.[key] || {};
-  return {
-    D: finiteNumber(source.D) ?? 0,
-    I: finiteNumber(source.I) ?? 0,
-    S: finiteNumber(source.S) ?? 0,
-    C: finiteNumber(source.C) ?? 0,
-  };
-}
-
-function graphNarrative(values: DiscGraphValues): string | null {
-  const info = findDiscTypeInfo(dominantDiscCode(values));
-  const text = info?.description?.trim();
-  return text || null;
-}
-
-const DISC_GRAPH_META: {
-  key: 'g1' | 'g2' | 'g3';
-  title: string;
-  subtitle: string;
-  howToRead: string;
-  cardTitle: string;
-}[] = [
-  {
-    key: 'g1',
-    title: 'GRAPH 1 · MOST',
-    subtitle: 'Diri Adaptif (Public Self)',
-    howToRead:
-      'Cara membaca: perilaku yang ditampilkan di lingkungan kerja. Titik di atas garis 0 berarti kecenderungan lebih kuat pada dimensi itu, di bawah garis berarti lebih rendah.',
-    cardTitle: 'Perilaku adaptasi · Graph 1 (MOST)',
-  },
-  {
-    key: 'g2',
-    title: 'GRAPH 2 · LEAST',
-    subtitle: 'Diri Alami (Private Self)',
-    howToRead:
-      'Cara membaca: perilaku alami yang cenderung tidak ditampilkan di lingkungan kerja. Penafsiran titik sama dengan Graph 1.',
-    cardTitle: 'Perilaku alami · Graph 2 (LEAST)',
-  },
-  {
-    key: 'g3',
-    title: 'GRAPH 3 · CHANGE',
-    subtitle: 'Persepsi Diri (Perceived Self)',
-    howToRead:
-      'Cara membaca: selisih Graph 1 dan Graph 2. Selisih besar menandakan adanya penyesuaian gaya.',
-    cardTitle: 'Persepsi diri · Graph 3 (CHANGE)',
-  },
-];
-
-export function discSectionModel(scoring: Record<string, any> | null | undefined) {
-  const graphs = DISC_GRAPH_META.map((meta) => {
-    const values = readGraph(scoring, meta.key);
-    const stored = scoring?.subTraits?.[meta.key];
-    const subTrait = String(stored || '').trim() || discSubTrait(values);
-    return {
-      ...meta,
-      values,
-      subTrait,
-      narrative: graphNarrative(values),
-    };
-  });
-
-  const kode = String(scoring?.dominantLabel || '').trim();
-  const primary = kode ? findDiscTypeInfo(kode) : null;
-  const label = primary?.name || String(scoring?.dominantType || '').trim();
-  const profil = primary?.description?.trim() || null;
-  const penempatan = primary?.jobs?.trim() || null;
-  const graph3 = graphs[2]?.narrative || null;
-  const stressFlag =
-    typeof scoring?.hasStressPotential === 'boolean'
-      ? scoring.hasStressPotential
-      : dominantDiscCode(graphs[0].values)[0] !== dominantDiscCode(graphs[1].values)[0];
-
-  return {
-    kode: kode || '-',
-    label: label || '-',
-    subtrait: graphs[2]?.subTrait || '-',
-    stress: stressFlag ? 'Ya (Terindikasi Penyesuaian Style)' : 'Normal',
-    graphs,
-    profil: profil && profil !== graph3 ? profil : null,
-    penempatan,
-  };
+export function discSectionModel(
+  scoring: Record<string, any> | null | undefined,
+  options?: { dictionary?: DiscReportDictionary | null }
+) {
+  const dictionary = options?.dictionary || bundledDiscReportDictionary();
+  const graphs = buildDiscGraphCards(scoring, dictionary);
+  const blocks = mergeDiscDescriptionBlocks(graphs, dictionary);
+  const traits = buildDiscTraitSummary(scoring, dictionary);
+  const development = buildDiscDevelopmentAdvice(scoring, dictionary);
+  return { graphs, blocks, traits, development };
 }
 
 export const BIG_FIVE_DIMENSIONS = [
@@ -347,12 +267,23 @@ export function bigFiveBars(dimensions: Record<string, any> | null | undefined) 
   });
 }
 
+export type PapiBand = 'Low' | 'Middle' | 'High';
+
 export interface PapiAspectRow {
   code: PapiAspect;
   name: string;
   score: number;
   scoreText: string;
   fraction: number;
+  zone: PapiBand;
+}
+
+export interface PapiNarrativeItem {
+  code: PapiAspect;
+  name: string;
+  score: number;
+  scoreText: string;
+  narrative: string;
 }
 
 export interface PapiGroupView {
@@ -361,113 +292,121 @@ export interface PapiGroupView {
   rows: PapiAspectRow[];
 }
 
-const PAPI_LAYOUT: { category: string; color: string; aspects: { code: PapiAspect; name: string }[] }[] = [
-  {
-    category: 'Arah Kerja',
-    color: '#2563eb',
-    aspects: [
-      { code: 'N', name: 'Ketekunan Menyelesaikan Tugas' },
-      { code: 'G', name: 'Peran Pekerja Keras' },
-      { code: 'A', name: 'Ambisi Pencapaian Target' },
-    ],
-  },
-  {
-    category: 'Kepemimpinan',
-    color: '#e8590c',
-    aspects: [
-      { code: 'L', name: 'Peran Kepemimpinan' },
-      { code: 'P', name: 'Pengendalian Orang Lain' },
-      { code: 'I', name: 'Pengambilan Keputusan' },
-    ],
-  },
-  {
-    category: 'Aktivitas Kerja',
-    color: '#16a34a',
-    aspects: [
-      { code: 'T', name: 'Kecepatan Kerja' },
-      { code: 'V', name: 'Tipe Enerjik' },
-    ],
-  },
-  {
-    category: 'Sifat Sosial',
-    color: '#475569',
-    aspects: [
-      { code: 'X', name: 'Kebutuhan Diperhatikan' },
-      { code: 'S', name: 'Orientasi Sosial' },
-      { code: 'B', name: 'Orientasi Kelompok' },
-      { code: 'O', name: 'Kehangatan Hubungan' },
-    ],
-  },
-  {
-    category: 'Gaya Kerja',
-    color: '#7c3aed',
-    aspects: [
-      { code: 'R', name: 'Tipe Teoretis & Analitis' },
-      { code: 'D', name: 'Perhatian pada Detail' },
-      { code: 'C', name: 'Tipe Teratur' },
-    ],
-  },
-  {
-    category: 'Temperamen',
-    color: '#0891b2',
-    aspects: [
-      { code: 'Z', name: 'Kebutuhan Perubahan' },
-      { code: 'E', name: 'Pengendalian Emosi' },
-      { code: 'K', name: 'Ketegasan & Daya Saing' },
-    ],
-  },
-  {
-    category: 'Kepatuhan',
-    color: '#b45309',
-    aspects: [
-      { code: 'F', name: 'Kebutuhan Dukungan' },
-      { code: 'W', name: 'Kebutuhan Aturan & Pengawasan' },
-    ],
-  },
+const PAPI_LAYOUT: { category: string; color: string; aspects: PapiAspect[] }[] = [
+  { category: 'Arah Kerja', color: '#2563eb', aspects: ['N', 'G', 'A'] },
+  { category: 'Kepemimpinan', color: '#e8590c', aspects: ['L', 'P', 'I'] },
+  { category: 'Aktivitas Kerja', color: '#16a34a', aspects: ['T', 'V'] },
+  { category: 'Sifat Sosial', color: '#475569', aspects: ['X', 'S', 'B', 'O'] },
+  { category: 'Gaya Kerja', color: '#7c3aed', aspects: ['R', 'D', 'C'] },
+  { category: 'Temperamen', color: '#0891b2', aspects: ['Z', 'E', 'K'] },
+  { category: 'Kepatuhan', color: '#b45309', aspects: ['F', 'W'] },
 ];
 
-/** Rendah 1-3, Sedang 4-6, Tinggi 7-9. A zero score sits with Rendah. */
-export function papiZone(score: number): 'Rendah' | 'Sedang' | 'Tinggi' {
-  if (score >= 7) return 'Tinggi';
-  if (score >= 4) return 'Sedang';
-  return 'Rendah';
+const PAPI_ASPECT_ORDER = Object.keys(PAPI_ASPECT_DETAILS) as PapiAspect[];
+
+/** Kamus section 4.5: Low ≤3, Middle 4–5, High ≥6. A zero score is Low. */
+export function papiZone(score: number): PapiBand {
+  if (score >= 6) return 'High';
+  if (score >= 4) return 'Middle';
+  return 'Low';
 }
 
-export function papiSectionModel(scoring: Record<string, any> | null | undefined) {
+function papiNarratives(scores: Record<string, unknown>, band: 'High' | 'Low'): PapiNarrativeItem[] {
+  const items = PAPI_ASPECT_ORDER.flatMap((code) => {
+    const detail = PAPI_ASPECT_DETAILS[code];
+    const score = Math.max(0, finiteNumber(scores[code]) ?? 0);
+    const zone = papiZone(score);
+    if (zone !== band) return [];
+    const scoreText = formatDecimal(score);
+    return [{
+      code,
+      name: detail.name,
+      score,
+      scoreText,
+      narrative: band === 'High' ? detail.high : detail.low,
+    }];
+  });
+  items.sort((left, right) => {
+    const byScore = band === 'High' ? right.score - left.score : left.score - right.score;
+    if (byScore !== 0) return byScore;
+    return PAPI_ASPECT_ORDER.indexOf(left.code) - PAPI_ASPECT_ORDER.indexOf(right.code);
+  });
+  return items;
+}
+
+function lowerFirstLetter(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+}
+
+const PAPI_PREDICATE_STARTERS = new Set(['sangat', 'lebih', 'kurang', 'cenderung', 'suka']);
+
+/** A bare adjective cannot follow "Ia" directly. Verbs and licensed adverbs can. */
+function papiPredicate(narrative: string): string {
+  const lowered = lowerFirstLetter(narrative);
+  const first = lowered.split(/[\s,]+/)[0] || '';
+  const verbal = /^(me|mem|men|meng|meny|ber|be|di|ter|ke)/.test(first);
+  if (PAPI_PREDICATE_STARTERS.has(first) || verbal) return lowered;
+  return `bersifat ${lowered}`;
+}
+
+/**
+ * One paragraph per band. First sentence uses the participant name.
+ * Later sentences use "Ia". Kamus text stays verbatim after the subject.
+ */
+export function papiNarrativeParagraph(
+  items: PapiNarrativeItem[],
+  participantName: string,
+  band: 'High' | 'Low',
+  contrastLow = false
+): string {
+  if (items.length === 0) return '';
+  const name = participantName.trim() || 'Kandidat';
+  const besidesIndex = items.length >= 4 ? 2 : -1;
+  return items.map((item, index) => {
+    const body = papiPredicate(item.narrative);
+    if (index === 0) {
+      return band === 'Low' && contrastLow ? `Di sisi lain, ${name} ${body}` : `${name} ${body}`;
+    }
+    if (index === besidesIndex) return `Selain itu, ia ${body}`;
+    return `Ia ${body}`;
+  }).join(' ');
+}
+
+export function papiSectionModel(
+  scoring: Record<string, any> | null | undefined,
+  participantName?: string | null
+) {
   const scores = (scoring?.scores || {}) as Record<string, unknown>;
   const groups: PapiGroupView[] = PAPI_LAYOUT.map((group) => ({
     category: group.category,
     color: group.color,
-    rows: group.aspects.map((aspect) => {
-      const raw = finiteNumber(scores[aspect.code]) ?? 0;
-      const score = Math.max(0, raw);
+    rows: group.aspects.map((code) => {
+      const detail = PAPI_ASPECT_DETAILS[code];
+      const score = Math.max(0, finiteNumber(scores[code]) ?? 0);
       return {
-        code: aspect.code,
-        name: aspect.name,
+        code,
+        name: detail.name,
         score,
         scoreText: formatDecimal(score),
         fraction: Math.max(0, Math.min(1, score / 9)),
+        zone: papiZone(score),
       };
     }),
   }));
 
-  const parts: string[] = [];
-  for (const group of groups) {
-    for (const row of group.rows) {
-      const detail = PAPI_ASPECT_DETAILS[row.code];
-      if (!detail) continue;
-      // PAPI_ASPECT_DETAILS: high when score >= 6, low when score <= 3. Scores 4-5 have no narrative.
-      // Bar zones stay Rendah 1-3 / Sedang 4-6 / Tinggi 7-9, so a score of 6 is Sedang on the bar and still uses high.
-      const template = row.score >= 6 ? detail.high : row.score <= 3 ? detail.low : '';
-      if (template) parts.push(withPeriod(`${row.name} (${row.code}): ${template}`));
-    }
-  }
-
+  const high = papiNarratives(scores, 'High');
+  const low = papiNarratives(scores, 'Low');
+  const name = typeof participantName === 'string' ? participantName : '';
   return {
     ringkasan:
       'Asesmen PAPI Kostick mengukur 20 dimensi kebutuhan dan peran yang berkaitan dengan lingkungan profesional dan gaya kerja.',
     groups,
-    narrative: parts.length > 0 ? parts.join(' ') : null,
+    high,
+    low,
+    highParagraph: papiNarrativeParagraph(high, name, 'High'),
+    lowParagraph: papiNarrativeParagraph(low, name, 'Low', high.length > 0),
   };
 }
 
@@ -547,6 +486,13 @@ export function sectionSummaries(
     title: summaryTitle(result.test_code, result.test_name),
     summary: hasilUtama(result.test_code, result.scoring_data),
   }));
+}
+
+/** The shared closing block stays for any report that includes a non-PAPI result. */
+export function showsClosingSection(results: { test_code?: string | null }[] | null | undefined): boolean {
+  const codes = (results || []).map((result) => normalizeTestCode(result?.test_code)).filter(Boolean);
+  if (codes.length === 0) return true;
+  return codes.some((code) => code !== 'papi');
 }
 
 export const DISC_COLORS = { D: '#D7263D', I: '#E8A317', S: '#2E9E5B', C: '#2D6CDF' } as const;

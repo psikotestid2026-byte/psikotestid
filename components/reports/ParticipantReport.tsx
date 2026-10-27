@@ -1,8 +1,11 @@
 import React from 'react';
 import { Document, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
-import { normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
-import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
+import { calculatePapiScore } from '@/lib/scoring/papi';
+import { calculateMsdtScore } from '@/lib/scoring/msdt';
+import { hydrateReportScores, normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
+import type { DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
+import { isV3TestCode, orderDetailResults, showsClosingSection } from '@/lib/reportTemplateV3';
 import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
@@ -458,11 +461,16 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
 export function UniversalPdfDocument({
   participant,
   results,
+  discDictionary,
 }: {
   participant: any;
   results: any[];
+  discDictionary?: DiscReportDictionary | null;
 }) {
-  const list = Array.isArray(results) ? results : [];
+  const list = hydrateReportScores(Array.isArray(results) ? results : [], {
+    papi: calculatePapiScore,
+    msdt: calculateMsdtScore,
+  });
   const { detail } = partitionReportResults(list);
   const ordered = orderDetailResults(detail);
 
@@ -474,11 +482,19 @@ export function UniversalPdfDocument({
           const code = normalizeTestCode(r.test_code);
           const pageKey = r.id || `${code}-${idx}`;
           if (isV3TestCode(code)) {
-            return <V3TestSection key={pageKey} result={r} sectionNumber={idx + 1} />;
+            return (
+              <V3TestSection
+                key={pageKey}
+                result={r}
+                sectionNumber={idx + 1}
+                discDictionary={discDictionary}
+                participantName={participant?.full_name}
+              />
+            );
           }
           return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
         })}
-        <ClosingBlock participant={participant} results={ordered} />
+        {showsClosingSection(ordered) ? <ClosingBlock participant={participant} results={ordered} /> : null}
       </FlowPage>
     </Document>
   );
