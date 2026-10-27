@@ -142,7 +142,7 @@ describe('report v3 view model', () => {
     const model = papiSectionModel({
       scores: { N: 7, G: 5, A: 3, L: 8, P: 4, I: 1, T: 3, V: 6, X: 7, S: 5, B: 1, O: 6, R: 3, D: 5, C: 5, Z: 4, E: 4, K: 6, F: 4, W: 3 },
       totalScore: 90,
-    });
+    }, 'Selasmawati');
     expect(model.groups.map((group) => group.category)).toEqual([
       'Arah Kerja',
       'Kepemimpinan',
@@ -164,10 +164,13 @@ describe('report v3 view model', () => {
     expect(papiZone(0)).toBe('Low');
     expect(model.high.map((item) => item.code)).toEqual(['L', 'N', 'X', 'V', 'O', 'K']);
     expect(model.low.map((item) => item.code)).toEqual(['I', 'B', 'A', 'T', 'R', 'W']);
-    expect(model.highParagraph.startsWith('Pada aspek Leadership Role (L, skor 8), cenderung dominan')).toBe(true);
-    expect(model.highParagraph).toContain('Selain itu, pada aspek Need for Recognition (X, skor 7), sangat termotivasi');
-    expect(model.highParagraph).toContain('Di sisi lain, pada aspek Need for Closeness & Affection (O, skor 6), membutuhkan hubungan');
-    expect(model.lowParagraph.startsWith('Pada aspek Ease in Decision Making (I, skor 1), cenderung ragu-ragu')).toBe(true);
+    expect(model.highParagraph.startsWith('Selasmawati cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.')).toBe(true);
+    expect(model.highParagraph).toContain('Selain itu, ia sangat termotivasi oleh apresiasi, pujian, dan sorotan publik.');
+    expect(model.highParagraph).toContain('Ia bersifat asertif, kompetitif, dan berani bersikap konfrontatif demi keyakinannya.');
+    expect(model.lowParagraph.startsWith('Di sisi lain, Selasmawati cenderung ragu-ragu atau membutuhkan waktu lama untuk mempertimbangkan keputusan.')).toBe(true);
+    expect(model.lowParagraph).toContain('Ia bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.');
+    expect(model.highParagraph).not.toMatch(/skor|Pada aspek/);
+    expect(model.lowParagraph).not.toMatch(/skor|Pada aspek/);
     expect(model.high.find((item) => item.code === 'L')?.narrative).toBe(
       'Cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.'
     );

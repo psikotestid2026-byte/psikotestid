@@ -41,11 +41,13 @@ const styles = StyleSheet.create({
 export function PapiSection({
   scoring,
   sectionNumber,
+  participantName,
 }: {
   scoring: Record<string, any> | null | undefined;
   sectionNumber: number;
+  participantName?: string | null;
 }) {
-  const model = papiSectionModel(scoring);
+  const model = papiSectionModel(scoring, participantName);
   const tableHead = (
     <View style={styles.head}>
       <Text style={[styles.headText, { width: 68 }]}>Kategori</Text>

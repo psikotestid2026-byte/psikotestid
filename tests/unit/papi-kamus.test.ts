@@ -53,7 +53,7 @@ describe('PAPI kamus section 5', () => {
       D: 3, C: 2, Z: 1, E: 3, K: 2, F: 0, W: 3,
     };
     expect(Object.values(scores).reduce((sum, score) => sum + score, 0)).toBe(90);
-    const model = papiSectionModel({ scores, totalScore: 90 });
+    const model = papiSectionModel({ scores, totalScore: 90 }, 'Selasmawati');
     expect(model.high.map((item) => `${item.code}:${item.score}`)).toEqual([
       'N:9', 'G:8', 'A:7', 'L:7', 'P:6', 'I:6', 'T:6',
     ]);
@@ -65,22 +65,42 @@ describe('PAPI kamus section 5', () => {
       expect(item.narrative).toBe(PAPI_ASPECT_DETAILS[item.code].high);
       expect(papiZone(item.score)).toBe('High');
       const lowered = item.narrative.charAt(0).toLowerCase() + item.narrative.slice(1);
-      expect(model.highParagraph).toContain(`(${item.code}, skor ${item.scoreText}), ${lowered}`);
+      expect(model.highParagraph).toContain(lowered);
+      expect(model.highParagraph).not.toContain(item.name);
     }
     for (const item of model.low) {
       expect(item.narrative).toBe(PAPI_ASPECT_DETAILS[item.code].low);
       expect(papiZone(item.score)).toBe('Low');
       const lowered = item.narrative.charAt(0).toLowerCase() + item.narrative.slice(1);
-      expect(model.lowParagraph).toContain(`(${item.code}, skor ${item.scoreText}), ${lowered}`);
+      expect(model.lowParagraph).toContain(lowered);
+      expect(model.lowParagraph).not.toContain(item.name);
     }
     expect(model.highParagraph).toBe(
-      'Pada aspek Need to Finish a Task (N, skor 9), sangat berkomitmen dan berorientasi pada penyelesaian tugas secara tuntas. Pada aspek Hard Intense Worker (G, skor 8), memiliki etos kerja yang kuat, gigih, dan pekerja keras. Selain itu, pada aspek Need for Achievement (A, skor 7), memiliki motivasi berprestasi tinggi dan ingin selalu menghasilkan karya terbaik. Pada aspek Leadership Role (L, skor 7), cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok. Di sisi lain, pada aspek Need to Control Others (P, skor 6), suka memegang kendali, mengarahkan, dan mengontrol pekerjaan orang lain. Pada aspek Ease in Decision Making (I, skor 6), sangat tanggap, cepat, dan percaya diri dalam mengambil keputusan. Pada aspek Pace / Tempo (T, skor 6), bekerja dengan tempo dan dinamika yang cepat serta cekatan.'
+      'Selasmawati sangat berkomitmen dan berorientasi pada penyelesaian tugas secara tuntas. Ia memiliki etos kerja yang kuat, gigih, dan pekerja keras. Selain itu, ia memiliki motivasi berprestasi tinggi dan ingin selalu menghasilkan karya terbaik. Ia cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok. Ia suka memegang kendali, mengarahkan, dan mengontrol pekerjaan orang lain. Ia sangat tanggap, cepat, dan percaya diri dalam mengambil keputusan. Ia bekerja dengan tempo dan dinamika yang cepat serta cekatan.'
     );
     expect(model.lowParagraph).toBe(
-      'Pada aspek Need for Support & Dependence (F, skor 0), sangat mandiri dan tidak terlalu membutuhkan validasi dari otoritas. Pada aspek Need for Change (Z, skor 1), lebih menyukai rutinitas yang stabil dan cenderung menolak perubahan mendadak. Selain itu, pada aspek Organized Type (C, skor 2), spontan, kurang terstruktur, dan fleksibel dalam penataan. Pada aspek Need for Aggression (K, skor 2), pasif, menghindari konflik, dan cenderung mengalah demi kedamaian. Di sisi lain, pada aspek Detail Conscious (D, skor 3), lebih berfokus pada gambaran besar (big picture) dan cenderung abai detail. Pada aspek Emotional Restraint (E, skor 3), ekspresif, reaktif secara emosional, atau mudah terpancing stres. Pada aspek Need for Rules & Supervision (W, skor 3), lebih suka kebebasan dalam bertindak dan tidak menyukai birokrasi ketat.'
+      'Di sisi lain, Selasmawati sangat mandiri dan tidak terlalu membutuhkan validasi dari otoritas. Ia lebih menyukai rutinitas yang stabil dan cenderung menolak perubahan mendadak. Selain itu, ia bersifat spontan, kurang terstruktur, dan fleksibel dalam penataan. Ia bersifat pasif, menghindari konflik, dan cenderung mengalah demi kedamaian. Ia lebih berfokus pada gambaran besar (big picture) dan cenderung abai detail. Ia bersifat ekspresif, reaktif secara emosional, atau mudah terpancing stres. Ia lebih suka kebebasan dalam bertindak dan tidak menyukai birokrasi ketat.'
     );
-    expect((model.highParagraph.match(/Pada aspek|pada aspek/g) || []).length).toBe(model.high.length);
-    expect((model.lowParagraph.match(/Pada aspek|pada aspek/g) || []).length).toBe(model.low.length);
+    expect((model.highParagraph.match(/Selain itu, ia/g) || []).length).toBe(1);
+    expect((model.lowParagraph.match(/Selain itu, ia/g) || []).length).toBe(1);
+    expect(model.highParagraph.startsWith('Selasmawati ')).toBe(true);
+    expect(model.lowParagraph.startsWith('Di sisi lain, Selasmawati ')).toBe(true);
+    expect(model.highParagraph).not.toMatch(/\bskor\b|Pada aspek/);
+    expect(model.lowParagraph).not.toMatch(/\bskor\b|Pada aspek/);
+
+    const middleScores = Object.fromEntries(ORDER.map((code) => [code, 5])) as Record<PapiAspect, number>;
+    expect(papiSectionModel({ scores: { ...middleScores, K: 9 } }, 'Selasmawati').highParagraph).toBe(
+      'Selasmawati bersifat asertif, kompetitif, dan berani bersikap konfrontatif demi keyakinannya.'
+    );
+    expect(papiSectionModel({ scores: { ...middleScores, W: 9 } }, 'Selasmawati').highParagraph).toBe(
+      'Selasmawati bersifat taat aturan, patuh, dan merasa aman dengan instruksi yang jelas.'
+    );
+    expect(papiSectionModel({ scores: { ...middleScores, X: 0 } }, 'Selasmawati').lowParagraph).toBe(
+      'Di sisi lain, Selasmawati bersifat rendah hati dan tidak terlalu membutuhkan perhatian atau panggung.'
+    );
+    expect(papiSectionModel({ scores: { ...middleScores, B: 1 } }, 'Selasmawati').lowParagraph).toBe(
+      'Di sisi lain, Selasmawati bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.'
+    );
     for (const code of ['V', 'X', 'S', 'B', 'O', 'R'] as PapiAspect[]) {
       expect(papiZone(scores[code])).toBe('Middle');
       expect(model.high.some((item) => item.code === code)).toBe(false);

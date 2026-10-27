@@ -343,18 +343,44 @@ function lowerFirstLetter(text: string): string {
   return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
 }
 
-/** Joins kamus sentences with a neutral lead. No extra interpretation. */
-export function papiNarrativeParagraph(items: PapiNarrativeItem[], empty: string): string {
+const PAPI_PREDICATE_STARTERS = new Set(['sangat', 'lebih', 'kurang', 'cenderung', 'suka']);
+
+/** A bare adjective cannot follow "Ia" directly. Verbs and licensed adverbs can. */
+function papiPredicate(narrative: string): string {
+  const lowered = lowerFirstLetter(narrative);
+  const first = lowered.split(/[\s,]+/)[0] || '';
+  const verbal = /^(me|mem|men|meng|meny|ber|be|di|ter|ke)/.test(first);
+  if (PAPI_PREDICATE_STARTERS.has(first) || verbal) return lowered;
+  return `bersifat ${lowered}`;
+}
+
+/**
+ * One paragraph per band. First sentence uses the participant name.
+ * Later sentences use "Ia". Kamus text stays verbatim after the subject.
+ */
+export function papiNarrativeParagraph(
+  items: PapiNarrativeItem[],
+  empty: string,
+  participantName: string,
+  band: 'High' | 'Low'
+): string {
   if (items.length === 0) return empty;
+  const name = participantName.trim() || 'Kandidat';
+  const besidesIndex = items.length >= 4 ? 2 : -1;
   return items.map((item, index) => {
-    let lead = 'Pada aspek';
-    if (items.length >= 4 && index === 2) lead = 'Selain itu, pada aspek';
-    else if (items.length >= 6 && index === 4) lead = 'Di sisi lain, pada aspek';
-    return `${lead} ${item.name} (${item.code}, skor ${item.scoreText}), ${lowerFirstLetter(item.narrative)}`;
+    const body = papiPredicate(item.narrative);
+    if (index === 0) {
+      return band === 'Low' ? `Di sisi lain, ${name} ${body}` : `${name} ${body}`;
+    }
+    if (index === besidesIndex) return `Selain itu, ia ${body}`;
+    return `Ia ${body}`;
   }).join(' ');
 }
 
-export function papiSectionModel(scoring: Record<string, any> | null | undefined) {
+export function papiSectionModel(
+  scoring: Record<string, any> | null | undefined,
+  participantName?: string | null
+) {
   const scores = (scoring?.scores || {}) as Record<string, unknown>;
   const groups: PapiGroupView[] = PAPI_LAYOUT.map((group) => ({
     category: group.category,
@@ -375,14 +401,15 @@ export function papiSectionModel(scoring: Record<string, any> | null | undefined
 
   const high = papiNarratives(scores, 'High');
   const low = papiNarratives(scores, 'Low');
+  const name = typeof participantName === 'string' ? participantName : '';
   return {
     ringkasan:
       'Asesmen PAPI Kostick mengukur 20 dimensi kebutuhan dan peran yang berkaitan dengan lingkungan profesional dan gaya kerja.',
     groups,
     high,
     low,
-    highParagraph: papiNarrativeParagraph(high, PAPI_HIGH_EMPTY),
-    lowParagraph: papiNarrativeParagraph(low, PAPI_LOW_EMPTY),
+    highParagraph: papiNarrativeParagraph(high, PAPI_HIGH_EMPTY, name, 'High'),
+    lowParagraph: papiNarrativeParagraph(low, PAPI_LOW_EMPTY, name, 'Low'),
     highEmpty: PAPI_HIGH_EMPTY,
     lowEmpty: PAPI_LOW_EMPTY,
   };
