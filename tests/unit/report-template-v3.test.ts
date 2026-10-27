@@ -96,10 +96,24 @@ describe('report v3 view model', () => {
     expect(model.graphs[0].values).toEqual({ D: 1, I: 5, S: -1, C: -6 });
     expect(model.blocks.map((block) => block.code)).toEqual(['I-D', 'I-C-D', 'I']);
     expect(model.blocks[0].description.startsWith('Persuader / Convincer atau dominan I-D')).toBe(true);
-    expect(model.blocks[0].jobs).toEqual([]);
-    expect(model.blocks[0].characteristics[0]?.label).toBe('Mudah membangun hubungan');
-    expect(model.blocks[1].jobs).toEqual([]);
-    expect(model.blocks[1].cautions).toHaveLength(3);
+    expect(model.blocks[0].jobs).toEqual([
+      'Manajer Toko Retail',
+      'Manajer Gedung Pertunjukan',
+      'Petugas Bantuan Hukum',
+      'Public Relations Representative',
+      'Pengacara',
+      'Manajer Sales & Service',
+    ]);
+    expect(model.blocks[0].characteristics).toEqual([]);
+    expect(model.blocks[1].jobs).toEqual([
+      'Manajer teknik',
+      'Manajer keuangan',
+      'Konsultan',
+      'Project Engineer',
+      'Sales Engineer',
+      'Trainer atau dosen',
+    ]);
+    expect(model.blocks[1].cautions).toEqual([]);
     expect(model.blocks[2].patternName).toBe('COMMUNICATOR');
     expect(model.traits.dims).toEqual(['I']);
     expect(model.development.items[0]).toBe('Berkonsentrasi pada tugas');
