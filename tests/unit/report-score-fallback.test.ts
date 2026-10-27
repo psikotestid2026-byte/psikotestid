@@ -90,9 +90,10 @@ describe('PAPI report score fallback', () => {
     const model = papiSectionModel(resolved);
     const workRole = model.groups.flatMap((group) => group.rows).find((row) => row.code === 'G');
     expect(workRole?.score).toBe(6);
-    expect(model.narrative).toContain('Peran Pekerja Keras (G): Memiliki etos kerja yang kuat');
-    expect(model.narrative).not.toContain('Menyukai gaya kerja yang santai');
-    expect(papiSectionModel(legacy).narrative).toContain('Menyukai gaya kerja yang santai');
+    expect(workRole?.name).toBe('Hard Intense Worker');
+    expect(model.high.find((item) => item.code === 'G')?.narrative).toBe(PAPI_ASPECT_DETAILS.G.high);
+    expect(model.low.find((item) => item.code === 'G')).toBeUndefined();
+    expect(papiSectionModel(legacy).low.find((item) => item.code === 'G')?.narrative).toBe(PAPI_ASPECT_DETAILS.G.low);
     expect(hasilUtama('papi', resolved)).toBe(expected.dominantLabel);
   });
 

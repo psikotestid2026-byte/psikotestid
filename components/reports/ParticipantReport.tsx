@@ -5,7 +5,7 @@ import { calculatePapiScore } from '@/lib/scoring/papi';
 import { calculateMsdtScore } from '@/lib/scoring/msdt';
 import { hydrateReportScores, normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
 import type { DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
-import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
+import { isV3TestCode, orderDetailResults, showsClosingSection } from '@/lib/reportTemplateV3';
 import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
@@ -488,12 +488,13 @@ export function UniversalPdfDocument({
                 result={r}
                 sectionNumber={idx + 1}
                 discDictionary={discDictionary}
+                participantName={participant?.full_name}
               />
             );
           }
           return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
         })}
-        <ClosingBlock participant={participant} results={ordered} />
+        {showsClosingSection(ordered) ? <ClosingBlock participant={participant} results={ordered} /> : null}
       </FlowPage>
     </Document>
   );

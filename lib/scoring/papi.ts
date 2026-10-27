@@ -1,4 +1,5 @@
-// PAPI Kostick scoring — implements refs/docs/papi.md Section 4-5.
+// PAPI Kostick scoring — questions and matching follow refs/docs/papi.md Section 3-4.
+// Aspect names, descriptions, and High/Low narratives are copied from refs/kamus-papi.md Section 5.
 // Answers are keyed by question index (0-based, matches question_banks.order_number - 1),
 // value = the exact statement text the participant selected (Pernyataan A or B),
 // following the same convention as lib/scoring/bigfive.ts.

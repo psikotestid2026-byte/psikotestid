@@ -19,6 +19,7 @@ import {
   orderDetailResults,
   papiSectionModel,
   papiZone,
+  showsClosingSection,
   sessionStatusLabel,
   wptGaugeAngle,
   wptSectionModel,
@@ -141,7 +142,7 @@ describe('report v3 view model', () => {
     const model = papiSectionModel({
       scores: { N: 7, G: 5, A: 3, L: 8, P: 4, I: 1, T: 3, V: 6, X: 7, S: 5, B: 1, O: 6, R: 3, D: 5, C: 5, Z: 4, E: 4, K: 6, F: 4, W: 3 },
       totalScore: 90,
-    });
+    }, 'Selasmawati');
     expect(model.groups.map((group) => group.category)).toEqual([
       'Arah Kerja',
       'Kepemimpinan',
@@ -152,20 +153,37 @@ describe('report v3 view model', () => {
       'Kepatuhan',
     ]);
     const leadership = model.groups[1].rows[0];
-    expect(leadership.name).toBe('Peran Kepemimpinan');
+    expect(leadership.name).toBe('Leadership Role');
+    expect(leadership.zone).toBe('High');
     expect(leadership.scoreText).toBe('8');
     expect(leadership.fraction).toBeCloseTo(8 / 9);
-    expect(papiZone(3)).toBe('Rendah');
-    expect(papiZone(4)).toBe('Sedang');
-    expect(papiZone(7)).toBe('Tinggi');
-    expect(papiZone(0)).toBe('Rendah');
-    expect(model.narrative).toContain('Peran Kepemimpinan (L): Cenderung dominan');
-    expect(model.narrative).toContain('Tipe Enerjik (V): Memiliki energi fisik yang besar');
-    expect(model.narrative).toContain('Ambisi Pencapaian Target (A): Kurang terdorong');
-    expect(model.narrative).not.toContain('Peran Pekerja Keras');
-    expect(model.narrative).not.toContain('Pengendalian Orang Lain');
-    expect(model.narrative).not.toContain('Kecenderungan bekerja keras');
-    expect(model.narrative).not.toContain('90');
+    expect(papiZone(3)).toBe('Low');
+    expect(papiZone(4)).toBe('Middle');
+    expect(papiZone(5)).toBe('Middle');
+    expect(papiZone(6)).toBe('High');
+    expect(papiZone(0)).toBe('Low');
+    expect(model.high.map((item) => item.code)).toEqual(['L', 'N', 'X', 'V', 'O', 'K']);
+    expect(model.low.map((item) => item.code)).toEqual(['I', 'B', 'A', 'T', 'R', 'W']);
+    expect(model.highParagraph.startsWith('Selasmawati cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.')).toBe(true);
+    expect(model.highParagraph).toContain('Selain itu, ia sangat termotivasi oleh apresiasi, pujian, dan sorotan publik.');
+    expect(model.highParagraph).toContain('Ia bersifat asertif, kompetitif, dan berani bersikap konfrontatif demi keyakinannya.');
+    expect(model.lowParagraph.startsWith('Di sisi lain, Selasmawati cenderung ragu-ragu atau membutuhkan waktu lama untuk mempertimbangkan keputusan.')).toBe(true);
+    expect(model.lowParagraph).toContain('Ia bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.');
+    expect(model.highParagraph).not.toMatch(/skor|Pada aspek/);
+    expect(model.lowParagraph).not.toMatch(/skor|Pada aspek/);
+    expect(model.high.find((item) => item.code === 'L')?.narrative).toBe(
+      'Cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.'
+    );
+    expect(model.low.find((item) => item.code === 'A')?.narrative).toBe(
+      'Kurang terdorong untuk bersaing secara performa atau berprestasi menonjol.'
+    );
+    expect(model.high.some((item) => item.code === 'G')).toBe(false);
+    expect(model.low.some((item) => item.code === 'P')).toBe(false);
+    const rendered = `${model.highParagraph}\n${model.lowParagraph}`;
+    expect(rendered).not.toContain('Peran Kepemimpinan');
+    expect(rendered).not.toContain('Ketekunan Menyelesaikan Tugas');
+    expect(rendered).not.toContain('90');
+    expect(model.groups.flatMap((group) => group.rows).map((row) => row.name)).not.toContain('Peran Kepemimpinan');
     expect(model.ringkasan).not.toMatch(/90/);
   });
 
@@ -228,6 +246,10 @@ describe('report v3 view model', () => {
     expect(fromPlatform.executive).toBe('Narasi platform.');
     expect(fromPlatform.recommendation).toBe('Rekomendasi platform.');
     expect(CATATAN_KETERBATASAN).toMatch(/satu-satunya dasar keputusan/);
+    expect(showsClosingSection([{ test_code: 'papi' }])).toBe(false);
+    expect(showsClosingSection([{ test_code: 'PAPI' }, { test_code: 'disc' }])).toBe(true);
+    expect(showsClosingSection([{ test_code: 'wpt' }])).toBe(true);
+    expect(showsClosingSection([])).toBe(true);
   });
 
   it('reads cover fields that exist and leaves missing ones blank', () => {

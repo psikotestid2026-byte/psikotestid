@@ -19,10 +19,12 @@ export function V3TestSection({
   result,
   sectionNumber,
   discDictionary,
+  participantName,
 }: {
   result: { test_code?: string | null; scoring_data?: any; raw_answers?: unknown };
   sectionNumber: number;
   discDictionary?: DiscReportDictionary | null;
+  participantName?: string | null;
 }) {
   const code = normalizeTestCode(result.test_code);
   const scoring = result.scoring_data || {};
@@ -36,7 +38,7 @@ export function V3TestSection({
   }
   if (code === 'papi') {
     const resolved = resolvePapiScoring(result.scoring_data, result.raw_answers, calculatePapiScore);
-    return <PapiSection scoring={resolved ?? scoring} sectionNumber={sectionNumber} />;
+    return <PapiSection scoring={resolved ?? scoring} sectionNumber={sectionNumber} participantName={participantName} />;
   }
   if (code === 'wpt') return <WptSection scoring={scoring} sectionNumber={sectionNumber} />;
   if (code === 'msdt') {
