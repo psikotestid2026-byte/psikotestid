@@ -1,9 +1,10 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
-import { papiSectionModel } from '@/lib/reportTemplateV3';
-import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
+import { papiSectionModel, type PapiNarrativeItem } from '@/lib/reportTemplateV3';
+import { SectionBlock, theme } from '@/components/reports/v3/ReportShell';
 
 const ACCENT = '#0f9d74';
+const ZONE_COLOR = { Low: '#0891b2', Middle: '#d97706', High: '#dc2626' } as const;
 
 const styles = StyleSheet.create({
   head: {
@@ -15,7 +16,7 @@ const styles = StyleSheet.create({
   },
   headText: { fontSize: 7, fontWeight: 'bold', color: theme.ink },
   zoneRow: { flexDirection: 'row', width: 168 },
-  zone: { width: 56, textAlign: 'center', fontSize: 6.5, fontWeight: 'bold' },
+  zone: { textAlign: 'center', fontSize: 6, fontWeight: 'bold' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -31,7 +32,36 @@ const styles = StyleSheet.create({
   barFill: { height: 7, borderRadius: 3 },
   tick: { position: 'absolute', top: 0, bottom: 0, width: 0.6, backgroundColor: '#d1d5db' },
   score: { width: 36, fontSize: 7.5, fontWeight: 'bold', textAlign: 'center', color: theme.ink },
+  lists: { marginTop: 4 },
+  listTitle: { fontSize: 9, fontWeight: 'bold', color: theme.ink, marginTop: 4, marginBottom: 2 },
+  item: { marginBottom: 2 },
+  heading: { fontSize: 8, fontWeight: 'bold', color: theme.ink },
+  body: { fontSize: 8, color: theme.ink, lineHeight: 1.25 },
+  empty: { fontSize: 8, fontStyle: 'italic', color: theme.ink, marginBottom: 1 },
 });
+
+function NarrativeList({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items: PapiNarrativeItem[];
+  empty: string;
+}) {
+  return (
+    <View>
+      <Text style={styles.listTitle}>{title}</Text>
+      {items.length === 0 ? <Text style={styles.empty}>{empty}</Text> : null}
+      {items.map((item) => (
+        <View key={item.code} style={styles.item}>
+          <Text style={styles.heading}>{item.heading}</Text>
+          <Text style={styles.body}>{item.narrative}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function PapiSection({
   scoring,
@@ -46,9 +76,9 @@ export function PapiSection({
       <Text style={[styles.headText, { width: 68 }]}>Kategori</Text>
       <Text style={[styles.headText, { width: 168 }]}>Aspek</Text>
       <View style={styles.zoneRow}>
-        <Text style={[styles.zone, { color: '#dc2626' }]}>Rendah (1-3)</Text>
-        <Text style={[styles.zone, { color: '#d97706' }]}>Sedang (4-6)</Text>
-        <Text style={[styles.zone, { color: '#16a34a' }]}>Tinggi (7-9)</Text>
+        <Text style={[styles.zone, { width: '33.333%', color: ZONE_COLOR.Low }]}>Low (≤3)</Text>
+        <Text style={[styles.zone, { width: '22.222%', color: ZONE_COLOR.Middle }]}>Middle (4–5)</Text>
+        <Text style={[styles.zone, { width: '44.445%', color: ZONE_COLOR.High }]}>High (≥6)</Text>
       </View>
       <Text style={[styles.headText, { width: 36, textAlign: 'center' }]}>Skor</Text>
     </View>
@@ -60,9 +90,9 @@ export function PapiSection({
         <Text style={styles.name}>{row.name}</Text>
         <View style={styles.barCell}>
           <View style={styles.barTrack}>
-            <View style={[styles.tick, { left: '33.3%' }]} />
-            <View style={[styles.tick, { left: '66.6%' }]} />
-            <View style={[styles.barFill, { width: `${row.fraction * 100}%`, backgroundColor: group.color }]} />
+            <View style={[styles.tick, { left: '33.333%' }]} />
+            <View style={[styles.tick, { left: '55.556%' }]} />
+            <View style={[styles.barFill, { width: `${row.fraction * 100}%`, backgroundColor: ZONE_COLOR[row.zone] }]} />
           </View>
         </View>
         <Text style={styles.score}>{row.scoreText}</Text>
@@ -87,12 +117,10 @@ export function PapiSection({
           {groupRows(group)}
         </View>
       ))}
-      {model.narrative ? (
-        <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: ACCENT, marginTop: 6 }]}>
-          <IconHeading accent={ACCENT} icon="i" title="Interpretasi" />
-          <Text style={cardStyles.body}>{model.narrative}</Text>
-        </View>
-      ) : null}
+      <View style={styles.lists}>
+        <NarrativeList title="Aspek Dominan (High)" items={model.high} empty={model.highEmpty} />
+        <NarrativeList title="Aspek Rendah (Low)" items={model.low} empty={model.lowEmpty} />
+      </View>
     </SectionBlock>
   );
 }

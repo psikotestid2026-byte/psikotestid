@@ -208,12 +208,6 @@ export function summaryIcon(code: string | null | undefined): string {
   return letter ? letter.toUpperCase() : 'T';
 }
 
-function withPeriod(text: string): string {
-  const trimmed = text.trim();
-  if (!trimmed) return '';
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
 export function hasilUtama(code: string | null | undefined, scoring: Record<string, any> | null | undefined): string {
   const normalized = normalizeTestCode(code);
   if (normalized === 'wpt') {
@@ -273,13 +267,28 @@ export function bigFiveBars(dimensions: Record<string, any> | null | undefined) 
   });
 }
 
+export type PapiBand = 'Low' | 'Middle' | 'High';
+
 export interface PapiAspectRow {
   code: PapiAspect;
   name: string;
   score: number;
   scoreText: string;
   fraction: number;
+  zone: PapiBand;
 }
+
+export interface PapiNarrativeItem {
+  code: PapiAspect;
+  name: string;
+  score: number;
+  scoreText: string;
+  narrative: string;
+  heading: string;
+}
+
+export const PAPI_HIGH_EMPTY = 'Tidak ada aspek berkategori High.';
+export const PAPI_LOW_EMPTY = 'Tidak ada aspek berkategori Low.';
 
 export interface PapiGroupView {
   category: string;
@@ -287,76 +296,47 @@ export interface PapiGroupView {
   rows: PapiAspectRow[];
 }
 
-const PAPI_LAYOUT: { category: string; color: string; aspects: { code: PapiAspect; name: string }[] }[] = [
-  {
-    category: 'Arah Kerja',
-    color: '#2563eb',
-    aspects: [
-      { code: 'N', name: 'Ketekunan Menyelesaikan Tugas' },
-      { code: 'G', name: 'Peran Pekerja Keras' },
-      { code: 'A', name: 'Ambisi Pencapaian Target' },
-    ],
-  },
-  {
-    category: 'Kepemimpinan',
-    color: '#e8590c',
-    aspects: [
-      { code: 'L', name: 'Peran Kepemimpinan' },
-      { code: 'P', name: 'Pengendalian Orang Lain' },
-      { code: 'I', name: 'Pengambilan Keputusan' },
-    ],
-  },
-  {
-    category: 'Aktivitas Kerja',
-    color: '#16a34a',
-    aspects: [
-      { code: 'T', name: 'Kecepatan Kerja' },
-      { code: 'V', name: 'Tipe Enerjik' },
-    ],
-  },
-  {
-    category: 'Sifat Sosial',
-    color: '#475569',
-    aspects: [
-      { code: 'X', name: 'Kebutuhan Diperhatikan' },
-      { code: 'S', name: 'Orientasi Sosial' },
-      { code: 'B', name: 'Orientasi Kelompok' },
-      { code: 'O', name: 'Kehangatan Hubungan' },
-    ],
-  },
-  {
-    category: 'Gaya Kerja',
-    color: '#7c3aed',
-    aspects: [
-      { code: 'R', name: 'Tipe Teoretis & Analitis' },
-      { code: 'D', name: 'Perhatian pada Detail' },
-      { code: 'C', name: 'Tipe Teratur' },
-    ],
-  },
-  {
-    category: 'Temperamen',
-    color: '#0891b2',
-    aspects: [
-      { code: 'Z', name: 'Kebutuhan Perubahan' },
-      { code: 'E', name: 'Pengendalian Emosi' },
-      { code: 'K', name: 'Ketegasan & Daya Saing' },
-    ],
-  },
-  {
-    category: 'Kepatuhan',
-    color: '#b45309',
-    aspects: [
-      { code: 'F', name: 'Kebutuhan Dukungan' },
-      { code: 'W', name: 'Kebutuhan Aturan & Pengawasan' },
-    ],
-  },
+const PAPI_LAYOUT: { category: string; color: string; aspects: PapiAspect[] }[] = [
+  { category: 'Arah Kerja', color: '#2563eb', aspects: ['N', 'G', 'A'] },
+  { category: 'Kepemimpinan', color: '#e8590c', aspects: ['L', 'P', 'I'] },
+  { category: 'Aktivitas Kerja', color: '#16a34a', aspects: ['T', 'V'] },
+  { category: 'Sifat Sosial', color: '#475569', aspects: ['X', 'S', 'B', 'O'] },
+  { category: 'Gaya Kerja', color: '#7c3aed', aspects: ['R', 'D', 'C'] },
+  { category: 'Temperamen', color: '#0891b2', aspects: ['Z', 'E', 'K'] },
+  { category: 'Kepatuhan', color: '#b45309', aspects: ['F', 'W'] },
 ];
 
-/** Rendah 1-3, Sedang 4-6, Tinggi 7-9. A zero score sits with Rendah. */
-export function papiZone(score: number): 'Rendah' | 'Sedang' | 'Tinggi' {
-  if (score >= 7) return 'Tinggi';
-  if (score >= 4) return 'Sedang';
-  return 'Rendah';
+const PAPI_ASPECT_ORDER = Object.keys(PAPI_ASPECT_DETAILS) as PapiAspect[];
+
+/** Kamus section 4.5: Low ≤3, Middle 4–5, High ≥6. A zero score is Low. */
+export function papiZone(score: number): PapiBand {
+  if (score >= 6) return 'High';
+  if (score >= 4) return 'Middle';
+  return 'Low';
+}
+
+function papiNarratives(scores: Record<string, unknown>, band: 'High' | 'Low'): PapiNarrativeItem[] {
+  const items = PAPI_ASPECT_ORDER.flatMap((code) => {
+    const detail = PAPI_ASPECT_DETAILS[code];
+    const score = Math.max(0, finiteNumber(scores[code]) ?? 0);
+    const zone = papiZone(score);
+    if (zone !== band) return [];
+    const scoreText = formatDecimal(score);
+    return [{
+      code,
+      name: detail.name,
+      score,
+      scoreText,
+      narrative: band === 'High' ? detail.high : detail.low,
+      heading: `${code} – ${detail.name} (Skor ${scoreText})`,
+    }];
+  });
+  items.sort((left, right) => {
+    const byScore = band === 'High' ? right.score - left.score : left.score - right.score;
+    if (byScore !== 0) return byScore;
+    return PAPI_ASPECT_ORDER.indexOf(left.code) - PAPI_ASPECT_ORDER.indexOf(right.code);
+  });
+  return items;
 }
 
 export function papiSectionModel(scoring: Record<string, any> | null | undefined) {
@@ -364,36 +344,28 @@ export function papiSectionModel(scoring: Record<string, any> | null | undefined
   const groups: PapiGroupView[] = PAPI_LAYOUT.map((group) => ({
     category: group.category,
     color: group.color,
-    rows: group.aspects.map((aspect) => {
-      const raw = finiteNumber(scores[aspect.code]) ?? 0;
-      const score = Math.max(0, raw);
+    rows: group.aspects.map((code) => {
+      const detail = PAPI_ASPECT_DETAILS[code];
+      const score = Math.max(0, finiteNumber(scores[code]) ?? 0);
       return {
-        code: aspect.code,
-        name: aspect.name,
+        code,
+        name: detail.name,
         score,
         scoreText: formatDecimal(score),
         fraction: Math.max(0, Math.min(1, score / 9)),
+        zone: papiZone(score),
       };
     }),
   }));
-
-  const parts: string[] = [];
-  for (const group of groups) {
-    for (const row of group.rows) {
-      const detail = PAPI_ASPECT_DETAILS[row.code];
-      if (!detail) continue;
-      // PAPI_ASPECT_DETAILS: high when score >= 6, low when score <= 3. Scores 4-5 have no narrative.
-      // Bar zones stay Rendah 1-3 / Sedang 4-6 / Tinggi 7-9, so a score of 6 is Sedang on the bar and still uses high.
-      const template = row.score >= 6 ? detail.high : row.score <= 3 ? detail.low : '';
-      if (template) parts.push(withPeriod(`${row.name} (${row.code}): ${template}`));
-    }
-  }
 
   return {
     ringkasan:
       'Asesmen PAPI Kostick mengukur 20 dimensi kebutuhan dan peran yang berkaitan dengan lingkungan profesional dan gaya kerja.',
     groups,
-    narrative: parts.length > 0 ? parts.join(' ') : null,
+    high: papiNarratives(scores, 'High'),
+    low: papiNarratives(scores, 'Low'),
+    highEmpty: PAPI_HIGH_EMPTY,
+    lowEmpty: PAPI_LOW_EMPTY,
   };
 }
 
@@ -473,6 +445,13 @@ export function sectionSummaries(
     title: summaryTitle(result.test_code, result.test_name),
     summary: hasilUtama(result.test_code, result.scoring_data),
   }));
+}
+
+/** The shared closing block stays for any report that includes a non-PAPI result. */
+export function showsClosingSection(results: { test_code?: string | null }[] | null | undefined): boolean {
+  const codes = (results || []).map((result) => normalizeTestCode(result?.test_code)).filter(Boolean);
+  if (codes.length === 0) return true;
+  return codes.some((code) => code !== 'papi');
 }
 
 export const DISC_COLORS = { D: '#D7263D', I: '#E8A317', S: '#2E9E5B', C: '#2D6CDF' } as const;
