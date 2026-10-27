@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { calculateBigFiveScore } from '@/lib/scoring/bigfive';
-import { findDiscTypeInfo } from '@/lib/scoring/disc_dictionary';
 import {
   buildClosingContent,
   bigFiveBars,
@@ -79,27 +78,32 @@ describe('report v3 view model', () => {
     expect(DISC_AXIS_MAX).toBe(18);
   });
 
-  it('uses the stored DISC graph values and existing dictionary narratives', () => {
-    const model = discSectionModel({
-      dominantLabel: 'SC',
-      dominantType: 'PEACEMAKER',
-      hasStressPotential: true,
-      subTraits: { g1: 'Patience', g2: 'Accuracy', g3: 'Cooperativeness' },
-      g1: { D: -8, I: 2, S: 8, C: 1 },
-      g2: { D: -2, I: 0, S: 1, C: 12 },
-      g3: { D: -4, I: 0, S: 6, C: 8 },
-    });
+  it('builds DISC cards from stored graph values and the 40-pattern dictionary', () => {
+    const model = discSectionModel(
+      {
+        subTraits: { g1: 'Patience', g2: 'Accuracy', g3: 'Cooperativeness' },
+        g1: { D: 1, I: 5, S: -1, C: -6 },
+        g2: { D: 1, I: 7, S: -2, C: 2 },
+        g3: { D: -0.5, I: 1, S: -4, C: -4 },
+      },
+      { participantName: 'Selasmawati' }
+    );
 
-    expect(model.kode).toBe('SC');
-    expect(model.label).toBe('PEACEMAKER');
-    expect(model.subtrait).toBe('Cooperativeness');
-    expect(model.stress).toBe('Ya (Terindikasi Penyesuaian Style)');
-    expect(model.graphs[0].values).toEqual({ D: -8, I: 2, S: 8, C: 1 });
-    expect(model.graphs[0].narrative).toBe(findDiscTypeInfo('S')?.description);
-    expect(model.graphs[1].narrative).toBe(findDiscTypeInfo('C')?.description);
-    expect(model.graphs[2].narrative).toBe(findDiscTypeInfo('CS')?.description);
-    expect(model.penempatan).toBe(findDiscTypeInfo('SC')?.jobs);
-    expect(model.profil).toBe(findDiscTypeInfo('SC')?.description);
+    expect(model.graphs.map((graph) => graph.code)).toEqual(['ID', 'ICD', 'I MURNI']);
+    expect(model.graphs.map((graph) => graph.patternName)).toEqual(['NEGOTIATOR', 'ASSESSOR', 'COMMUNICATOR']);
+    expect(model.graphs[0].values).toEqual({ D: 1, I: 5, S: -1, C: -6 });
+    expect(model.graphs[0].subTraitLabel).toBe('Kepercayaan Diri (I/C)');
+    expect(model.blocks).toHaveLength(3);
+    expect(model.blocks[0].header).toBe('DESKRIPSI PERILAKU ADAPTASI — GRAPH 1 (MOST) (NEGOTIATOR)');
+    expect(model.blocks[0].description).toContain('Selasmawati pemimpin integratif');
+    expect(model.blocks[0].jobs).toEqual([
+      'PENGAJARAN',
+      'PELATIHAN',
+      'PENEMU',
+      'PENJUALAN KHUSUS',
+      'KEUANGAN',
+      'HUBUNGAN MASYARAKAT',
+    ]);
     expect(JSON.stringify(model)).not.toMatch(/potret diri|kelebihan|kekurangan/i);
   });
 

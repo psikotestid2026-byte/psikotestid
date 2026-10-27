@@ -1,11 +1,16 @@
 /**
  * View-model for the theaim.id participant report (v3).
- * Formatting and narrative selection only. Narratives are copied from the
- * scoring dictionaries already on the platform; this module does not author new ones.
+ * Formatting and narrative selection only. DISC pattern text comes from the
+ * report dictionary (database when seeded, bundled copy otherwise).
  */
 
-import { discSubTrait, dominantDiscCode, type DiscGraphValues } from '@/lib/scoring/disc';
-import { findDiscTypeInfo } from '@/lib/scoring/disc_dictionary';
+import { bundledDiscReportDictionary, type DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
+import {
+  buildDiscGraphCards,
+  mergeDiscDescriptionBlocks,
+  type DiscDescriptionBlock,
+  type DiscGraphCardModel,
+} from '@/lib/scoring/discReportView';
 import { PAPI_ASPECT_DETAILS, type PapiAspect } from '@/lib/scoring/papi';
 import { MSDT_TYPE_DETAILS, type MsdtDimension } from '@/lib/scoring/msdt';
 import { WPT_CATEGORIES } from '@/lib/scoring/wpt';
@@ -229,98 +234,16 @@ export function coverStatus(code: string | null | undefined): string {
   return isSkippedDetailTest(code) ? 'Selesai (tanpa lampiran)' : 'Selesai';
 }
 
-export interface DiscGraphView {
-  key: 'g1' | 'g2' | 'g3';
-  title: string;
-  subtitle: string;
-  howToRead: string;
-  values: DiscGraphValues;
-  subTrait: string;
-  narrative: string | null;
-}
+export type DiscGraphView = DiscGraphCardModel;
 
-function readGraph(scoring: Record<string, any> | null | undefined, key: 'g1' | 'g2' | 'g3'): DiscGraphValues {
-  const source = scoring?.[key] || {};
-  return {
-    D: finiteNumber(source.D) ?? 0,
-    I: finiteNumber(source.I) ?? 0,
-    S: finiteNumber(source.S) ?? 0,
-    C: finiteNumber(source.C) ?? 0,
-  };
-}
-
-function graphNarrative(values: DiscGraphValues): string | null {
-  const info = findDiscTypeInfo(dominantDiscCode(values));
-  const text = info?.description?.trim();
-  return text || null;
-}
-
-const DISC_GRAPH_META: {
-  key: 'g1' | 'g2' | 'g3';
-  title: string;
-  subtitle: string;
-  howToRead: string;
-  cardTitle: string;
-}[] = [
-  {
-    key: 'g1',
-    title: 'GRAPH 1 · MOST',
-    subtitle: 'Diri Adaptif (Public Self)',
-    howToRead:
-      'Cara membaca: perilaku yang ditampilkan di lingkungan kerja. Titik di atas garis 0 berarti kecenderungan lebih kuat pada dimensi itu, di bawah garis berarti lebih rendah.',
-    cardTitle: 'Perilaku adaptasi · Graph 1 (MOST)',
-  },
-  {
-    key: 'g2',
-    title: 'GRAPH 2 · LEAST',
-    subtitle: 'Diri Alami (Private Self)',
-    howToRead:
-      'Cara membaca: perilaku alami yang cenderung tidak ditampilkan di lingkungan kerja. Penafsiran titik sama dengan Graph 1.',
-    cardTitle: 'Perilaku alami · Graph 2 (LEAST)',
-  },
-  {
-    key: 'g3',
-    title: 'GRAPH 3 · CHANGE',
-    subtitle: 'Persepsi Diri (Perceived Self)',
-    howToRead:
-      'Cara membaca: selisih Graph 1 dan Graph 2. Selisih besar menandakan adanya penyesuaian gaya.',
-    cardTitle: 'Persepsi diri · Graph 3 (CHANGE)',
-  },
-];
-
-export function discSectionModel(scoring: Record<string, any> | null | undefined) {
-  const graphs = DISC_GRAPH_META.map((meta) => {
-    const values = readGraph(scoring, meta.key);
-    const stored = scoring?.subTraits?.[meta.key];
-    const subTrait = String(stored || '').trim() || discSubTrait(values);
-    return {
-      ...meta,
-      values,
-      subTrait,
-      narrative: graphNarrative(values),
-    };
-  });
-
-  const kode = String(scoring?.dominantLabel || '').trim();
-  const primary = kode ? findDiscTypeInfo(kode) : null;
-  const label = primary?.name || String(scoring?.dominantType || '').trim();
-  const profil = primary?.description?.trim() || null;
-  const penempatan = primary?.jobs?.trim() || null;
-  const graph3 = graphs[2]?.narrative || null;
-  const stressFlag =
-    typeof scoring?.hasStressPotential === 'boolean'
-      ? scoring.hasStressPotential
-      : dominantDiscCode(graphs[0].values)[0] !== dominantDiscCode(graphs[1].values)[0];
-
-  return {
-    kode: kode || '-',
-    label: label || '-',
-    subtrait: graphs[2]?.subTrait || '-',
-    stress: stressFlag ? 'Ya (Terindikasi Penyesuaian Style)' : 'Normal',
-    graphs,
-    profil: profil && profil !== graph3 ? profil : null,
-    penempatan,
-  };
+export function discSectionModel(
+  scoring: Record<string, any> | null | undefined,
+  options?: { participantName?: string | null; dictionary?: DiscReportDictionary | null }
+) {
+  const dictionary = options?.dictionary || bundledDiscReportDictionary();
+  const graphs = buildDiscGraphCards(scoring, dictionary);
+  const blocks = mergeDiscDescriptionBlocks(graphs, dictionary, options?.participantName);
+  return { graphs, blocks };
 }
 
 export const BIG_FIVE_DIMENSIONS = [

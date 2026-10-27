@@ -4,6 +4,7 @@ import React from 'react';
 import { sql } from '@/lib/neon';
 import { requireParticipantAccess } from '@/lib/authGuards';
 import { UniversalPdfDocument } from '@/components/reports/ParticipantReport';
+import { loadDiscReportDictionary } from '@/lib/loadDiscReportDictionary';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -46,8 +47,9 @@ export async function GET(
       ORDER BY tr.id ASC
     `;
 
+    const discDictionary = await loadDiscReportDictionary();
     const pdfStream = await renderToStream(
-      <UniversalPdfDocument participant={participant} results={results} />
+      <UniversalPdfDocument participant={participant} results={results} discDictionary={discDictionary} />
     );
 
     const safeName = (participant.full_name || 'Kandidat').replace(/\s+/g, '_');
