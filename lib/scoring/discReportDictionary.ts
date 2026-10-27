@@ -8,11 +8,19 @@ export type DiscGraphKey = 'g1' | 'g2' | 'g3';
 export type DiscTraitDimension = 'D' | 'I' | 'S' | 'C';
 export type DiscSpecialStatusName = 'Transisi' | 'Super Syndrom' | 'Undershift';
 
+export interface DiscPatternPoint {
+  label: string;
+  text: string;
+}
+
 export interface DiscPatternRecord {
   code: string;
   name: string;
   description: string;
   jobs: string[];
+  characteristics?: DiscPatternPoint[] | null;
+  cautions?: string[] | null;
+  motivators?: string | null;
 }
 
 export interface DiscDimensionTraitRecord {
@@ -89,7 +97,15 @@ export function findDiscTypeInfo(
 }
 
 export interface DiscDictionaryRows {
-  patterns: { code: string; name: string; description: string; jobs: unknown }[];
+  patterns: {
+    code: string;
+    name: string;
+    description: string;
+    jobs: unknown;
+    characteristics?: unknown;
+    cautions?: unknown;
+    motivators?: unknown;
+  }[];
   traits: {
     dim: string;
     heading: string;
@@ -126,6 +142,27 @@ function pickList(value: unknown, current: string[] | undefined): string[] {
   return list.length > 0 ? list : current || [];
 }
 
+function asCharacteristicList(value: unknown): DiscPatternPoint[] | null {
+  let source = value;
+  if (typeof value === 'string') {
+    try {
+      source = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(source)) return null;
+  const points: DiscPatternPoint[] = [];
+  for (const item of source) {
+    if (!item || typeof item !== 'object') continue;
+    const label = String((item as { label?: unknown }).label || '').trim();
+    const text = String((item as { text?: unknown }).text || '').trim();
+    if (!label || !text) continue;
+    points.push({ label, text });
+  }
+  return points.length > 0 ? points : null;
+}
+
 const TRAIT_DIMS = new Set<DiscTraitDimension>(['D', 'I', 'S', 'C']);
 const STATUS_NAMES = new Set<DiscSpecialStatusName>(['Transisi', 'Super Syndrom', 'Undershift']);
 const GRAPH_KEYS = new Set<DiscGraphKey>(['g1', 'g2', 'g3']);
@@ -148,11 +185,21 @@ export function mergeDiscDictionary(
       if (!code) continue;
       const current = patterns[code];
       const jobs = asStringList(row.jobs);
+      const characteristics =
+        row.characteristics == null
+          ? current?.characteristics ?? null
+          : asCharacteristicList(row.characteristics) ?? current?.characteristics ?? null;
+      const cautions =
+        row.cautions == null ? current?.cautions ?? null : pickList(row.cautions, current?.cautions ?? undefined);
+      const motivatorText = String(row.motivators ?? '').trim();
       patterns[code] = {
         code,
         name: String(row.name || current?.name || '').trim(),
         description: String(row.description || current?.description || '').trim(),
         jobs: jobs.length > 0 ? jobs : current?.jobs || [],
+        characteristics,
+        cautions: cautions && cautions.length > 0 ? cautions : null,
+        motivators: motivatorText || current?.motivators || null,
       };
     }
   }
@@ -200,14 +247,24 @@ function sqlLiteral(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-function jsonb(value: string[]): string {
+function jsonb(value: unknown): string {
   return `${sqlLiteral(JSON.stringify(value))}::jsonb`;
+}
+
+function jsonbOrNull(value: unknown): string {
+  if (value == null) return 'NULL';
+  return jsonb(value);
+}
+
+function textOrNull(value: string | null | undefined): string {
+  if (value == null || value.trim() === '') return 'NULL';
+  return sqlLiteral(value);
 }
 
 export function renderDiscDictionarySeedSql(): string {
   const patternValues = DISC_PATTERN_LIST.map((row, index) => {
     const suffix = index === DISC_PATTERN_LIST.length - 1 ? '' : ',';
-    return `  (${sqlLiteral(row.code)}, ${sqlLiteral(row.name)}, ${sqlLiteral(row.description)}, ${jsonb(row.jobs)}, TRUE, NOW())${suffix}`;
+    return `  (${sqlLiteral(row.code)}, ${sqlLiteral(row.name)}, ${sqlLiteral(row.description)}, ${jsonb(row.jobs)}, ${jsonbOrNull(row.characteristics)}, ${jsonbOrNull(row.cautions)}, ${textOrNull(row.motivators)}, TRUE, NOW())${suffix}`;
   });
   const traitValues = DISC_DIMENSION_TRAIT_LIST.map((row, index) => {
     const suffix = index === DISC_DIMENSION_TRAIT_LIST.length - 1 ? '' : ',';
@@ -220,17 +277,20 @@ export function renderDiscDictionarySeedSql(): string {
   const codeList = DISC_PATTERN_CODES.map((code) => sqlLiteral(code)).join(', ');
 
   return [
-    '-- Idempotent DISC kamus seed. Strings are copied from refs/disc.md.',
-    '-- Re-running updates section 5 patterns, section 6 traits, and section 4.5 statuses.',
-    '-- Pattern codes outside section 5 are marked inactive. Sub-trait and graph-meaning rows are marked inactive.',
+    '-- Idempotent DISC kamus seed. Strings are copied from refs/disc.md and refs/kamus-tambahan-ID-ICD.md.',
+    '-- Re-running updates section 5 patterns, section 6 traits, section 4.5 statuses, and the I-D / I-C-D supplement.',
+    '-- Pattern codes outside the bundled list are marked inactive. Sub-trait and graph-meaning rows are marked inactive.',
     '',
-    'INSERT INTO disc_patterns (code, name, description, jobs, is_active, updated_at)',
+    'INSERT INTO disc_patterns (code, name, description, jobs, characteristics, cautions, motivators, is_active, updated_at)',
     'VALUES',
     ...patternValues,
     'ON CONFLICT (code) DO UPDATE SET',
     '  name = EXCLUDED.name,',
     '  description = EXCLUDED.description,',
     '  jobs = EXCLUDED.jobs,',
+    '  characteristics = EXCLUDED.characteristics,',
+    '  cautions = EXCLUDED.cautions,',
+    '  motivators = EXCLUDED.motivators,',
     '  is_active = EXCLUDED.is_active,',
     '  updated_at = NOW();',
     '',

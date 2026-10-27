@@ -105,8 +105,14 @@ describe('disc calcType and checkStatus', () => {
     expect(checkDiscStatus(screenshot.g3)).toBeNull();
 
     const dictionary = bundledDiscReportDictionary();
-    expect(findDiscTypeInfo(dictionary, 'I-D')).toMatchObject({ matchedCode: 'I', pattern: { name: 'COMMUNICATOR' } });
-    expect(findDiscTypeInfo(dictionary, 'I-C-D')).toMatchObject({ matchedCode: 'I-C', pattern: { name: 'ASSESSOR' } });
+    expect(findDiscTypeInfo(dictionary, 'I-D')).toMatchObject({
+      matchedCode: 'I-D',
+      pattern: { name: 'PERSUADER / CONVINCER' },
+    });
+    expect(findDiscTypeInfo(dictionary, 'I-C-D')).toMatchObject({
+      matchedCode: 'I-C-D',
+      pattern: { name: 'LEADER / DECISIVE' },
+    });
     expect(findDiscTypeInfo(dictionary, 'I').pattern?.name).toBe('COMMUNICATOR');
   });
 
@@ -141,13 +147,18 @@ describe('disc description blocks', () => {
     const cards = buildDiscGraphCards(screenshot, dictionary);
     const blocks = mergeDiscDescriptionBlocks(cards, dictionary);
     expect(blocks.map((block) => block.header)).toEqual([
-      'Grafik I (Adaptif / Public Self / MOST) · KODE: I-D · COMMUNICATOR',
-      'Grafik II (Alami / Private Self / LEAST) · KODE: I-C-D · ASSESSOR',
+      'Grafik I (Adaptif / Public Self / MOST) · KODE: I-D · PERSUADER / CONVINCER',
+      'Grafik II (Alami / Private Self / LEAST) · KODE: I-C-D · LEADER / DECISIVE',
       'Grafik III (Gabungan / Perceived Self / CHANGE) · KODE: I MURNI · COMMUNICATOR',
     ]);
-    expect(blocks[0].description).toBe(dictionary.patterns.I.description);
-    expect(blocks[1].description).toBe(dictionary.patterns['I-C'].description);
-    expect(blocks[1].jobs).toEqual(dictionary.patterns['I-C'].jobs);
+    expect(blocks[0].description).toBe(dictionary.patterns['I-D'].description);
+    expect(blocks[0].jobs).toEqual([]);
+    expect(blocks[0].characteristics).toHaveLength(5);
+    expect(blocks[0].motivators).toContain('kebebasan dari rutinitas');
+    expect(blocks[1].description).toBe(dictionary.patterns['I-C-D'].description);
+    expect(blocks[1].jobs).toEqual([]);
+    expect(blocks[1].motivators).toBe('');
+    expect(blocks[2].jobs).toEqual(dictionary.patterns.I.jobs);
     expect(blocks.every((block) => block.description.includes('{nama}'))).toBe(false);
   });
 
@@ -229,8 +240,8 @@ describe('disc dictionary matches refs/disc.md', () => {
 
   it('copies every section 5 entry verbatim', () => {
     expect(parsed.patterns.map((row) => row.code)).toEqual(SECTION5_CODES);
-    expect(DISC_PATTERN_CODES).toEqual(SECTION5_CODES);
-    expect(Object.keys(dictionary.patterns)).toEqual(SECTION5_CODES);
+    expect(DISC_PATTERN_CODES).toEqual([...SECTION5_CODES, 'I-D', 'I-C-D']);
+    expect(Object.keys(dictionary.patterns)).toEqual([...SECTION5_CODES, 'I-D', 'I-C-D']);
     for (const row of parsed.patterns) {
       expect(dictionary.patterns[row.code]).toEqual(row);
       expect(markdown).toContain(row.description);
@@ -280,6 +291,11 @@ describe('disc dictionary matches refs/disc.md', () => {
     expect(sql).not.toMatch(/\b(DROP|TRUNCATE|DELETE)\b/i);
     expect(sql).not.toContain('NEGOTIATOR');
     expect(sql).toContain('LOGICAL THINKER');
+    expect(sql).toContain('characteristics = EXCLUDED.characteristics');
+    expect(sql).toContain('PERSUADER / CONVINCER');
+    expect(sql).toContain('LEADER / DECISIVE');
+    expect(sql).toContain("'I-D'");
+    expect(sql).toContain("'I-C-D'");
   });
 
   it('keeps the bundled copy when database rows are empty and overrides a seeded name', () => {
@@ -294,5 +310,72 @@ describe('disc dictionary matches refs/disc.md', () => {
     expect(merged.patterns.I.description).toBe(fallback.patterns.I.description);
     expect(merged.patterns.I.jobs).toEqual(['Journalist']);
     expect(merged.patterns.D.name).toBe('ESTABLISHER');
+    expect(merged.patterns['I-D'].characteristics?.[0]?.label).toBe('Mudah membangun hubungan');
+  });
+});
+
+function splitHeading(text: string, heading: string): [string, string] {
+  const index = text.indexOf(heading);
+  if (index < 0) return [text.trim(), ''];
+  return [text.slice(0, index).trim(), text.slice(index + heading.length).trim()];
+}
+
+function bulletLines(block: string): string[] {
+  return block
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2).trim());
+}
+
+function parseSupplement(markdown: string) {
+  return markdown
+    .split(/\n(?=\d+\. )/)
+    .filter((chunk) => /^\d+\. /.test(chunk.trim()))
+    .map((chunk) => {
+      const head = chunk.match(/^(\d+)\. ([A-Z](?:-[A-Z])*) — ([^\n]+)\n+([\s\S]+)$/);
+      if (!head) throw new Error(`Supplement block did not parse: ${chunk.slice(0, 48)}`);
+      const [, , code, title, rest] = head;
+      const [description, afterIntro] = splitHeading(rest, 'Karakteristik Utama');
+      const [characteristicsBlock, afterCharacteristics] = splitHeading(afterIntro, 'Hal yang Perlu Diperhatikan');
+      const [cautionsBlock, motivatorsBlock] = splitHeading(afterCharacteristics, 'Faktor yang Memotivasi');
+      return {
+        code,
+        name: title.trim().toUpperCase(),
+        description,
+        jobs: [] as string[],
+        characteristics: bulletLines(characteristicsBlock).map((line) => {
+          const splitAt = line.indexOf(': ');
+          return { label: line.slice(0, splitAt), text: line.slice(splitAt + 2) };
+        }),
+        cautions: bulletLines(cautionsBlock),
+        motivators: motivatorsBlock.trim() || null,
+      };
+    });
+}
+
+describe('disc I-D and I-C-D supplement', () => {
+  const markdown = readFileSync(path.join(process.cwd(), 'refs/kamus-tambahan-ID-ICD.md'), 'utf8');
+  const parsed = parseSupplement(markdown);
+  const dictionary = bundledDiscReportDictionary();
+
+  it('copies both official entries verbatim and leaves professions empty', () => {
+    expect(parsed.map((row) => row.code)).toEqual(['I-D', 'I-C-D']);
+    for (const row of parsed) {
+      const pattern = dictionary.patterns[row.code];
+      expect(pattern.name).toBe(row.name);
+      expect(pattern.description).toBe(row.description);
+      expect(pattern.jobs).toEqual([]);
+      expect(pattern.characteristics).toEqual(row.characteristics);
+      expect(pattern.cautions).toEqual(row.cautions);
+      expect(pattern.motivators ?? null).toBe(row.motivators);
+      expect(markdown).toContain(row.description);
+      for (const point of row.characteristics) expect(markdown).toContain(`${point.label}: ${point.text}`);
+      for (const caution of row.cautions) expect(markdown).toContain(caution);
+      if (row.motivators) expect(markdown).toContain(row.motivators);
+    }
+    expect(dictionary.patterns['I-D'].name).toBe('PERSUADER / CONVINCER');
+    expect(dictionary.patterns['I-C-D'].name).toBe('LEADER / DECISIVE');
+    expect(dictionary.patterns['I-C-D'].motivators ?? null).toBeNull();
   });
 });

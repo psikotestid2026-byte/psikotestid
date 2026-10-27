@@ -12,6 +12,7 @@ import {
   discStatusKey,
   findDiscTypeInfo,
   type DiscGraphKey,
+  type DiscPatternPoint,
   type DiscReportDictionary,
   type DiscTraitDimension,
 } from '@/lib/scoring/discReportDictionary';
@@ -37,6 +38,9 @@ export interface DiscDescriptionBlock {
   patternName: string;
   description: string;
   jobs: string[];
+  characteristics: DiscPatternPoint[];
+  cautions: string[];
+  motivators: string;
   status: DiscSpecialStatusName | null;
   arti: string;
   context: string;
@@ -202,6 +206,9 @@ export function mergeDiscDescriptionBlocks(
         patternName: '',
         description: '',
         jobs: [],
+        characteristics: [],
+        cautions: [],
+        motivators: '',
         status: first.status,
         arti: record?.arti || '',
         context: record?.context || '',
@@ -218,6 +225,9 @@ export function mergeDiscDescriptionBlocks(
       patternName,
       description: found.pattern?.description || '',
       jobs: found.pattern?.jobs || [],
+      characteristics: found.pattern?.characteristics || [],
+      cautions: found.pattern?.cautions || [],
+      motivators: found.pattern?.motivators || '',
       status: null,
       arti: '',
       context: '',
