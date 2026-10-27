@@ -4,6 +4,7 @@ import { RIASEC_TYPE_DETAILS } from '@/lib/scoring/riasec';
 import { calculatePapiScore } from '@/lib/scoring/papi';
 import { calculateMsdtScore } from '@/lib/scoring/msdt';
 import { hydrateReportScores, normalizeTestCode, partitionReportResults } from '@/lib/combinedReport';
+import type { DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
 import { isV3TestCode, orderDetailResults } from '@/lib/reportTemplateV3';
 import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
@@ -460,9 +461,11 @@ function renderSpecificTestReport(r: any, idx: number, participant: any) {
 export function UniversalPdfDocument({
   participant,
   results,
+  discDictionary,
 }: {
   participant: any;
   results: any[];
+  discDictionary?: DiscReportDictionary | null;
 }) {
   const list = hydrateReportScores(Array.isArray(results) ? results : [], {
     papi: calculatePapiScore,
@@ -479,7 +482,15 @@ export function UniversalPdfDocument({
           const code = normalizeTestCode(r.test_code);
           const pageKey = r.id || `${code}-${idx}`;
           if (isV3TestCode(code)) {
-            return <V3TestSection key={pageKey} result={r} sectionNumber={idx + 1} />;
+            return (
+              <V3TestSection
+                key={pageKey}
+                result={r}
+                sectionNumber={idx + 1}
+                participantName={participant?.full_name}
+                discDictionary={discDictionary}
+              />
+            );
           }
           return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
         })}

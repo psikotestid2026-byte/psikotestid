@@ -20,6 +20,7 @@ import {
   type BulkActor,
 } from '@/lib/combinedReport';
 import { buildStoredZip } from '@/lib/zipStore';
+import { loadDiscReportDictionary } from '@/lib/loadDiscReportDictionary';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -208,11 +209,12 @@ export async function GET(request: Request) {
     `;
     const grouped = groupResultsByParticipant(resultRows as { participant_id?: number | string | null }[]);
 
+    const discDictionary = await loadDiscReportDictionary();
     const files: { name: string; data: Uint8Array }[] = [];
     for (const participant of participants) {
       const results = grouped.get(String(participant.id)) || [];
       const pdf = await renderToBuffer(
-        <UniversalPdfDocument participant={participant} results={results as any[]} />
+        <UniversalPdfDocument participant={participant} results={results as any[]} discDictionary={discDictionary} />
       );
       files.push({
         name: participantPdfFileName(participant.full_name, Number(participant.id)),
