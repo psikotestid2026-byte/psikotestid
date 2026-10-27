@@ -625,64 +625,9 @@ Ada **dua dokumen spesifikasi historis** (`zlainnya/PROMPT_DISC_GENERATOR.md` â€
 | Potensi Stress (banding kombinasi Grafik I vs II) | Direncanakan | **Tidak diimplementasikan** sebagai field eksplisit (meski secara konsep bisa diturunkan manual dari `type1` vs `type2`) |
 | Status khusus | Sama-sama ada Super Syndrome & Undershift | **Ditambah "Transisi"** (tidak ada di draft v1/v2) sebagai status ketiga |
 
-**Kesimpulan:** dokumen ini (disc.md) mengikuti **kode yang benar-benar berjalan** sebagai kebenaran utama karena itulah yang dipakai untuk memproses peserta sungguhan saat ini. Skoring yang tersimpan tetap memakai `dominantDiscCode` (1 atau 2 huruf). Laporan PDF peserta v3 memakai kamus 40 pola pada bagian berikut, termasuk sub-trait dan rekomendasi jabatan per grafik. Pencocokan jabatan terhadap profil lowongan dari draft lama tetap belum dihitung.
+**Kesimpulan:** dokumen ini (disc.md) mengikuti **kode yang benar-benar berjalan** sebagai kebenaran utama karena itulah yang dipakai untuk memproses peserta sungguhan saat ini. Fitur Sub Trait dan Job Matching dari draft lama **belum ada di produk** â€” bila suatu saat ingin dibangun, draft di `PROMPT_DISC_V2.md` Bagian 6 & 8 bisa dipakai sebagai starting point, tapi perlu dikalibrasi ulang karena tabel skalanya berbeda dari `TABEL` yang sekarang dipakai.
 
 ---
-
-## 9. Kamus 40 Pola Laporan v3
-
-Kode pola pada laporan v3 **bukan** `dominantDiscCode`. Untuk tiap grafik, dimensi dengan nilai di atas 0 diurutkan dari yang tertinggi, lalu digabung (`ID`, `ICD`). Tepat satu dimensi positif, atau tidak ada yang positif, ditulis `X MURNI` (bila tidak ada yang positif, dipakai satu dimensi tertinggi). Empat dimensi positif dipotong menjadi tiga teratas. Nilai yang sama diurutkan D, I, S, C.
-
-Sub-trait tetap pasangan dimensi tertinggi dan terendah, sama seperti `discSubTrait`, lalu ditampilkan dalam bahasa Indonesia. Grafik yang keempat nilainya sama memakai `BALANCE`.
-
-Nama di bawah ini mengikuti lembar 40 pola yang dipakai pada praktik asesmen Indonesia (MOST / LEAST / CHANGE). Beberapa kode berbagi nama karena urutan hurufnya berbeda tetapi polanya sama pada lembar itu.
-
-| Kode | Nama pola |
-|---|---|
-| D MURNI | ESTABLISHER |
-| I MURNI | COMMUNICATOR |
-| S MURNI | SPECIALIST |
-| C MURNI | LOGICAL THINKER |
-| DI | PENGAMBIL KEPUTUSAN |
-| ID | NEGOTIATOR |
-| DS | SELF-MOTIVATED |
-| SD | SELF-MOTIVATED |
-| DC | CHALLENGER |
-| CD | DESIGNER |
-| IS | ADVISOR |
-| SI | ADVISOR |
-| IC | ASSESSOR |
-| CI | ASSESSOR |
-| SC | PEACEMAKER |
-| CS | PERFECTIONIST |
-| DIS | DIRECTOR |
-| DSI | DIRECTOR |
-| IDS | REFORMER |
-| ISD | MOTIVATOR |
-| SDI | DIRECTOR |
-| SID | ADVISOR |
-| DIC | CHANCELLOR |
-| DCI | CHALLENGER |
-| IDC | CONFIDENT & DETERMINED |
-| ICD | ASSESSOR |
-| CDI | CHALLENGER |
-| CID | ASSESSOR |
-| DSC | DIRECTOR |
-| DCS | CHALLENGER |
-| SDC | INQUIRER |
-| SCD | INQUIRER |
-| CDS | CONTEMPLATOR |
-| CSD | PRECISIONIST |
-| ISC | RESPONSIVE & THOUGHTFUL |
-| ICS | RESPONSIVE & THOUGHTFUL |
-| SIC | ADVOCATE |
-| SCI | ADVOCATE |
-| CIS | MEDIATOR |
-| CSI | PRACTITIONER |
-
-Contoh yang harus cocok dengan cuplikan klien: Graph 1 `D1 I5 S-1 C-6` menjadi NEGOTIATOR, kode `ID`, sub-trait Kepercayaan Diri (I/C). Graph 2 `D1 I7 S-2 C2` menjadi ASSESSOR, kode `ICD`, sub-trait Antusiasme (I/S). Graph 3 `D-0,5 I1 S-4 C-4` menjadi COMMUNICATOR, kode `I MURNI`, sub-trait Kepercayaan Diri (I/C).
-
-Salinan bawaan ada di `lib/scoring/discReportDictionary.ts`. Tabel database: `disc_patterns`, `disc_subtraits`, `disc_graph_meanings`. Seed idempoten: `drizzle/seeds/disc_dictionary.sql`.
 
 ## Sumber Dokumen
 

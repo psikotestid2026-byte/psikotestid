@@ -487,7 +487,6 @@ export function UniversalPdfDocument({
                 key={pageKey}
                 result={r}
                 sectionNumber={idx + 1}
-                participantName={participant?.full_name}
                 discDictionary={discDictionary}
               />
             );

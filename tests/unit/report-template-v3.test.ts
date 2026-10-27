@@ -78,33 +78,32 @@ describe('report v3 view model', () => {
     expect(DISC_AXIS_MAX).toBe(18);
   });
 
-  it('builds DISC cards from stored graph values and the 40-pattern dictionary', () => {
-    const model = discSectionModel(
-      {
-        subTraits: { g1: 'Patience', g2: 'Accuracy', g3: 'Cooperativeness' },
-        g1: { D: 1, I: 5, S: -1, C: -6 },
-        g2: { D: 1, I: 7, S: -2, C: 2 },
-        g3: { D: -0.5, I: 1, S: -4, C: -4 },
-      },
-      { participantName: 'Selasmawati' }
-    );
+  it('builds DISC cards from the kamus calcType and section 5 fallback', () => {
+    const model = discSectionModel({
+      g1: { D: 1, I: 5, S: -1, C: -6 },
+      g2: { D: 1, I: 7, S: -2, C: 2 },
+      g3: { D: -0.5, I: 1, S: -4, C: -4 },
+    });
 
-    expect(model.graphs.map((graph) => graph.code)).toEqual(['ID', 'ICD', 'I MURNI']);
-    expect(model.graphs.map((graph) => graph.patternName)).toEqual(['NEGOTIATOR', 'ASSESSOR', 'COMMUNICATOR']);
+    expect(model.graphs.map((graph) => graph.code)).toEqual(['I-D', 'I-C-D', 'I']);
+    expect(model.graphs.map((graph) => graph.kodeText)).toEqual(['I-D', 'I-C-D', 'I MURNI']);
+    expect(model.graphs.map((graph) => graph.patternName)).toEqual(['COMMUNICATOR', 'ASSESSOR', 'COMMUNICATOR']);
+    expect(model.graphs.map((graph) => graph.matchedCode)).toEqual(['I', 'I-C', 'I']);
     expect(model.graphs[0].values).toEqual({ D: 1, I: 5, S: -1, C: -6 });
-    expect(model.graphs[0].subTraitLabel).toBe('Kepercayaan Diri (I/C)');
-    expect(model.blocks).toHaveLength(3);
-    expect(model.blocks[0].header).toBe('DESKRIPSI PERILAKU ADAPTASI — GRAPH 1 (MOST) (NEGOTIATOR)');
-    expect(model.blocks[0].description).toContain('Selasmawati pemimpin integratif');
-    expect(model.blocks[0].jobs).toEqual([
-      'PENGAJARAN',
-      'PELATIHAN',
-      'PENEMU',
-      'PENJUALAN KHUSUS',
-      'KEUANGAN',
-      'HUBUNGAN MASYARAKAT',
+    expect(model.blocks.map((block) => block.code)).toEqual(['I-D', 'I-C-D', 'I']);
+    expect(model.blocks[0].description.startsWith('Seorang yang berhasil dalam membangkitkan antusiasme orang lain.')).toBe(true);
+    expect(model.blocks[1].jobs).toEqual([
+      'Teaching',
+      'Training',
+      'Inventing',
+      'Specialist Selling',
+      'Finance',
+      'Public Relations',
     ]);
-    expect(JSON.stringify(model)).not.toMatch(/potret diri|kelebihan|kekurangan/i);
+    expect(model.traits.dims).toEqual(['I']);
+    expect(model.development.items[0]).toBe('Berkonsentrasi pada tugas');
+    expect(JSON.stringify(model)).not.toContain('Selasmawati');
+    expect(JSON.stringify(model)).not.toContain('{nama}');
   });
 
   it('formats Big Five bars from platform percent, category, and narrative', () => {

@@ -1,8 +1,7 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
-import { Document } from '@react-pdf/renderer';
+import { Document, renderToBuffer, Text } from '@react-pdf/renderer';
 import { DiscSection } from '@/components/reports/v3/DiscSection';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
 
@@ -16,14 +15,14 @@ async function main() {
   const buffer = await renderToBuffer(
     <Document>
       <FlowPage>
-        <DiscSection scoring={scoring} sectionNumber={1} participantName="Selasmawati" />
+        <Text style={{ fontSize: 12, marginBottom: 6, fontFamily: 'Helvetica' }}>Selasmawati</Text>
+        <DiscSection scoring={scoring} sectionNumber={1} />
       </FlowPage>
     </Document>
   );
   const dir = '/opt/cursor/artifacts';
   mkdirSync(dir, { recursive: true });
-  const filePath = path.join(dir, 'contoh-disc-v4.pdf');
-  const { writeFileSync } = await import('node:fs');
+  const filePath = path.join(dir, 'contoh-disc-v5.pdf');
   writeFileSync(filePath, buffer);
   console.log(filePath, buffer.length);
 }

@@ -42,7 +42,7 @@ const chart = StyleSheet.create({
   title: { fontSize: 8, fontFamily: 'Poppins', fontWeight: 'bold', textAlign: 'center', color: INK },
   sub: { fontSize: 6.2, fontFamily: 'Poppins', textAlign: 'center', color: '#4B5563', marginBottom: 2 },
   pattern: {
-    fontSize: 8,
+    fontSize: 7.2,
     fontFamily: 'Poppins',
     fontWeight: 'bold',
     textAlign: 'center',
@@ -50,19 +50,11 @@ const chart = StyleSheet.create({
     marginTop: 3,
   },
   kode: {
-    fontSize: 7.5,
+    fontSize: 7,
     fontFamily: 'Poppins',
     fontWeight: 'bold',
     textAlign: 'center',
     color: CODE_BLUE,
-    marginTop: 1,
-  },
-  subTrait: {
-    fontSize: 6.4,
-    fontFamily: 'Poppins',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    color: INK,
     marginTop: 1,
   },
   legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2, marginBottom: 6 },
@@ -83,9 +75,10 @@ const chart = StyleSheet.create({
   },
   barText: {
     color: '#ffffff',
-    fontSize: 7.4,
+    fontSize: 7.2,
     fontFamily: 'Poppins',
     fontWeight: 'bold',
+    lineHeight: 1.35,
   },
   body: { paddingHorizontal: 8, paddingTop: 6, paddingBottom: 7 },
   paragraph: {
@@ -101,13 +94,12 @@ const chart = StyleSheet.create({
     marginTop: 2,
     marginBottom: 6,
   },
-  smallCaps: {
-    fontSize: 7.2,
+  aspectLabel: {
+    fontSize: 7.4,
     fontFamily: 'Poppins',
     fontWeight: 'bold',
     color: INK,
-    letterSpacing: 0.4,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   jobLabel: {
     fontSize: 7.4,
@@ -127,9 +119,14 @@ const chart = StyleSheet.create({
     marginBottom: 4,
     fontSize: 6.6,
     fontFamily: 'Poppins',
-    fontWeight: 'bold',
     color: INK,
-    letterSpacing: 0.2,
+  },
+  bullet: {
+    fontSize: 8,
+    fontFamily: 'Poppins',
+    color: INK,
+    lineHeight: 1.4,
+    marginBottom: 2,
   },
 });
 
@@ -137,15 +134,15 @@ function DiscGraph({
   title,
   subtitle,
   patternName,
-  code,
-  subTraitLabel,
+  kodeText,
+  status,
   values,
 }: {
   title: string;
   subtitle: string;
   patternName: string;
-  code: string;
-  subTraitLabel: string;
+  kodeText: string | null;
+  status: string | null;
   values: { D: number; I: number; S: number; C: number };
 }) {
   const W = 168;
@@ -208,9 +205,9 @@ function DiscGraph({
           );
         })}
       </Svg>
-      <Text style={chart.pattern}>{patternName}</Text>
-      <Text style={chart.kode}>KODE: {code}</Text>
-      <Text style={chart.subTrait}>Sub-trait: {subTraitLabel}</Text>
+      {status ? <Text style={chart.pattern}>{status}</Text> : null}
+      {!status && patternName ? <Text style={chart.pattern}>{patternName}</Text> : null}
+      {!status && kodeText ? <Text style={chart.kode}>KODE: {kodeText}</Text> : null}
     </View>
   );
 }
@@ -218,15 +215,13 @@ function DiscGraph({
 export function DiscSection({
   scoring,
   sectionNumber,
-  participantName,
   dictionary,
 }: {
   scoring: Record<string, any> | null | undefined;
   sectionNumber: number;
-  participantName?: string | null;
   dictionary?: DiscReportDictionary | null;
 }) {
-  const model = discSectionModel(scoring, { participantName, dictionary });
+  const model = discSectionModel(scoring, { dictionary });
   const kicker = `Bagian Tes ${sectionNumber}`;
 
   return (
@@ -241,10 +236,10 @@ export function DiscSection({
               <DiscGraph
                 key={graph.key}
                 title={graph.title}
-                subtitle={graph.subtitle}
+                subtitle={graph.label}
                 patternName={graph.patternName}
-                code={graph.code}
-                subTraitLabel={graph.subTraitLabel}
+                kodeText={graph.kodeText}
+                status={graph.status}
                 values={graph.values}
               />
             ))}
@@ -265,32 +260,66 @@ export function DiscSection({
             <Text style={chart.barText}>{block.header}</Text>
           </View>
           <View style={chart.body}>
-            {block.meanings.map((meaning, index) => (
-              <Text key={`${block.code}-makna-${index}`} style={chart.paragraph}>
-                {meaning}
-              </Text>
-            ))}
-            <View style={chart.divider} />
-            <Text style={chart.paragraph}>{block.description}</Text>
-            {block.subTraits.map((subTrait) => (
-              <View key={subTrait.pairKey}>
-                <View style={chart.divider} />
-                <Text style={chart.smallCaps}>{subTrait.heading}</Text>
-                <Text style={chart.paragraph}>{subTrait.narrative}</Text>
-              </View>
-            ))}
-            <View style={chart.divider} />
-            <Text style={chart.jobLabel}>REKOMENDASI JABATAN / PROFESI</Text>
-            <View style={chart.chips}>
-              {block.jobs.map((job) => (
-                <Text key={job} style={chart.chip}>
-                  {job}
-                </Text>
-              ))}
-            </View>
+            {block.kind === 'status' ? (
+              <>
+                {block.arti ? <Text style={chart.paragraph}>{block.arti}</Text> : null}
+                {block.context ? <Text style={chart.paragraph}>{block.context}</Text> : null}
+              </>
+            ) : (
+              <>
+                {block.description ? <Text style={chart.paragraph}>{block.description}</Text> : null}
+                {block.jobs.length > 0 ? (
+                  <>
+                    <View style={chart.divider} />
+                    <Text style={chart.jobLabel}>Profesi cocok</Text>
+                    <View style={chart.chips}>
+                      {block.jobs.map((job) => (
+                        <Text key={job} style={chart.chip}>
+                          {job}
+                        </Text>
+                      ))}
+                    </View>
+                  </>
+                ) : null}
+              </>
+            )}
           </View>
         </View>
       ))}
+      <View style={chart.block}>
+        <View wrap={false}>
+          <View style={chart.bar}>
+            <Text style={chart.barText}>{model.traits.heading}</Text>
+          </View>
+          <View style={chart.body}>
+            <Text style={chart.aspectLabel}>{model.traits.aspects[0]?.label}</Text>
+            <Text style={chart.paragraph}>{(model.traits.aspects[0]?.items || []).join(' · ')}</Text>
+          </View>
+        </View>
+        <View style={chart.body}>
+          {model.traits.aspects.slice(1).map((aspect) => (
+            <View key={aspect.label} wrap={false}>
+              <View style={chart.divider} />
+              <Text style={chart.aspectLabel}>{aspect.label}</Text>
+              <Text style={chart.paragraph}>{aspect.items.join(' · ')}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      {model.development.items.length > 0 ? (
+        <View style={chart.block}>
+          <View style={chart.bar} minPresenceAhead={48}>
+            <Text style={chart.barText}>Saran Pengembangan</Text>
+          </View>
+          <View style={chart.body}>
+            {model.development.items.map((item) => (
+              <Text key={item} style={chart.bullet}>
+                • {item}
+              </Text>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </SectionBlock>
   );
 }
