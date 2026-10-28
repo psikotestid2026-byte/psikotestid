@@ -3,6 +3,8 @@
 import { sql } from '@/lib/neon';
 import crypto from 'crypto';
 import { assertCustomer } from '@/lib/authGuards';
+import { loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { msdtTestIdToSkip } from '@/lib/requiredTests';
 
 export async function getClientData(customerId: number) {
   const auth = await assertCustomer();
@@ -252,7 +254,7 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
   }
 
   // 1. Fetch customer_id and assigned test_ids for this campaign
-  const campaignRows = await sql`SELECT customer_id FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
+  const campaignRows = await sql`SELECT customer_id, campaign_mode FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
   if (campaignRows.length === 0) throw new Error('Campaign tidak ditemukan.');
   const customerId = campaignRows[0].customer_id;
 
@@ -262,9 +264,19 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
     JOIN master_tests mt ON ct.test_id = mt.id
     WHERE ct.campaign_id = ${campaignId}
   `;
+  const quotaCtx = await loadRequiredTestsContext();
+  const skipMsdtId = msdtTestIdToSkip(
+    {
+      campaign_mode: campaignRows[0].campaign_mode,
+      tests: assignedTests.map((test) => ({ test_id: Number(test.test_id), code: test.test_code })),
+    },
+    { job_level_code: 'STAF' },
+    quotaCtx
+  );
+  const billableTests = assignedTests.filter((test) => Number(test.test_id) !== skipMsdtId);
 
-  // 2. Validate test quota sufficiency for all assigned tests
-  for (const testItem of assignedTests) {
+  // 2. Validate test quota sufficiency for tests this participant will take
+  for (const testItem of billableTests) {
     const quotaRows = await sql`
       SELECT quota FROM customer_test_quotas 
       WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id} 
@@ -280,8 +292,8 @@ export async function addCandidateToCampaign(campaignId: number, data: { full_na
     }
   }
 
-  // 3. Deduct 1 test quota per assigned test & record transaction ledger
-  for (const testItem of assignedTests) {
+  // 3. Deduct 1 test quota per billable test & record transaction ledger
+  for (const testItem of billableTests) {
     await sql`
       UPDATE customer_test_quotas 
       SET quota = quota - 1 
@@ -345,7 +357,7 @@ export async function bulkImportCandidates(
     throw new Error('Daftar kandidat kosong.');
   }
 
-  const campaignRows = await sql`SELECT customer_id FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
+  const campaignRows = await sql`SELECT customer_id, campaign_mode FROM campaigns WHERE id = ${campaignId} LIMIT 1`;
   if (campaignRows.length === 0) throw new Error('Campaign tidak ditemukan.');
   const customerId = campaignRows[0].customer_id;
 
@@ -355,11 +367,21 @@ export async function bulkImportCandidates(
     JOIN master_tests mt ON ct.test_id = mt.id
     WHERE ct.campaign_id = ${campaignId}
   `;
+  const quotaCtx = await loadRequiredTestsContext();
+  const skipMsdtId = msdtTestIdToSkip(
+    {
+      campaign_mode: campaignRows[0].campaign_mode,
+      tests: assignedTests.map((test) => ({ test_id: Number(test.test_id), code: test.test_code })),
+    },
+    { job_level_code: 'STAF' },
+    quotaCtx
+  );
+  const billableTests = assignedTests.filter((test) => Number(test.test_id) !== skipMsdtId);
 
   const totalRequiredCount = candidates.length;
 
-  // Validate sufficient quotas for all candidates
-  for (const testItem of assignedTests) {
+  // Validate sufficient quotas for tests every imported candidate will take
+  for (const testItem of billableTests) {
     const quotaRows = await sql`
       SELECT quota FROM customer_test_quotas 
       WHERE customer_id = ${customerId} AND test_id = ${testItem.test_id} 
@@ -378,8 +400,8 @@ export async function bulkImportCandidates(
   let count = 0;
   for (const c of candidates) {
     if (c.full_name && c.email) {
-      // Deduct quota per candidate
-      for (const testItem of assignedTests) {
+      // Deduct quota per candidate. Manual import has no jabatan, so the level fallback is STAF.
+      for (const testItem of billableTests) {
         await sql`
           UPDATE customer_test_quotas 
           SET quota = quota - 1 

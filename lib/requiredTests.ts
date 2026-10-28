@@ -45,6 +45,80 @@ export function getRequiredTestsForParticipant<T extends { code?: string | null 
   return campaignTests.filter((test) => String(test.code || '').toLowerCase() !== 'msdt');
 }
 
+export interface QuotaCampaign {
+  campaign_mode?: string | null;
+  tests: Array<{ test_id?: number | null; id?: number | null; code?: string | null }>;
+}
+
+function campaignTestId(test: { test_id?: number | null; id?: number | null }): number {
+  return Number(test.test_id ?? test.id);
+}
+
+/**
+ * MSDT test id to leave out of quota for this participant, or null when MSDT is charged.
+ * Only a MANDATORY_BUNDLE whose level drops MSDT (requires_msdt = false) returns an id.
+ * Callers load `ctx` with loadRequiredTestsContext().
+ */
+export function msdtTestIdToSkip(
+  campaign: QuotaCampaign,
+  participantLike: RequiredTestParticipant,
+  ctx: RequiredTestsContext
+): number | null {
+  if (String(campaign.campaign_mode || '').toUpperCase() !== 'MANDATORY_BUNDLE') return null;
+  const tests = campaign.tests.map((test) => ({
+    id: campaignTestId(test),
+    code: test.code ?? null,
+  }));
+  const msdt = tests.find((test) => String(test.code || '').toLowerCase() === 'msdt');
+  if (!msdt || !Number.isFinite(msdt.id)) return null;
+  const required = getRequiredTestsForParticipant(participantLike, tests, ctx);
+  const kept = required.some((test) => Number(test.id) === msdt.id);
+  return kept ? null : msdt.id;
+}
+
+export interface QuotaSlice {
+  testId: number;
+  code: string;
+  amount: number;
+}
+
+/** Units to reserve per campaign test. MSDT is the count of participants who still need it. */
+export function quotaReservePlan(
+  campaign: QuotaCampaign,
+  participants: RequiredTestParticipant[],
+  ctx: RequiredTestsContext
+): QuotaSlice[] {
+  return campaign.tests
+    .map((test) => {
+      const testId = campaignTestId(test);
+      const code = String(test.code || '').toLowerCase();
+      if (code !== 'msdt') return { testId, code, amount: participants.length };
+      const amount = participants.filter((person) => msdtTestIdToSkip(campaign, person, ctx) == null).length;
+      return { testId, code, amount };
+    })
+    .filter((slice) => slice.amount > 0);
+}
+
+/**
+ * Reserved units vs rows actually inserted. Refund is reserved - used, per test,
+ * so a mixed STAF/leader shortfall returns MSDT only for leaders who were not inserted.
+ */
+export function quotaAfterInsert(
+  campaign: QuotaCampaign,
+  reservedParticipants: RequiredTestParticipant[],
+  insertedParticipants: RequiredTestParticipant[],
+  ctx: RequiredTestsContext
+): Array<QuotaSlice & { reserved: number; used: number; refund: number }> {
+  const reserved = quotaReservePlan(campaign, reservedParticipants, ctx);
+  const usedById = new Map(
+    quotaReservePlan(campaign, insertedParticipants, ctx).map((slice) => [slice.testId, slice.amount])
+  );
+  return reserved.map((slice) => {
+    const used = usedById.get(slice.testId) ?? 0;
+    return { ...slice, reserved: slice.amount, used, refund: slice.amount - used };
+  });
+}
+
 /** Drops an existing MSDT result from a report payload when the level does not require it. */
 export function omitUnrequiredMsdtFromReport<T extends { test_code?: string | null; code?: string | null }>(
   participant: RequiredTestParticipant & { score_breakdown?: any },
