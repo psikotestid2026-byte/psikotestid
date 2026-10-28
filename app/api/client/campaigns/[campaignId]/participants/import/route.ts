@@ -8,7 +8,8 @@ import {
   generateUsernames,
   syntheticParticipantEmail,
 } from '@/lib/usernameGenerator';
-import { resolveJobLevel, type JabatanMapping } from '@/lib/jobFit';
+import { loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { quotaAfterInsert, quotaReservePlan, resolveParticipantLevelCode } from '@/lib/requiredTests';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -62,14 +63,22 @@ export async function POST(
     }
 
     const customerId = Number(auth.campaign.customer_id);
-    const [tests, mappings] = await Promise.all([
+    const [tests, ctx] = await Promise.all([
       sql`SELECT ct.test_id, mt.code FROM campaign_tests ct JOIN master_tests mt ON mt.id = ct.test_id WHERE ct.campaign_id = ${campaignId}`,
-      sql`SELECT jabatan_keyword, match_mode, level_code, priority FROM jabatan_mappings WHERE is_active`,
+      loadRequiredTestsContext(),
     ]);
     if (tests.length === 0) {
       return NextResponse.json({ success: false, error: 'Campaign belum memiliki tes.' }, { status: 400 });
     }
-    const testIds = tests.map((t) => Number(t.test_id));
+    const quotaCampaign = {
+      campaign_mode: auth.campaign.campaign_mode,
+      tests: tests.map((test) => ({ test_id: Number(test.test_id), code: String(test.code || '') })),
+    };
+    const people = rows.map((row) => ({
+      position: row.position,
+      job_level_code: resolveParticipantLevelCode({ position: row.position }, ctx.mappings),
+    }));
+    const reservePlan = quotaReservePlan(quotaCampaign, people, ctx);
 
     // Existing usernames that could clash with generated ones.
     const firstNames = Array.from(
@@ -83,37 +92,41 @@ export async function POST(
     );
     const passwords = rows.map((r) => buildDefaultPassword(r.full_name));
 
-    // Reserve quota atomically (one statement); compensate if any test was short.
-    const needed = rows.length;
-    const reserved = await sql`
-      UPDATE customer_test_quotas
-      SET quota = quota - ${needed}, updated_at = NOW()
-      WHERE customer_id = ${customerId} AND test_id = ANY(${testIds}::int[]) AND quota >= ${needed}
-      RETURNING test_id
-    `;
-    if (reserved.length !== testIds.length) {
-      const reservedIds = reserved.map((r) => Number(r.test_id));
-      if (reservedIds.length > 0) {
-        await sql`
-          UPDATE customer_test_quotas SET quota = quota + ${needed}, updated_at = NOW()
-          WHERE customer_id = ${customerId} AND test_id = ANY(${reservedIds}::int[])
-        `;
+    // Reserve each test by the number of employees who will actually take it.
+    // MSDT is only the leaders; STAF in a mandatory bundle is not charged.
+    const reserved: typeof reservePlan = [];
+    for (const slice of reservePlan) {
+      const updated = await sql`
+        UPDATE customer_test_quotas
+        SET quota = quota - ${slice.amount}, updated_at = NOW()
+        WHERE customer_id = ${customerId} AND test_id = ${slice.testId} AND quota >= ${slice.amount}
+        RETURNING test_id
+      `;
+      if (updated.length === 0) {
+        for (const done of reserved) {
+          await sql`
+            UPDATE customer_test_quotas SET quota = quota + ${done.amount}, updated_at = NOW()
+            WHERE customer_id = ${customerId} AND test_id = ${done.testId}
+          `;
+        }
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Kuota tes tidak mencukupi untuk mengimpor ${rows.length} karyawan. Hubungi admin untuk menambah kuota.`,
+          },
+          { status: 402 }
+        );
       }
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Kuota tes tidak mencukupi untuk mengimpor ${needed} karyawan. Hubungi admin untuk menambah kuota.`,
-        },
-        { status: 402 }
-      );
+      reserved.push(slice);
     }
 
     let insertedCount = 0;
+    let insertedPeople: { job_level_code: string }[] = [];
     try {
       const hashes: string[] = [];
       for (const pw of passwords) hashes.push(await bcrypt.hash(pw, 10));
 
-      const level = rows.map((r) => resolveJobLevel(r.position, mappings as unknown as JabatanMapping[]));
+      const level = people.map((person) => person.job_level_code || '');
       const inserted = await sql`
         INSERT INTO participants
           (campaign_id, access_token, full_name, email, registration_source, status, username,
@@ -135,34 +148,41 @@ export async function POST(
         ) AS t(access_token, full_name, email, username, password_hash, default_password, employee_id,
                position, unit_work, job_level_code)
         ON CONFLICT (username) DO NOTHING
-        RETURNING id
+        RETURNING id, job_level_code
       `;
       insertedCount = inserted.length;
+      insertedPeople = inserted.map((row) => ({ job_level_code: String(row.job_level_code || '') }));
     } catch (err) {
-      // Give the quota back before surfacing the error.
-      await sql`
-        UPDATE customer_test_quotas SET quota = quota + ${needed}, updated_at = NOW()
-        WHERE customer_id = ${customerId} AND test_id = ANY(${testIds}::int[])
-      `;
+      for (const slice of reserved) {
+        await sql`
+          UPDATE customer_test_quotas SET quota = quota + ${slice.amount}, updated_at = NOW()
+          WHERE customer_id = ${customerId} AND test_id = ${slice.testId}
+        `;
+      }
       throw err;
     }
 
-    const shortfall = needed - insertedCount;
-    if (shortfall > 0) {
+    const settled = quotaAfterInsert(quotaCampaign, people, insertedPeople, ctx);
+    for (const slice of settled) {
+      if (slice.refund > 0) {
+        await sql`
+          UPDATE customer_test_quotas SET quota = quota + ${slice.refund}, updated_at = NOW()
+          WHERE customer_id = ${customerId} AND test_id = ${slice.testId}
+        `;
+      }
+    }
+    const used = settled.filter((slice) => slice.used > 0);
+    if (used.length > 0) {
       await sql`
-        UPDATE customer_test_quotas SET quota = quota + ${shortfall}, updated_at = NOW()
-        WHERE customer_id = ${customerId} AND test_id = ANY(${testIds}::int[])
+        INSERT INTO quota_transactions (customer_id, test_id, quantity, type, description)
+        SELECT ${customerId}::int, t.test_id, t.quantity, 'USAGE',
+               ${`Impor karyawan ke campaign "${auth.campaign.title}"`}::text
+        FROM unnest(${used.map((slice) => slice.testId)}::int[], ${used.map((slice) => -slice.used)}::int[])
+          AS t(test_id, quantity)
       `;
     }
 
-    if (insertedCount > 0) {
-      await sql`
-        INSERT INTO quota_transactions (customer_id, test_id, quantity, type, description)
-        SELECT ${customerId}::int, t.test_id, ${-insertedCount}::int, 'USAGE',
-               ${`Impor ${insertedCount} karyawan ke campaign "${auth.campaign.title}"`}::text
-        FROM unnest(${testIds}::int[]) AS t(test_id)
-      `;
-    }
+    const shortfall = rows.length - insertedCount;
 
     return NextResponse.json({
       success: true,
