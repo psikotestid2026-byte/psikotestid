@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ChevronLeft, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
 
 interface QuestionStageProps {
@@ -9,6 +8,7 @@ interface QuestionStageProps {
   onPrev: () => void;
   onNext: () => void;
   brandColor: string;
+  isSubmitting?: boolean;
 }
 
 export function QuestionStage({
@@ -19,8 +19,8 @@ export function QuestionStage({
   onPrev,
   onNext,
   brandColor,
+  isSubmitting = false,
 }: QuestionStageProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const questions = currentTest?.questions || [];
   const questionObj = questions[currentQ];
   const questionData = questionObj?.question_data || {};
@@ -253,6 +253,7 @@ export function QuestionStage({
           <ChevronLeft className="w-5 h-5" /> Kembali
         </button>
         <button
+          type="button"
           onClick={onNext}
           disabled={!isValidToAdvance || isSubmitting}
           className="flex items-center gap-2 text-white font-extrabold text-sm md:text-base px-10 py-3.5 rounded-2xl shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
