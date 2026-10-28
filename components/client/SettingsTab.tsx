@@ -188,7 +188,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
             <Button
               type="submit"
               disabled={loading || isUploadingLogo}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 shadow-md flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               {loading ? 'Menyimpan Perubahan...' : 'Simpan Perubahan Branding Portal'}

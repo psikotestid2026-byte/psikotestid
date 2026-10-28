@@ -450,8 +450,8 @@ function MappingsSection({ data, onChanged }: { data: JobFitAdminData; onChanged
                   <td className="px-2">{m.priority}</td>
                   <td className="px-2"><Badge variant={m.is_active ? 'success' : 'default'}>{m.is_active ? 'Aktif' : 'Nonaktif'}</Badge></td>
                   <td className="px-4 text-right whitespace-nowrap">
-                    <button type="button" className="text-indigo-600 font-bold text-xs mr-3 hover:underline" onClick={() => { setError(null); setEditing({ id: m.id, jabatan_keyword: m.jabatan_keyword, match_mode: m.match_mode, level_code: m.level_code, priority: Number(m.priority) }); }}>Edit</button>
-                    <button type="button" className="text-slate-500 font-bold text-xs hover:underline" onClick={() => toggle(m)}>{m.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button>
+                    <button type="button" className="text-indigo-600 font-bold text-xs mr-3 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600" onClick={() => { setError(null); setEditing({ id: m.id, jabatan_keyword: m.jabatan_keyword, match_mode: m.match_mode, level_code: m.level_code, priority: Number(m.priority) }); }}>Edit</button>
+                    <button type="button" className="text-slate-500 font-bold text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600" onClick={() => toggle(m)}>{m.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button>
                   </td>
                 </tr>
               ))}

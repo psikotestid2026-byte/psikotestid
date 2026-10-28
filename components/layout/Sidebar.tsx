@@ -60,7 +60,11 @@ export function Sidebar({ title, subtitle, userWidget, items, activeTab, onTabCh
       </nav>
 
       <div className="p-4 border-t border-slate-100 mt-auto">
-        <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+        <button
+          type="button"
+          onClick={onLogout}
+          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
+        >
           <LogOut className="w-4 h-4" /> Keluar
         </button>
       </div>

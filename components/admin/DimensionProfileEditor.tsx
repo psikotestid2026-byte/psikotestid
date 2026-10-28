@@ -70,7 +70,7 @@ export function DimensionProfileEditor({
           }}
         />
         {jsonError && <p className="text-xs text-red-600">{jsonError}</p>}
-        <button type="button" className="text-xs font-bold text-indigo-600" onClick={() => setMode('form')}>
+        <button type="button" className="text-xs font-bold text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600" onClick={() => setMode('form')}>
           Kembali ke form
         </button>
       </div>
@@ -162,7 +162,7 @@ export function DimensionProfileEditor({
 
       <button
         type="button"
-        className="text-xs font-bold text-slate-500 hover:text-indigo-600"
+        className="text-xs font-bold text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
         onClick={() => {
           setJsonText(JSON.stringify(value, null, 2));
           setJsonError(null);
