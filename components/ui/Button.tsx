@@ -104,6 +104,29 @@ export function ActionPillLink({
   title,
   onClick,
 }: ActionPillLinkProps) {
+  const content = (
+    <>
+      {icon ? <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span> : null}
+      {children}
+    </>
+  );
+  // API routes (PDF, XLSX downloads) are not pages: a plain anchor avoids
+  // Next.js prefetching them on render and keeps the original download behaviour.
+  if (href.startsWith('/api/')) {
+    return (
+      <a
+        href={href}
+        aria-label={ariaLabel}
+        target={target}
+        rel={rel}
+        title={title}
+        onClick={onClick}
+        className={actionPillClass(variant, size, className)}
+      >
+        {content}
+      </a>
+    );
+  }
   return (
     <Link
       href={href}
@@ -114,8 +137,7 @@ export function ActionPillLink({
       onClick={onClick}
       className={actionPillClass(variant, size, className)}
     >
-      {icon ? <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span> : null}
-      {children}
+      {content}
     </Link>
   );
 }
