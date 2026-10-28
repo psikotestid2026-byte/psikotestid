@@ -5,6 +5,7 @@ import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { MembersCard } from '@/components/ui/MembersCard';
 import { Upload, Building, Image as ImageIcon, CheckCircle2, Loader2, Link as LinkIcon } from 'lucide-react';
 import { updateCustomerBranding } from '@/app/(client)/clients/actions';
 
@@ -195,6 +196,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
           </div>
         </form>
       </Card>
+      <MembersCard />
     </div>
   );
 }

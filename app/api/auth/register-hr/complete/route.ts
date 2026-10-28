@@ -62,7 +62,8 @@ export async function POST(req: Request) {
 
     // Check if email already registered in customers table using RAW SQL
     const existing = await sql`
-      SELECT id FROM customers WHERE LOWER(email) = ${cleanEmail} LIMIT 1
+      SELECT customer_id AS id FROM customer_members WHERE LOWER(email) = ${cleanEmail}
+      UNION ALL SELECT id FROM customers WHERE LOWER(email) = ${cleanEmail} LIMIT 1
     `;
 
     if (existing.length > 0) {
@@ -121,6 +122,12 @@ export async function POST(req: Request) {
     `;
 
     const newCustomerId = newCustomerRows[0].id;
+
+    await sql`
+      INSERT INTO customer_members (customer_id, email, full_name, status)
+      VALUES (${newCustomerId}, ${cleanEmail}, ${contact_name.trim()}, 'ACTIVE')
+      ON CONFLICT DO NOTHING
+    `;
 
     // If welcome bonus credited, record wallet transaction ledger
     if (initialBalance > 0) {

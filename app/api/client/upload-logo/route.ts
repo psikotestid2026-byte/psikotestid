@@ -1,3 +1,4 @@
+import { resolveCustomerByEmail } from '@/lib/customerResolver';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
 
     // Get customer ID from DB using RAW SQL
     const customerRows = await sql`
-      SELECT id FROM customers WHERE LOWER(email) = ${session.user.email.toLowerCase()} LIMIT 1
+      SELECT id FROM customers WHERE id = ${(await resolveCustomerByEmail(session.user.email))?.id ?? 0} LIMIT 1
     `;
 
     if (customerRows.length === 0) {

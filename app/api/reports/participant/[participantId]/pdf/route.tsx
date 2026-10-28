@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { renderToStream } from '@react-pdf/renderer';
 import React from 'react';
 import { sql } from '@/lib/neon';
+import { getBundleCompletion, INCOMPLETE_RESULT_MESSAGE } from '@/lib/bundleCompletion';
 import { requireParticipantAccess } from '@/lib/authGuards';
 import { UniversalPdfDocument } from '@/components/reports/ParticipantReport';
 import { loadDiscReportDictionary } from '@/lib/loadDiscReportDictionary';
@@ -25,7 +26,7 @@ export async function GET(
     if (!auth.ok) return auth.response;
 
     const participantRows = await sql`
-      SELECT p.*, c.title as campaign_title, cust.company_name, cust.logo_url
+      SELECT p.*, c.title as campaign_title, c.campaign_mode, cust.company_name, cust.logo_url
       FROM participants p
       JOIN campaigns c ON p.campaign_id = c.id
       JOIN customers cust ON c.customer_id = cust.id
@@ -46,6 +47,13 @@ export async function GET(
       WHERE tr.participant_id = ${participantId}
       ORDER BY tr.id ASC
     `;
+
+    if (participant.campaign_mode === 'MANDATORY_BUNDLE') {
+      const completion = await getBundleCompletion(participantId);
+      if (!completion.isComplete || participant.scoring_status !== 'DONE') {
+        return NextResponse.json({ error: INCOMPLETE_RESULT_MESSAGE }, { status: 409 });
+      }
+    }
 
     const discDictionary = await loadDiscReportDictionary();
     const pdfStream = await renderToStream(

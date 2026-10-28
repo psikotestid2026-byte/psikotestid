@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
-import { CheckCircle2, ArrowRight, Check, LogOut, ShieldCheck } from 'lucide-react';
+import useSWR from 'swr';
+import { CheckCircle2, ArrowRight, Check, LogOut, ShieldCheck, Loader2 } from 'lucide-react';
+import { clearTabAssessmentBindings } from '@/lib/assessmentSession';
 
 interface TransitionStageProps {
   onConfirm: () => void;
@@ -31,16 +33,37 @@ export function TransitionStage({ onConfirm, brandColor }: TransitionStageProps)
 interface DoneStageProps {
   userName: string;
   customer: any;
+  /** Set for mandatory-bundle campaigns: shows processing state while scoring runs in the background. */
+  bundleParticipantId?: number | null;
+  /** Tab token so status polling stays on this participant after another login overwrites the cookie. */
+  assessmentToken?: string | null;
 }
 
-export function DoneStage({ userName, customer }: DoneStageProps) {
-  const [countdown, setCountdown] = useState(10);
+const statusFetcher = ([url, token]: [string, string | null]) =>
+  fetch(url, {
+    headers: token ? { 'x-assessment-token': token } : {},
+    cache: 'no-store',
+  }).then((res) => res.json());
+
+export function DoneStage({ userName, customer, bundleParticipantId, assessmentToken }: DoneStageProps) {
+  const [countdown, setCountdown] = useState(bundleParticipantId ? 20 : 10);
+
+  // Poll until the background scoring is finished (zero-delay feedback, never blocks the submit).
+  const { data: statusData } = useSWR(
+    bundleParticipantId
+      ? ([`/api/test/status?participant_id=${bundleParticipantId}`, assessmentToken || null] as [string, string | null])
+      : null,
+    statusFetcher,
+    { refreshInterval: (latest) => (latest?.scoring_status === 'DONE' || latest?.scoring_status === 'FAILED' ? 0 : 2000) }
+  );
+  const scoringDone = statusData?.scoring_status === 'DONE';
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          clearTabAssessmentBindings();
           signOut({ callbackUrl: '/clients/test/login' });
           return 0;
         }
@@ -66,13 +89,29 @@ export function DoneStage({ userName, customer }: DoneStageProps) {
           Seluruh jawaban Anda telah tersimpan secara aman dan terkirim otomatis ke Tim HRD <strong>{customer?.company_name || 'Perusahaan'}</strong>.
         </p>
 
+        {bundleParticipantId && (
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-2 text-xs text-slate-700 font-semibold">
+            {scoringDone ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Hasil asesmen Anda sudah diproses dan tersedia bagi HR.</span>
+              </>
+            ) : (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0" />
+                <span>Hasil asesmen Anda sedang diproses. Anda tidak perlu menunggu halaman ini.</span>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-950 font-semibold">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>Sesi otomatis logout dalam <strong>{countdown} detik</strong>...</span>
           </div>
           <span className="font-mono text-xs px-2 py-0.5 bg-emerald-200/80 rounded-md font-bold text-emerald-900">
-            0:0{countdown}
+            {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
           </span>
         </div>
       </div>

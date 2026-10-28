@@ -74,7 +74,7 @@ export default async function TestIndexPage() {
         </div>
         <h2 className="text-xl font-bold text-slate-900 font-display">Portal Asesmen Peserta</h2>
         <p className="text-xs text-slate-600 leading-relaxed">
-          Halo <strong>{session.user.email}</strong>, Anda telah berhasil masuk menggunakan Google SSO.
+          Halo <strong>{session.user.name || session.user.email}</strong>, Anda telah berhasil masuk.
         </p>
         <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-2xl text-xs text-sky-900 font-extrabold leading-snug">
           Silakan buka <strong>Link Sesi Ujian Spesifik</strong> yang diberikan oleh Tim HR perusahaan Anda (contoh: <code className="bg-sky-100 px-1 py-0.5 rounded font-mono">/clients/test/1</code>).

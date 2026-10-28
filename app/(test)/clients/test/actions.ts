@@ -2,6 +2,7 @@
 
 import { sql } from '@/lib/neon';
 import { requireSession } from '@/lib/authGuards';
+import { getAssessmentSecret, mintAssessmentToken, verifyAssessmentToken } from '@/lib/assessmentToken';
 
 export async function submitBiodata(
   campaignId: number,
@@ -53,7 +54,11 @@ export async function submitBiodata(
           started_at = COALESCE(started_at, NOW())
       WHERE id = ${existing.id}
     `;
-    return { success: true, participantId: existing.id };
+    return {
+      success: true,
+      participantId: existing.id,
+      assessmentToken: mintForParticipant(Number(existing.id), Number(campaignId), cleanEmail, fullName),
+    };
   }
 
   // 3. Candidate is NOT yet registered
@@ -128,7 +133,23 @@ export async function submitBiodata(
     RETURNING id
   `;
 
-  return { success: true, participantId: result[0].id };
+  return {
+    success: true,
+    participantId: result[0].id,
+    assessmentToken: mintForParticipant(Number(result[0].id), Number(campaignId), cleanEmail, fullName),
+  };
+}
+
+function mintForParticipant(participantId: number, campaignId: number, email: string, name: string) {
+  try {
+    return mintAssessmentToken(
+      { pid: participantId, cid: campaignId, email, name },
+      getAssessmentSecret()
+    );
+  } catch (err) {
+    console.error('Failed to mint assessment token:', err);
+    return null;
+  }
 }
 
 export async function submitTestResult(participantId: number, testId: number, answers: any) {
@@ -204,5 +225,49 @@ export async function markTestCompleted(participantId: number) {
     });
   } catch (err) {
     console.error('Failed to load email helper in markTestCompleted:', err);
+  }
+}
+
+/**
+ * Mandatory-bundle participants are pre-registered by HR, so there is no biodata step.
+ * Marks the session as started (idempotent) and confirms the caller owns the participant.
+ */
+export async function startBundleSession(participantId: number, assessmentToken?: string) {
+  const verified = assessmentToken
+    ? verifyAssessmentToken(assessmentToken, safeAssessmentSecret())
+    : null;
+  if (assessmentToken) {
+    if (!verified || verified.pid !== Number(participantId)) throw new Error('Unauthorized');
+    const rows = await sql`
+      UPDATE participants
+      SET started_at = COALESCE(started_at, NOW())
+      WHERE id = ${participantId}
+        AND campaign_id = ${verified.cid}
+        AND LOWER(email) = ${verified.email}
+      RETURNING id, status
+    `;
+    if (!rows.length) throw new Error('Unauthorized');
+    return { success: true, alreadyCompleted: rows[0].status === 'COMPLETED' };
+  }
+
+  const auth = await requireSession();
+  if (!auth.ok) throw new Error('Unauthorized');
+
+  const rows = await sql`
+    UPDATE participants
+    SET started_at = COALESCE(started_at, NOW())
+    WHERE id = ${participantId} AND LOWER(email) = ${auth.email}
+    RETURNING id, status
+  `;
+  if (!rows.length) throw new Error('Unauthorized');
+
+  return { success: true, alreadyCompleted: rows[0].status === 'COMPLETED' };
+}
+
+function safeAssessmentSecret(): string {
+  try {
+    return getAssessmentSecret();
+  } catch {
+    return '';
   }
 }

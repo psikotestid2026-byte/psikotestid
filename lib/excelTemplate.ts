@@ -74,3 +74,55 @@ export function parseCandidateExcelFile(arrayBuffer: ArrayBuffer): Array<{
     return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Employee import (username/password login, no email required)
+// ---------------------------------------------------------------------------
+
+export interface EmployeeImportRow {
+  full_name: string;
+  position: string;
+  unit_work: string;
+  employee_id: string;
+}
+
+export function downloadEmployeeExcelTemplate() {
+  const worksheetData = [
+    ['Nama Lengkap', 'Jabatan', 'Unit Kerja', 'ID Karyawan (Opsional)'],
+    ['Budi Santoso', 'STAF KEUANGAN', 'PUSAT', 'K-0001'],
+    ['Siti Rahma', 'MANAJER PROGRAM', 'BANDUNG', 'K-0002'],
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  worksheet['!cols'] = [{ wch: 30 }, { wch: 40 }, { wch: 22 }, { wch: 22 }];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Karyawan');
+  XLSX.writeFile(workbook, 'Template_Karyawan_PsikoTest.xlsx');
+}
+
+export function parseEmployeeExcelFile(arrayBuffer: ArrayBuffer): EmployeeImportRow[] {
+  try {
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) return [];
+    const rows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 });
+    if (rows.length <= 1) return [];
+
+    const result: EmployeeImportRow[] = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !Array.isArray(row)) continue;
+      const fullName = row[0] ? String(row[0]).trim() : '';
+      if (!fullName) continue;
+      result.push({
+        full_name: fullName,
+        position: row[1] ? String(row[1]).trim() : '',
+        unit_work: row[2] ? String(row[2]).trim() : '',
+        employee_id: row[3] ? String(row[3]).trim() : '',
+      });
+    }
+    return result;
+  } catch (err) {
+    console.error('Error parsing employee Excel file:', err);
+    return [];
+  }
+}

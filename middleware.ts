@@ -28,8 +28,10 @@ export default withAuth(
     }
 
     // 2b. Redirect authenticated candidates away from candidate login page
-    if (path === '/clients/test/login' && token) {
-      const callbackUrl = req.nextUrl.searchParams.get('callbackUrl') || '/clients/test';
+    if (path === '/clients/test/login' && token && req.nextUrl.searchParams.get('switch') !== '1') {
+      const rawCallback = req.nextUrl.searchParams.get('callbackUrl') || '';
+      // Same-site relative paths only (prevents open redirects).
+      const callbackUrl = rawCallback.startsWith('/') && !rawCallback.startsWith('//') ? rawCallback : '/clients/test';
       return NextResponse.redirect(new URL(callbackUrl, req.url));
     }
 

@@ -90,6 +90,7 @@ export const campaigns = pgTable('campaigns', {
   description: text('description'),
   access_token: varchar('access_token', { length: 100 }).unique(),
   registration_type: varchar('registration_type', { length: 50 }).default('OPEN_LINK'),
+  campaign_mode: varchar('campaign_mode', { length: 30 }).default('OPEN'), // OPEN | MANDATORY_BUNDLE
   valid_until: timestamp('valid_until', { withTimezone: true }),
   max_participants: integer('max_participants').default(0),
   is_active: boolean('is_active').default(true),
@@ -104,6 +105,7 @@ export const campaigns = pgTable('campaigns', {
 export const campaign_tests = pgTable('campaign_tests', {
   campaign_id: integer('campaign_id').notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
   test_id: integer('test_id').notNull().references(() => master_tests.id, { onDelete: 'cascade' }),
+  order_number: integer('order_number').default(0),
 }, (table) => {
   return {
     pk: primaryKey({ columns: [table.campaign_id, table.test_id] }),
@@ -124,6 +126,27 @@ export const participants = pgTable('participants', {
   gender: varchar('gender', { length: 20 }),
   date_of_birth: timestamp('date_of_birth', { withTimezone: true }),
   status: varchar('status', { length: 50 }).default('RUNNING'),
+  username: varchar('username', { length: 100 }).unique(),
+  password_hash: varchar('password_hash', { length: 255 }),
+  default_password: varchar('default_password', { length: 100 }),
+  employee_id: varchar('employee_id', { length: 50 }),
+  position: varchar('position', { length: 255 }),
+  unit_work: varchar('unit_work', { length: 255 }),
+  education: varchar('education', { length: 50 }),
+  employment_status: varchar('employment_status', { length: 100 }),
+  job_level_code: varchar('job_level_code', { length: 50 }),
+  reset_count: integer('reset_count').notNull().default(0),
+  scoring_status: varchar('scoring_status', { length: 30 }).default('PENDING'), // PENDING | PROCESSING | DONE | FAILED
+  scoring_error: text('scoring_error'),
+  scored_at: timestamp('scored_at', { withTimezone: true }),
+  recommendation_status: varchar('recommendation_status', { length: 50 }), // DIREKOMENDASIKAN | DIPERTIMBANGKAN | TIDAK_DIREKOMENDASIKAN
+  system_recommendation_status: varchar('system_recommendation_status', { length: 50 }),
+  recommendation_score: numeric('recommendation_score', { precision: 5, scale: 2 }),
+  score_breakdown: jsonb('score_breakdown'),
+  assessor_override: boolean('assessor_override').default(false),
+  assessor_notes: text('assessor_notes'),
+  assessor_email: varchar('assessor_email', { length: 255 }),
+  assessor_updated_at: timestamp('assessor_updated_at', { withTimezone: true }),
   started_at: timestamp('started_at', { withTimezone: true }),
   completed_at: timestamp('completed_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -387,4 +410,41 @@ export const admins = pgTable('admins', {
   status: varchar('status', { length: 20 }).default('ACTIVE'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const jabatan_level_profiles = pgTable('jabatan_level_profiles', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  level_code: varchar('level_code', { length: 50 }).notNull().unique(),
+  level_name: varchar('level_name', { length: 100 }).notNull(),
+  sort_order: integer('sort_order').notNull().default(0),
+  weight_wpt: numeric('weight_wpt', { precision: 4, scale: 3 }).notNull().default('0.200'),
+  weight_disc: numeric('weight_disc', { precision: 4, scale: 3 }).notNull().default('0.200'),
+  weight_bigfive: numeric('weight_bigfive', { precision: 4, scale: 3 }).notNull().default('0.200'),
+  weight_papi: numeric('weight_papi', { precision: 4, scale: 3 }).notNull().default('0.200'),
+  weight_msdt: numeric('weight_msdt', { precision: 4, scale: 3 }).notNull().default('0.200'),
+  min_score_wpt: numeric('min_score_wpt', { precision: 5, scale: 2 }).notNull().default('50'),
+  min_score_disc: numeric('min_score_disc', { precision: 5, scale: 2 }).notNull().default('50'),
+  min_score_bigfive: numeric('min_score_bigfive', { precision: 5, scale: 2 }).notNull().default('50'),
+  min_score_papi: numeric('min_score_papi', { precision: 5, scale: 2 }).notNull().default('50'),
+  min_score_msdt: numeric('min_score_msdt', { precision: 5, scale: 2 }).notNull().default('50'),
+  threshold_recommended: numeric('threshold_recommended', { precision: 5, scale: 2 }).notNull().default('75'),
+  threshold_considered: numeric('threshold_considered', { precision: 5, scale: 2 }).notNull().default('55'),
+  dimension_profiles: jsonb('dimension_profiles').notNull().default({}),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const jabatan_mappings = pgTable('jabatan_mappings', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  jabatan_keyword: varchar('jabatan_keyword', { length: 255 }).notNull(),
+  match_mode: varchar('match_mode', { length: 20 }).notNull().default('PREFIX'), // PREFIX | CONTAINS
+  level_code: varchar('level_code', { length: 50 }).notNull().references(() => jabatan_level_profiles.level_code),
+  priority: integer('priority').notNull().default(100),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => {
+  return {
+    keyword_mode_uq: unique().on(table.jabatan_keyword, table.match_mode),
+  };
 });

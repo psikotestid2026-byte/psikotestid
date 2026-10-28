@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Eye, FileDown, Search, Users } from 'lucide-react';
+import { Pagination } from '@/components/ui/Pagination';
+import { Eye, FileDown, Search, Users, X } from 'lucide-react';
 import { BulkPdfExportButton } from '@/components/reports/BulkPdfExportButton';
 
 interface ParticipantsTabProps {
@@ -25,6 +26,9 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
   const activeData = clientData || data;
   const [searchQuery, setSearchQuery] = useState('');
   const [campaignFilter, setCampaignFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const participants = activeData?.participants || [];
   const campaigns = Array.isArray(activeData?.campaigns) ? activeData.campaigns : [];
@@ -32,17 +36,43 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
   const selectedCampaignId =
     campaignFilter === 'ALL' ? null : Number(campaignFilter) || null;
 
-  const filteredParticipants = participants.filter((p: any) => {
-    const matchesCampaign = campaignFilter === 'ALL' || String(p.campaign_id) === campaignFilter;
-    if (!matchesCampaign) return false;
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      p.full_name?.toLowerCase().includes(q) ||
-      p.email?.toLowerCase().includes(q) ||
-      p.campaign_title?.toLowerCase().includes(q)
-    );
-  });
+  const filteredParticipants = useMemo(() => {
+    return participants.filter((p: any) => {
+      const matchesCampaign = campaignFilter === 'ALL' || String(p.campaign_id) === campaignFilter;
+      if (!matchesCampaign) return false;
+
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'COMPLETED' ? p.status === 'COMPLETED' : p.status !== 'COMPLETED');
+      if (!matchesStatus) return false;
+
+      if (!searchQuery.trim()) return true;
+      const terms = searchQuery.trim().toLowerCase().split(/\s+/);
+      const targetStr = `${p.full_name || ''} ${p.email || ''} ${p.campaign_title || ''} ${p.id || ''}`.toLowerCase();
+      return terms.every((term) => targetStr.includes(term));
+    });
+  }, [participants, campaignFilter, statusFilter, searchQuery]);
+
+  const total = filteredParticipants.length;
+  const paginatedParticipants = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredParticipants.slice(start, start + limit);
+  }, [filteredParticipants, page, limit]);
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setPage(1);
+  };
+
+  const handleCampaignFilterChange = (val: string) => {
+    setCampaignFilter(val);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setPage(1);
+  };
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
@@ -58,7 +88,7 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
           <select
             aria-label="Sesi untuk unduhan ZIP"
             value={campaignFilter}
-            onChange={(event) => setCampaignFilter(event.target.value)}
+            onChange={(event) => handleCampaignFilterChange(event.target.value)}
             className="py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             <option value="ALL">Semua sesi (batch)</option>
@@ -80,41 +110,64 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
 
       {/* Main Participants List Table Card */}
       <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">
-        <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-600" />
             <h3 className="font-display font-bold text-sm text-slate-800">
-              Daftar Hasil Kandidat ({filteredParticipants.length} Peserta)
+              Daftar Hasil Kandidat ({total} Peserta)
             </h3>
           </div>
 
-          {/* Search Filter Input */}
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama, email, campaign..."
-              className="pl-9 w-full py-1.5 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Filter Status Ujian */}
+            <select
+              aria-label="Filter status ujian"
+              value={statusFilter}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
+              className="py-1.5 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              <option value="ALL">Semua Status Ujian</option>
+              <option value="COMPLETED">Selesai</option>
+              <option value="NOT_COMPLETED">Belum Mengerjakan</option>
+            </select>
+
+            {/* Search Filter Input by Terms */}
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Cari kata kunci (nama, email, sesi)..."
+                className="pl-9 pr-8 w-full py-1.5 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         <Table
-          headers={['Nama Kandidat', 'Email', 'Sesi (Campaign)', 'Status Ujian', 'Aksi Laporan']}
-          isEmpty={filteredParticipants.length === 0}
+          headers={['No', 'Nama Kandidat', 'Email', 'Sesi (Campaign)', 'Status Ujian', 'Aksi Laporan']}
+          isEmpty={paginatedParticipants.length === 0}
+          emptyMessage="Tidak ada data kandidat yang cocok dengan filter / pencarian."
         >
-          {filteredParticipants.map((p: any) => {
-            const testResults = Array.isArray(p.test_results)
-              ? p.test_results
-              : typeof p.test_results === 'string'
-              ? JSON.parse(p.test_results)
-              : [];
-            const discResult = testResults.find((r: any) => r.scoring_data);
+          {paginatedParticipants.map((p: any, idx: number) => {
+            const rowNumber = (page - 1) * limit + idx + 1;
 
             return (
               <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                <td className="py-4 px-4 font-semibold text-slate-500 text-xs w-12 text-center">
+                  {rowNumber}
+                </td>
+
                 <td className="py-4 px-4 font-bold text-slate-900 text-xs">{p.full_name}</td>
 
                 <td className="py-4 px-4 text-slate-600 font-mono text-xs">{p.email}</td>
@@ -151,6 +204,18 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
             );
           })}
         </Table>
+
+        <Pagination
+          page={page}
+          limit={limit}
+          total={total}
+          pageSizes={[10, 25, 50, 100]}
+          onPageChange={(p) => setPage(Math.max(1, p))}
+          onLimitChange={(l) => {
+            setLimit(l);
+            setPage(1);
+          }}
+        />
       </Card>
     </div>
   );

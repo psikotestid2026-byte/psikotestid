@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -10,13 +10,30 @@ import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
 import { QuestionStage } from '@/components/assessment/QuestionStage';
 import { TransitionStage, DoneStage } from '@/components/assessment/CompletionStage';
-import { submitBiodata, submitTestResult, markTestCompleted } from '../actions';
+import { BundleProgress } from '@/components/assessment/BundleProgress';
+import {
+  buildParticipantSubmitBody,
+  clearTabAssessmentBindings,
+  decideTabSession,
+  legacyProgressStorageKey,
+  progressStorageKey,
+  tabSessionStorageKey,
+} from '@/lib/assessmentSession';
+import { submitBiodata, startBundleSession } from '../actions';
 
 export default function AssessmentClient({ initialData }: { initialData: any }) {
   const { campaign, customer, tests, sessionUser, existingParticipant } = initialData;
+  const isBundle = campaign?.campaign_mode === 'MANDATORY_BUNDLE';
+  const [completedTestIds, setCompletedTestIds] = useState<number[]>(initialData.completedTestIds || []);
+  // Mandatory bundle: resume at the first test that has no stored result on the server.
+  const firstPendingIdx = Math.max(
+    0,
+    tests.findIndex((t: any) => !(initialData.completedTestIds || []).includes(t.id))
+  );
   const [stage, setStage] = useState('welcome');
+  const [isStarting, setIsStarting] = useState(false);
   const [participantId, setParticipantId] = useState<number | null>(existingParticipant?.id || null);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(isBundle ? firstPendingIdx : 0);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<any>({});
   const [timeLeft, setTimeLeft] = useState(0);
@@ -30,6 +47,16 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const [email, setEmail] = useState(initialEmail);
   const [phoneNumber, setPhoneNumber] = useState(existingParticipant?.phone_number || '');
   const [nik, setNik] = useState(existingParticipant?.nik || '');
+  const [resetCount, setResetCount] = useState(Number(existingParticipant?.reset_count ?? 0));
+  const [boundReady, setBoundReady] = useState(false);
+  const [tabToken, setTabToken] = useState<string | null>(initialData.assessmentToken || null);
+  const [sessionHalt, setSessionHalt] = useState<{ boundName: string } | null>(null);
+  const tokenRef = useRef<string | null>(initialData.assessmentToken || null);
+  const boundParticipantRef = useRef<number | null>(existingParticipant?.id ? Number(existingParticipant.id) : null);
+  const boundNameRef = useRef(initialName);
+  const boundEmailRef = useRef(String(initialEmail || '').toLowerCase());
+  const haltedRef = useRef(false);
+  const ignoreIncomingRef = useRef(false);
 
   // Fullscreen event listener
   useEffect(() => {
@@ -52,22 +79,158 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     }
   };
 
-  // LocalStorage Key based on campaign and participant/email
-  const storageKey = campaign?.id ? `psikotest_progress_c${campaign.id}_${email || participantId || 'guest'}` : null;
+  const rememberBound = (token: string, participantIdValue: number, name: string, emailValue: string) => {
+    tokenRef.current = token;
+    setTabToken(token);
+    boundParticipantRef.current = participantIdValue;
+    boundNameRef.current = name;
+    boundEmailRef.current = emailValue.trim().toLowerCase();
+    if (campaign?.id) {
+      try {
+        sessionStorage.setItem(tabSessionStorageKey(Number(campaign.id)), token);
+      } catch {
+        // Private mode can reject storage; the in-memory refs still guard this render.
+      }
+    }
+  };
+
+  const haltTab = (boundName: string) => {
+    haltedRef.current = true;
+    ignoreIncomingRef.current = true;
+    setSessionHalt({ boundName: boundName || 'peserta ini' });
+  };
+
+  // Bind this tab before paint so a refreshed cookie cannot render the other participant.
+  useLayoutEffect(() => {
+    if (!campaign?.id) {
+      setBoundReady(true);
+      return;
+    }
+    const campaignId = Number(campaign.id);
+    let stored: string | null = null;
+    try {
+      stored = sessionStorage.getItem(tabSessionStorageKey(campaignId));
+    } catch {
+      stored = null;
+    }
+    const decision = decideTabSession({
+      storedToken: stored,
+      incomingToken: initialData.assessmentToken || null,
+      campaignId,
+    });
+
+    if (decision.action === 'stop') {
+      haltTab(decision.boundName);
+      setBoundReady(true);
+      return;
+    }
+
+    if (decision.action === 'anonymous') {
+      tokenRef.current = null;
+      setTabToken(null);
+      setBoundReady(true);
+      return;
+    }
+
+    rememberBound(decision.token, decision.participantId, decision.name, decision.email);
+    if (!decision.cookieMismatch) {
+      setBoundReady(true);
+      return;
+    }
+
+    ignoreIncomingRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/test/session', {
+          headers: { 'x-assessment-token': decision.token },
+          cache: 'no-store',
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        const ownedId = Number(data?.participant?.id);
+        if (!res.ok || ownedId !== decision.participantId) {
+          haltTab(decision.name);
+          setBoundReady(true);
+          return;
+        }
+        const owned = data.participant;
+        setParticipantId(ownedId);
+        setUserName(owned.full_name || decision.name);
+        setEmail(owned.email || decision.email);
+        setPhoneNumber(owned.phone_number || '');
+        setNik(owned.nik || '');
+        setResetCount(Number(owned.reset_count || 0));
+        setCompletedTestIds(Array.isArray(data.completedTestIds) ? data.completedTestIds.map(Number) : []);
+        if (String(owned.status) === 'COMPLETED') setStage('already_completed');
+        setBoundReady(true);
+      } catch {
+        if (cancelled) return;
+        haltTab(decision.name);
+        setBoundReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // The binding is decided once per mount. Later cookie changes are watched separately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaign?.id]);
+
+  useEffect(() => {
+    if (!boundReady || !boundEmailRef.current) return;
+    let stop = false;
+    const checkCookie = async () => {
+      try {
+        const res = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const cookieEmail = String(data?.user?.email || '').toLowerCase();
+        if (stop || !cookieEmail || cookieEmail === boundEmailRef.current) return;
+        ignoreIncomingRef.current = true;
+        if (!tokenRef.current) haltTab(boundNameRef.current);
+      } catch {
+        // A failed poll must not switch the participant.
+      }
+    };
+    const timer = window.setInterval(checkCookie, 2500);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') checkCookie();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [boundReady]);
+
+  // Progress is keyed by the bound participant id, not the shared login cookie.
+  const storageKey =
+    boundReady && !sessionHalt && campaign?.id && participantId
+      ? progressStorageKey(Number(campaign.id), Number(participantId), resetCount)
+      : null;
 
   // Restore state from LocalStorage on mount
   useEffect(() => {
     if (!storageKey || typeof window === 'undefined') return;
     try {
-      const saved = localStorage.getItem(storageKey);
+      const legacyKey =
+        campaign?.id && email
+          ? legacyProgressStorageKey(Number(campaign.id), email, resetCount)
+          : null;
+      const saved = localStorage.getItem(storageKey) || (legacyKey ? localStorage.getItem(legacyKey) : null);
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed.participantId && Number(parsed.participantId) !== Number(participantId)) {
+          return;
+        }
         if (parsed.answers && Object.keys(parsed.answers).length > 0) {
           setAnswers(parsed.answers);
         }
         if (parsed.participantId) setParticipantId(parsed.participantId);
         if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
-          setActiveIdx(parsed.activeIdx);
+          setActiveIdx(isBundle ? Math.max(parsed.activeIdx, firstPendingIdx) : parsed.activeIdx);
         }
         // Guard against stale progress: if the saved question-count "fingerprint"
         // for the active test no longer matches the freshly loaded question list
@@ -92,17 +255,22 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             setAnswers(parsed.answers);
           }
           if (parsed.participantId) setParticipantId(parsed.participantId);
+          const behindServer = isBundle && typeof parsed.activeIdx === 'number' && parsed.activeIdx < firstPendingIdx;
           if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
-            setActiveIdx(parsed.activeIdx);
+            setActiveIdx(isBundle ? Math.max(parsed.activeIdx, firstPendingIdx) : parsed.activeIdx);
           }
-          if (typeof parsed.currentQ === 'number') {
+          if (typeof parsed.currentQ === 'number' && !behindServer) {
             const maxQ = savedTest?.questions?.length ? savedTest.questions.length - 1 : 0;
             setCurrentQ(Math.min(parsed.currentQ, Math.max(maxQ, 0)));
           }
-          if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
+          if (behindServer) {
+            // Local progress points at a test already stored on the server: restart at the next test.
+            setCurrentQ(0);
+            setStage('instruction');
+          } else if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
             setStage(parsed.stage);
           }
-          if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0) {
+          if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0 && !behindServer) {
             setTimeLeft(parsed.timeLeft);
           }
         }
@@ -117,7 +285,8 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
 
   // Persist state to LocalStorage when changed
   useEffect(() => {
-    if (!storageKey || typeof window === 'undefined') return;
+    if (!storageKey || typeof window === 'undefined' || sessionHalt) return;
+    if (boundParticipantRef.current && Number(participantId) !== boundParticipantRef.current) return;
     if (stage === 'done') {
       localStorage.removeItem(storageKey);
       return;
@@ -139,9 +308,17 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     } catch (e) {
       console.error('Failed to save progress to localStorage:', e);
     }
-  }, [storageKey, answers, participantId, activeIdx, currentQ, stage, timeLeft, tests]);
+  }, [storageKey, answers, participantId, activeIdx, currentQ, stage, timeLeft, tests, sessionHalt]);
 
   useEffect(() => {
+    if (!boundReady || ignoreIncomingRef.current || haltedRef.current) return;
+    const incomingId = Number(existingParticipant?.id || 0);
+    if (boundParticipantRef.current && incomingId && incomingId !== boundParticipantRef.current) {
+      ignoreIncomingRef.current = true;
+      if (!tokenRef.current) haltTab(boundNameRef.current);
+      return;
+    }
+
     if (existingParticipant?.full_name) {
       setUserName(existingParticipant.full_name);
     } else if (sessionUser?.name && !userName) {
@@ -155,9 +332,14 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     }
 
     if (existingParticipant?.id) {
-      setParticipantId(existingParticipant.id);
+      const nextId = Number(existingParticipant.id);
+      setParticipantId(nextId);
+      boundParticipantRef.current = nextId;
     }
-  }, [sessionUser, existingParticipant]);
+    if (existingParticipant?.reset_count != null) {
+      setResetCount(Number(existingParticipant.reset_count) || 0);
+    }
+  }, [sessionUser, existingParticipant, boundReady, userName, email]);
 
   useEffect(() => {
     if (customer?.brand_color) {
@@ -166,20 +348,24 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   }, [customer]);
 
   useEffect(() => {
+    if (!boundReady || ignoreIncomingRef.current || haltedRef.current) return;
+    const incomingId = Number(existingParticipant?.id || 0);
+    if (boundParticipantRef.current && incomingId && incomingId !== boundParticipantRef.current) return;
     if (existingParticipant?.status === 'COMPLETED') {
       setStage('already_completed');
     }
-  }, [existingParticipant]);
+  }, [existingParticipant, boundReady]);
 
   useEffect(() => {
     let timer: any;
     const currentTestCode = tests[activeIdx]?.code?.toLowerCase();
 
-    if (stage === 'questions' && timeLeft > 0) {
+    if (!haltedRef.current && !sessionHalt && stage === 'questions' && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
+            if (haltedRef.current) return 0;
             if (currentTestCode === 'wpt') {
               toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
               finishActiveTest();
@@ -193,7 +379,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [stage, timeLeft, activeIdx, tests]);
+  }, [stage, timeLeft, activeIdx, tests, sessionHalt]);
 
   if (!campaign || tests.length === 0) {
     return (
@@ -201,6 +387,39 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-800 mb-2">Campaign Tidak Ditemukan</h1>
           <p className="text-slate-500">Sesi asesmen ini mungkin sudah tidak aktif atau link tidak valid.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!boundReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <p className="text-sm font-semibold text-slate-500">Memuat sesi asesmen...</p>
+      </div>
+    );
+  }
+
+  if (sessionHalt) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="bg-white rounded-3xl border border-amber-200 p-8 text-center shadow-xl max-w-lg w-full space-y-4">
+          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-extrabold text-slate-900 font-display">Sesi Berubah</h2>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            Sesi berganti ke akun lain. Silakan login ulang sebagai <strong>{sessionHalt.boundName}</strong>.
+          </p>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Jawaban di tab ini tidak dikirim dan tidak menyelesaikan tes untuk akun yang lain.
+          </p>
+          <Link
+            href="/clients/test/login?switch=1"
+            className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-slate-900 text-white font-bold text-xs rounded-2xl"
+          >
+            <LogOut className="w-4 h-4" /> Login ulang sebagai {sessionHalt.boundName}
+          </Link>
         </div>
       </div>
     );
@@ -222,10 +441,38 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         }
         return;
       }
-      setParticipantId(res.participantId);
+      const nextId = Number(res.participantId);
+      setParticipantId(nextId);
+      if (res.assessmentToken) {
+        rememberBound(res.assessmentToken, nextId, userName, email);
+      } else {
+        boundParticipantRef.current = nextId;
+      }
       setStage('instruction');
     } catch (err: any) {
       toast.error('Gagal mendaftar: ' + err.message);
+    }
+  };
+
+  const handleBundleStart = async () => {
+    if (!participantId || isStarting) return;
+    setIsStarting(true);
+    try {
+      const res = await startBundleSession(participantId, tokenRef.current || undefined);
+      if (res.alreadyCompleted) {
+        setStage('already_completed');
+        return;
+      }
+      // Everything already stored on the server but not yet marked complete: finalize directly.
+      if (completedTestIds.length >= tests.length) {
+        await finalizeBundle();
+        return;
+      }
+      setStage('instruction');
+    } catch (err: any) {
+      toast.error('Gagal memulai asesmen: ' + (err?.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -285,41 +532,65 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     return val !== undefined && val !== null && String(val).trim() !== '';
   };
 
+  const postSubmit = async (input: { testId?: number; answers?: unknown; action?: 'mark_completed' }) => {
+    const built = buildParticipantSubmitBody({
+      halted: haltedRef.current,
+      boundParticipantId: boundParticipantRef.current,
+      token: tokenRef.current,
+      testId: input.testId,
+      answers: input.answers,
+      action: input.action,
+    });
+    if (!built.ok) {
+      if (built.reason === 'halted') haltTab(boundNameRef.current);
+      throw new Error('Sesi asesmen tidak valid. Jawaban tidak dikirim.');
+    }
+    const res = await fetch('/api/test/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(built.body),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (result?.code === 'SESSION_MISMATCH') {
+      haltTab(boundNameRef.current);
+    }
+    return { res, result };
+  };
+
+  const finalizeBundle = async () => {
+    const { res, result } = await postSubmit({ action: 'mark_completed' });
+    if (!res.ok || !result.success) {
+      throw new Error(result.error || 'Gagal menyelesaikan asesmen.');
+    }
+    setStage('done');
+  };
+
   const finishActiveTest = async () => {
     const t = tests[activeIdx];
     try {
-      if (participantId) {
-        const res = await fetch('/api/test/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            participant_id: participantId,
-            test_id: t.id,
-            answers: answers[t.id] || {},
-          }),
-        });
-
-        const result = await res.json();
-        if (!res.ok || !result.success) {
-          toast.error(result.error || 'Gagal menyimpan jawaban tes.');
-          return;
-        }
+      if (haltedRef.current) return;
+      const { res, result } = await postSubmit({
+        testId: t.id,
+        answers: answers[t.id] || {},
+      });
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'Gagal menyimpan jawaban tes.');
+        return;
       }
 
       toast.success(`Jawaban tes ${t.name || 'psikotes'} berhasil disimpan!`);
+      const nowCompleted = completedTestIds.includes(t.id) ? completedTestIds : [...completedTestIds, t.id];
+      setCompletedTestIds(nowCompleted);
 
       if (activeIdx < tests.length - 1) {
         setStage('transition');
+      } else if (isBundle) {
+        await finalizeBundle();
       } else {
-        if (participantId) {
-          await fetch('/api/test/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'mark_completed',
-              participant_id: participantId,
-            }),
-          });
+        const { res, result } = await postSubmit({ action: 'mark_completed' });
+        if (!res.ok || !result.success) {
+          toast.error(result.error || 'Gagal menyelesaikan asesmen.');
+          return;
         }
         setStage('done');
       }
@@ -370,9 +641,26 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-indigo-600" /> : <Maximize className="w-3.5 h-3.5 text-slate-600" />}
             <span className="hidden sm:inline">{isFullscreen ? 'Keluar Fullscreen' : 'Layar Penuh'}</span>
           </button>
-          <button onClick={() => signOut({ callbackUrl: '/clients/test/login' })} className="text-xs text-red-500 font-bold hover:underline">Logout</button>
+          {userName ? (
+            <span className="hidden sm:inline max-w-[140px] truncate text-xs font-bold text-slate-600" title={userName}>
+              {userName}
+            </span>
+          ) : null}
+          <button
+            onClick={() => {
+              clearTabAssessmentBindings();
+              signOut({ callbackUrl: '/clients/test/login' });
+            }}
+            className="text-xs text-red-500 font-bold hover:underline"
+          >
+            Logout
+          </button>
         </div>
       </header>
+
+      {isBundle && ['instruction', 'questions', 'transition'].includes(stage) && (
+        <BundleProgress tests={tests} activeIdx={activeIdx} completedTestIds={completedTestIds} brandColor={brandColor} />
+      )}
 
       {stage === 'questions' && (
         <div className="bg-white border-b border-slate-100 px-4 py-2 sticky top-14 z-40">
@@ -413,7 +701,17 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       )}
 
       <main className="flex-1 flex items-center justify-center p-4">
-        {stage === 'welcome' && <WelcomeStage customer={customer} tests={tests} onNext={() => setStage('biodata')} brandColor={brandColor} sessionUser={sessionUser} />}
+        {stage === 'welcome' && (
+          <WelcomeStage
+            customer={customer}
+            tests={tests}
+            onNext={isBundle && participantId ? handleBundleStart : () => setStage('biodata')}
+            brandColor={brandColor}
+            sessionUser={sessionUser}
+            ctaLabel={isBundle && participantId ? (completedTestIds.length > 0 ? 'Lanjutkan Asesmen' : 'Mulai Asesmen') : undefined}
+            isStarting={isStarting}
+          />
+        )}
         {stage === 'biodata' && (
           <BiodataStage 
             userName={userName} 
@@ -432,7 +730,14 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         {stage === 'instruction' && <InstructionStage currentTest={currentTest} onStart={startTest} brandColor={brandColor} />}
         {stage === 'questions' && <QuestionStage currentTest={currentTest} currentQ={currentQ} answers={answers} setAnswerValue={setAnswerValue} onPrev={prevQuestion} onNext={nextQuestion} brandColor={brandColor} />}
         {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} />}
-        {stage === 'done' && <DoneStage userName={userName} customer={customer} />}
+        {stage === 'done' && (
+          <DoneStage
+            userName={userName}
+            customer={customer}
+            bundleParticipantId={isBundle ? participantId : null}
+            assessmentToken={tabToken}
+          />
+        )}
 
         {stage === 'kuota_habis' && (
           <div className="flex flex-col max-w-lg w-full animate-fadeUp">
@@ -543,7 +848,10 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: '/clients/test/login' })}
+                  onClick={() => {
+                  clearTabAssessmentBindings();
+                  signOut({ callbackUrl: '/clients/test/login' });
+                }}
                   className="w-full sm:w-1/2 py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all"
                 >
                   <LogOut className="w-4 h-4 text-slate-400" /> Logout / Keluar Sesi

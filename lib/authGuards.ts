@@ -2,6 +2,7 @@ import { getServerSession, Session } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
 import { NextResponse } from 'next/server';
+import { resolveCustomerByEmail } from '@/lib/customerResolver';
 
 export type AuthFailure = { ok: false; response: NextResponse };
 export type SessionOk = { ok: true; session: Session; email: string };
@@ -47,12 +48,8 @@ export async function requireCustomer() {
   const base = await requireSession();
   if (!base.ok) return base;
 
-  const customers = await sql`
-    SELECT id, email, role, status, company_name, balance
-    FROM customers
-    WHERE LOWER(email) = ${base.email}
-    LIMIT 1
-  `;
+  const resolved = await resolveCustomerByEmail(base.email);
+  const customers = resolved ? [resolved] : [];
 
   if (customers.length === 0) {
     return {
@@ -62,6 +59,60 @@ export async function requireCustomer() {
   }
 
   return { ...base, customer: customers[0] };
+}
+
+/**
+ * Admin or the customer that owns the campaign. Used by campaign-level exports,
+ * result tables and credential downloads.
+ */
+export async function requireCampaignAccess(campaignId: number) {
+  const base = await requireSession();
+  if (!base.ok) return base;
+
+  if (!Number.isInteger(campaignId) || campaignId <= 0) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ success: false, error: 'Campaign tidak valid.' }, { status: 400 }),
+    };
+  }
+
+  const [campaigns, admins, memberCustomer] = await Promise.all([
+    sql`
+      SELECT c.id, c.title, c.customer_id, c.campaign_mode, LOWER(cust.email) AS customer_email, cust.company_name
+      FROM campaigns c
+      JOIN customers cust ON cust.id = c.customer_id
+      WHERE c.id = ${campaignId}
+      LIMIT 1
+    `,
+    sql`SELECT id, role, status FROM admins WHERE LOWER(email) = ${base.email} LIMIT 1`,
+    resolveCustomerByEmail(base.email),
+  ]);
+
+  const campaign = campaigns[0];
+  if (!campaign) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ success: false, error: 'Campaign tidak ditemukan.' }, { status: 404 }),
+    };
+  }
+
+  const admin = admins[0];
+  const isAdmin =
+    !!admin &&
+    (admin.role === 'SUPERADMIN' || admin.role === 'ADMIN') &&
+    String(admin.status || 'ACTIVE').toUpperCase() !== 'INACTIVE';
+  const isOwnerCustomer =
+    campaign.customer_email === base.email ||
+    (!!memberCustomer && String(memberCustomer.id) === String(campaign.customer_id));
+
+  if (!isAdmin && !isOwnerCustomer) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ success: false, error: 'Akses ditolak.' }, { status: 403 }),
+    };
+  }
+
+  return { ...base, campaign, isAdmin, isOwnerCustomer };
 }
 
 /** Admin, owning customer, or the participant themself may access a participant's data. */
@@ -98,7 +149,10 @@ export async function requireParticipantAccess(participantId: number) {
     admins.length > 0 &&
     (admins[0].role === 'SUPERADMIN' || admins[0].role === 'ADMIN');
 
-  const isOwnerCustomer = String(row.customer_email || '').toLowerCase() === base.email;
+  const memberCustomer = await resolveCustomerByEmail(base.email);
+  const isOwnerCustomer =
+    String(row.customer_email || '').toLowerCase() === base.email ||
+    (!!memberCustomer && String(memberCustomer.id) === String(row.customer_id));
   const isParticipant = String(row.participant_email || '') === base.email;
 
   if (!isAdmin && !isOwnerCustomer && !isParticipant) {

@@ -1,3 +1,4 @@
+import { resolveCustomerByEmail } from '@/lib/customerResolver';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -13,7 +14,7 @@ export async function GET() {
     }
 
     const customer = await sql`
-      SELECT id, balance FROM customers WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, balance FROM customers WHERE id = ${(await resolveCustomerByEmail(session.user.email))?.id ?? 0} LIMIT 1
     `;
 
     if (customer.length === 0) {
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
       sql`
         SELECT id, company_name, contact_name, phone_number 
         FROM customers 
-        WHERE email = ${session.user.email} 
+        WHERE id = ${(await resolveCustomerByEmail(session.user.email))?.id ?? 0}
         LIMIT 1
       `,
       paymentMethodQuery,
