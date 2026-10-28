@@ -3,6 +3,8 @@
 import { sql } from '@/lib/neon';
 import { requireSession } from '@/lib/authGuards';
 import { getAssessmentSecret, mintAssessmentToken, verifyAssessmentToken } from '@/lib/assessmentToken';
+import { loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { msdtTestIdToSkip } from '@/lib/requiredTests';
 
 export async function submitBiodata(
   campaignId: number,
@@ -15,7 +17,7 @@ export async function submitBiodata(
 
   // 1. Fetch Campaign information
   const campaignRows = await sql`
-    SELECT id, customer_id, registration_type, is_active, valid_until 
+    SELECT id, customer_id, registration_type, campaign_mode, is_active, valid_until 
     FROM campaigns 
     WHERE id = ${campaignId} 
     LIMIT 1
@@ -82,10 +84,21 @@ export async function submitBiodata(
     return { success: false, error: 'NO_TESTS_ASSIGNED' };
   }
 
+  const quotaCtx = await loadRequiredTestsContext();
+  const skipMsdtId = msdtTestIdToSkip(
+    {
+      campaign_mode: campaign.campaign_mode,
+      tests: assignedTests.map((test) => ({ test_id: Number(test.test_id), code: test.test_code })),
+    },
+    { job_level_code: 'STAF' },
+    quotaCtx
+  );
+  const billableTests = assignedTests.filter((test) => Number(test.test_id) !== skipMsdtId);
+
   // Track deducted test IDs for rollback in case of partial failure
   const deductedTestIds: number[] = [];
 
-  for (const testItem of assignedTests) {
+  for (const testItem of billableTests) {
     // Atomic update: only decrements quota if quota >= 1
     const updateResult = await sql`
       UPDATE customer_test_quotas 
