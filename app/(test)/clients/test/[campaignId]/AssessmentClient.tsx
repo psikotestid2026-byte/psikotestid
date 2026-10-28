@@ -23,6 +23,7 @@ import {
   acquireSubmitLock,
   planConfirmNext,
   planQuestionAdvance,
+  planTimeExpiry,
   releaseSubmitLock,
   routeToMissingTest,
   type SubmitLock,
@@ -51,6 +52,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const submitLockRef = useRef<SubmitLock>({ held: false });
   const questionStepRef = useRef(false);
   const confirmLockRef = useRef(false);
+  const timeUpHandledRef = useRef(false);
 
   const initialName = existingParticipant?.full_name || sessionUser?.name || '';
   const initialEmail = existingParticipant?.email || sessionUser?.email || '';
@@ -377,31 +379,36 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   }, [existingParticipant, boundReady]);
 
   useEffect(() => {
-    let timer: any;
-    const currentTestCode = tests[activeIdx]?.code?.toLowerCase();
-
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (!haltedRef.current && !sessionHalt && stage === 'questions' && timeLeft > 0) {
       timer = setInterval(() => {
-        let expired = false;
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            expired = true;
-            return 0;
-          }
-          return prev - 1;
-        });
-        if (!expired) return;
-        clearInterval(timer);
-        if (haltedRef.current) return;
-        if (currentTestCode === 'wpt') {
-          toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
-          void finishActiveTest();
-        } else {
-          toast.warning('Waktu alokasi pengerjaan telah selesai, namun Anda masih dapat meninjau dan menyelesaikan jawaban sebelum menekan tombol Selesai.');
-        }
+        setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1));
       }, 1000);
     }
     return () => clearInterval(timer);
+  }, [stage, timeLeft, activeIdx, tests, sessionHalt]);
+
+  useEffect(() => {
+    if (stage !== 'questions' || timeLeft > 0) {
+      timeUpHandledRef.current = false;
+      return;
+    }
+    const plan = planTimeExpiry({
+      stage,
+      timeLeft,
+      testCode: tests[activeIdx]?.code,
+      alreadyFired: timeUpHandledRef.current,
+      locked: submitLockRef.current.held,
+      halted: haltedRef.current || Boolean(sessionHalt),
+    });
+    if (plan === 'none') return;
+    timeUpHandledRef.current = true;
+    if (plan === 'submit-wpt') {
+      toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
+      void finishActiveTest();
+      return;
+    }
+    toast.warning('Waktu alokasi pengerjaan telah selesai, namun Anda masih dapat meninjau dan menyelesaikan jawaban sebelum menekan tombol Selesai.');
   }, [stage, timeLeft, activeIdx, tests, sessionHalt]);
 
   if (!campaign || tests.length === 0) {

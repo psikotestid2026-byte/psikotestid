@@ -3,6 +3,7 @@ import {
   acquireSubmitLock,
   planConfirmNext,
   planQuestionAdvance,
+  planTimeExpiry,
   releaseSubmitLock,
   routeToMissingTest,
   type SubmitLock,
@@ -51,5 +52,23 @@ describe('assessment submit lock', () => {
     expect(routeToMissingTest(tests, ['not-a-test'])).toBeNull();
     expect(routeToMissingTest(tests, [])).toBeNull();
     expect(routeToMissingTest(tests, 'PAPI')).toBeNull();
+  });
+
+  it('auto-submits WPT exactly once when the timer reaches zero, and not from inside the tick', () => {
+    const running = {
+      stage: 'questions',
+      timeLeft: 5,
+      testCode: 'wpt',
+      alreadyFired: false,
+      locked: false,
+      halted: false,
+    };
+    expect(planTimeExpiry(running)).toBe('none');
+    expect(planTimeExpiry({ ...running, timeLeft: 0 })).toBe('submit-wpt');
+    expect(planTimeExpiry({ ...running, timeLeft: 0, alreadyFired: true })).toBe('none');
+    expect(planTimeExpiry({ ...running, timeLeft: 0, locked: true })).toBe('none');
+    expect(planTimeExpiry({ ...running, timeLeft: 0, halted: true })).toBe('none');
+    expect(planTimeExpiry({ ...running, timeLeft: 0, testCode: 'disc' })).toBe('warn');
+    expect(planTimeExpiry({ ...running, timeLeft: 0, stage: 'instruction' })).toBe('none');
   });
 });

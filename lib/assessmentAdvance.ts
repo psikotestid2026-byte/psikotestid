@@ -41,6 +41,26 @@ export function planConfirmNext(locked: boolean): 'advance' | 'ignore' {
   return locked ? 'ignore' : 'advance';
 }
 
+/**
+ * What to do when the on-screen timer reaches 0:00.
+ * The decision is made from rendered state, not from inside a setState updater,
+ * so a deferred updater cannot swallow the WPT auto-submit.
+ * alreadyFired / locked keep it to a single submit.
+ */
+export function planTimeExpiry(input: {
+  stage: string;
+  timeLeft: number;
+  testCode: string | null | undefined;
+  alreadyFired: boolean;
+  locked: boolean;
+  halted: boolean;
+}): 'submit-wpt' | 'warn' | 'none' {
+  if (input.halted || input.alreadyFired || input.locked) return 'none';
+  if (input.stage !== 'questions' || input.timeLeft !== 0) return 'none';
+  if (String(input.testCode || '').trim().toLowerCase() === 'wpt') return 'submit-wpt';
+  return 'warn';
+}
+
 export interface MissingTestRoute {
   index: number;
   code: string;
