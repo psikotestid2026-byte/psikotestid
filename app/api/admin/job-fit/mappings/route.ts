@@ -54,6 +54,11 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, error: 'ID tidak valid.' }, { status: 400 });
     }
     const levelCode = typeof body?.level_code === 'string' ? body.level_code : null;
+    const keyword = typeof body?.jabatan_keyword === 'string' && body.jabatan_keyword.trim() ? body.jabatan_keyword.trim().toUpperCase() : null;
+    const matchMode = MATCH_MODES.includes(body?.match_mode) ? (body.match_mode as string) : null;
+    if (keyword && keyword.length > 255) {
+      return NextResponse.json({ success: false, error: 'Kata kunci terlalu panjang.' }, { status: 400 });
+    }
     const priority = body?.priority != null && Number.isInteger(Number(body.priority)) ? Number(body.priority) : null;
     const isActive = typeof body?.is_active === 'boolean' ? body.is_active : null;
 
@@ -65,6 +70,8 @@ export async function PATCH(req: Request) {
     const rows = await sql`
       UPDATE jabatan_mappings SET
         level_code = COALESCE(${levelCode}, level_code),
+        jabatan_keyword = COALESCE(${keyword}, jabatan_keyword),
+        match_mode = COALESCE(${matchMode}, match_mode),
         priority = COALESCE(${priority}::int, priority),
         is_active = COALESCE(${isActive}::boolean, is_active)
       WHERE id = ${id}
@@ -73,7 +80,10 @@ export async function PATCH(req: Request) {
     if (!rows.length) return NextResponse.json({ success: false, error: 'Pemetaan tidak ditemukan.' }, { status: 404 });
     invalidateScoringConfigCache();
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === '23505') {
+      return NextResponse.json({ success: false, error: 'Kata kunci dengan mode yang sama sudah ada.' }, { status: 409 });
+    }
     console.error('PATCH admin/job-fit/mappings error:', err);
     return NextResponse.json({ success: false, error: 'Gagal memperbarui pemetaan jabatan.' }, { status: 500 });
   }

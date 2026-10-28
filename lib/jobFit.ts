@@ -136,6 +136,27 @@ export function resolveJobLevel(
   return fallback;
 }
 
+/** Like resolveJobLevel, but also reports which mapping matched (null when the fallback was used). */
+export function explainJobLevel(
+  position: string | null | undefined,
+  mappings: JabatanMapping[],
+  fallback: string = FALLBACK_LEVEL_CODE
+): { level_code: string; matched: JabatanMapping | null } {
+  const normalized = normalizePosition(position);
+  if (!normalized) return { level_code: fallback, matched: null };
+
+  const ordered = [...mappings].sort(
+    (a, b) => a.priority - b.priority || b.jabatan_keyword.length - a.jabatan_keyword.length
+  );
+  for (const mapping of ordered) {
+    const keyword = String(mapping.jabatan_keyword || '').toUpperCase();
+    if (!keyword) continue;
+    const hit = mapping.match_mode === 'CONTAINS' ? normalized.includes(keyword) : normalized.startsWith(keyword);
+    if (hit) return { level_code: mapping.level_code, matched: mapping };
+  }
+  return { level_code: fallback, matched: null };
+}
+
 // ---------------------------------------------------------------------------
 // Per-instrument normalisation (0-100)
 // ---------------------------------------------------------------------------
@@ -353,4 +374,68 @@ export function levelProfileFromRow(row: Record<string, any>): LevelProfile {
     threshold_considered: num(row.threshold_considered, 55),
     dimension_profiles: (asObject(row.dimension_profiles) as DimensionProfiles) || {},
   };
+}
+
+// ---------------------------------------------------------------------------
+// Fit details (actual vs ideal), stored alongside the breakdown for reporting
+// ---------------------------------------------------------------------------
+
+export interface FitDetails {
+  wpt?: { iq: number; floor: number; ceil: number };
+  disc?: { dominant: string; ideal: string[] };
+  bigfive?: Partial<Record<'E' | 'A' | 'C' | 'N' | 'O', { percent: number; weight: number }>>;
+  papi?: { high: Array<{ aspect: string; value: number }>; low: Array<{ aspect: string; value: number }> };
+  msdt?: { type: string; fit: number };
+}
+
+/** Collects the raw values behind each normalised score so the report can explain the match. */
+export function buildFitDetails(scoringByCode: Partial<Record<string, unknown>>, profile: LevelProfile): FitDetails {
+  const details: FitDetails = {};
+
+  const wpt = asObject(scoringByCode.wpt);
+  const iq = finite(wpt?.iq) ?? finite(wpt?.score);
+  if (iq != null) {
+    details.wpt = {
+      iq,
+      floor: profile.dimension_profiles.wpt?.floor ?? DEFAULT_WPT_FLOOR,
+      ceil: profile.dimension_profiles.wpt?.ceil ?? DEFAULT_WPT_CEIL,
+    };
+  }
+
+  const disc = asObject(scoringByCode.disc);
+  const dominant = String(disc?.dominantLabel || '').toUpperCase().replace(/[^DISC]/g, '');
+  if (dominant) {
+    details.disc = {
+      dominant,
+      ideal: (profile.dimension_profiles.disc?.ideal || []).map((l) => String(l).toUpperCase()),
+    };
+  }
+
+  const dims = asObject(asObject(scoringByCode.bigfive)?.dimensions);
+  if (dims) {
+    const weights = profile.dimension_profiles.bigfive || {};
+    details.bigfive = {};
+    for (const dim of ['E', 'A', 'C', 'N', 'O'] as const) {
+      const percent = finite(dims[dim]?.percent);
+      const weight = finite(weights[dim]);
+      if (percent != null && weight != null && weight !== 0) details.bigfive[dim] = { percent, weight };
+    }
+  }
+
+  const scores = asObject(asObject(scoringByCode.papi)?.scores);
+  if (scores) {
+    const cfg = profile.dimension_profiles.papi || {};
+    const pick = (list?: string[]) =>
+      (list || [])
+        .map((aspect) => ({ aspect, value: finite(scores[aspect]) }))
+        .filter((x): x is { aspect: string; value: number } => x.value != null);
+    details.papi = { high: pick(cfg.high), low: pick(cfg.low) };
+  }
+
+  const msdt = asObject(scoringByCode.msdt);
+  const type = String(msdt?.dominantType || '').trim();
+  const fit = finite((profile.dimension_profiles.msdt || {})[type]);
+  if (type && fit != null) details.msdt = { type, fit };
+
+  return details;
 }

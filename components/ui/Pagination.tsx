@@ -5,6 +5,7 @@ interface PaginationProps {
   limit: number;
   total: number;
   pageSizes?: readonly number[];
+  itemLabel?: string;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
 }
@@ -14,6 +15,7 @@ export function Pagination({
   limit,
   total,
   pageSizes = [10, 25, 50, 100],
+  itemLabel = 'peserta',
   onPageChange,
   onLimitChange,
 }: PaginationProps) {
@@ -25,7 +27,7 @@ export function Pagination({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/60 text-xs text-slate-600">
       <div className="font-medium">
         Menampilkan <strong className="text-slate-900">{from}-{to}</strong> dari{' '}
-        <strong className="text-slate-900">{total}</strong> peserta
+        <strong className="text-slate-900">{total}</strong> {itemLabel}
       </div>
 
       <div className="flex items-center gap-3">

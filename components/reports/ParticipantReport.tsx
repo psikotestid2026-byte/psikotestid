@@ -13,6 +13,7 @@ import {
   JobFitConclusionBlock,
   JobFitCoverBlock,
   JobFitSummaryBlock,
+  JobMatchBlock,
   buildJobFitReportData,
 } from '@/components/reports/v3/JobFitBlocks';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
@@ -473,6 +474,7 @@ export function UniversalPdfDocument({
             <JobFitCoverBlock data={jobFit} companyName={participant?.company_name} />
             <CoverBlock participant={participant} />
             <JobFitSummaryBlock data={jobFit} />
+            <JobMatchBlock data={jobFit} />
           </>
         ) : (
           <CoverBlock participant={participant} />

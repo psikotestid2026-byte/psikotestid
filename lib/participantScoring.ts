@@ -4,6 +4,7 @@ import {
   BUNDLE_TEST_CODES,
   FALLBACK_LEVEL_PROFILE,
   computeJobFit,
+  buildFitDetails,
   levelProfileFromRow,
   resolveJobLevel,
   type JabatanMapping,
@@ -145,7 +146,7 @@ export async function scoreParticipant(participantId: number): Promise<ScoreOutc
         recommendation_score = ${fit.composite},
         system_recommendation_status = ${fit.status},
         recommendation_status = CASE WHEN assessor_override THEN recommendation_status ELSE ${fit.status} END,
-        score_breakdown = ${JSON.stringify(fit.breakdown)}::jsonb
+        score_breakdown = ${JSON.stringify({ ...fit.breakdown, fit_details: buildFitDetails(scoringByCode, profile) })}::jsonb
     WHERE id = ${participantId}
   `;
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import { BUNDLE_TEST_CODES, RECOMMENDATION_LABELS, isRecommendationStatus, type RecommendationStatus } from '@/lib/jobFit';
+import { buildJobMatchNarrative } from '@/lib/jobMatchNarrative';
 import { IconHeading, SectionBlock, cardStyles, theme } from '@/components/reports/v3/ReportShell';
 
 const TEST_LABELS: Record<string, string> = {
@@ -188,6 +189,107 @@ export function JobFitConclusionBlock({ data }: { data: JobFitReportData }) {
           <Text style={cardStyles.body}>{data.assessorNotes}</Text>
         </View>
       ) : null}
+    </SectionBlock>
+  );
+}
+
+const VERDICT_COLOR: Record<string, string> = {
+  'Sangat sesuai': '#047857',
+  Sesuai: '#0369a1',
+  'Cukup sesuai': '#b45309',
+  'Perlu pengembangan': '#b91c1c',
+};
+
+const matchStyles = StyleSheet.create({
+  barTrack: { height: 6, backgroundColor: '#e5e7eb', borderRadius: 3, marginTop: 2 },
+  small: { fontSize: 7.5, color: theme.softText, lineHeight: 1.35 },
+});
+
+/** "Kecocokan Jabatan" page: per-test match, ideal vs actual, strengths, development and conclusion. */
+export function JobMatchBlock({ data }: { data: JobFitReportData }) {
+  const narrative = buildJobMatchNarrative({
+    fullName: data.fullName,
+    position: data.position,
+    breakdown: data.breakdown,
+    status: data.status,
+    systemStatus: data.systemStatus,
+    overridden: data.overridden,
+    composite: data.composite,
+  });
+  if (!narrative) return null;
+
+  return (
+    <SectionBlock
+      accent="#1d4ed8"
+      kicker="Kecocokan Jabatan"
+      title="Analisis Kecocokan dengan Jabatan"
+      subtitle={narrative.intro}
+    >
+      {narrative.statusReason ? (
+        <Text style={[cardStyles.body, { marginBottom: 6 }]}>{narrative.statusReason}</Text>
+      ) : null}
+
+      <View style={[styles.row, styles.head]}>
+        <Text style={[styles.cellHead, { width: '24%' }]}>Instrumen</Text>
+        <Text style={[styles.cellHead, { width: '22%' }]}>Kecocokan</Text>
+        <Text style={[styles.cellHead, { width: '27%' }]}>Profil ideal jabatan</Text>
+        <Text style={[styles.cellHead, { width: '27%' }]}>Hasil kandidat</Text>
+      </View>
+      {narrative.rows.map((r) => (
+        <View key={r.code} style={styles.row} wrap={false}>
+          <Text style={[styles.cell, { width: '24%', fontSize: 8 }]}>{r.label}</Text>
+          <View style={{ width: '22%', paddingRight: 6 }}>
+            <Text style={[styles.cell, { fontWeight: 'bold', color: VERDICT_COLOR[r.verdict] }]}>
+              {r.score.toFixed(1)} - {r.verdict}
+            </Text>
+            <View style={matchStyles.barTrack}>
+              <View
+                style={{
+                  height: 6,
+                  borderRadius: 3,
+                  width: `${Math.max(2, Math.min(100, r.score))}%`,
+                  backgroundColor: VERDICT_COLOR[r.verdict],
+                }}
+              />
+            </View>
+            {r.below_min ? <Text style={[matchStyles.small, { color: '#b91c1c' }]}>Di bawah batas minimum</Text> : null}
+          </View>
+          <Text style={[matchStyles.small, { width: '27%', paddingRight: 6 }]}>{r.ideal}</Text>
+          <Text style={[matchStyles.small, { width: '27%' }]}>{r.actual}</Text>
+        </View>
+      ))}
+
+      <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: '#047857', marginTop: 8 }]} wrap={false}>
+        <IconHeading accent="#047857" icon="+" title="Kekuatan terhadap jabatan" />
+        {narrative.strengths.length === 0 ? (
+          <Text style={cardStyles.body}>Belum terdapat instrumen dengan kecocokan yang menonjol.</Text>
+        ) : (
+          narrative.strengths.map((t, i) => (
+            <Text key={i} style={cardStyles.body}>
+              - {t}
+            </Text>
+          ))
+        )}
+      </View>
+
+      <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: '#b45309' }]} wrap={false}>
+        <IconHeading accent="#b45309" icon="!" title="Area pengembangan" />
+        {narrative.development.length === 0 ? (
+          <Text style={cardStyles.body}>Seluruh instrumen berada pada tingkat kecocokan yang baik.</Text>
+        ) : (
+          narrative.development.map((t, i) => (
+            <Text key={i} style={cardStyles.body}>
+              - {t}
+            </Text>
+          ))
+        )}
+      </View>
+
+      <View style={[cardStyles.card, cardStyles.plain, { borderTopColor: '#0f172a' }]} wrap={false}>
+        <IconHeading accent="#0f172a" icon="K" title="Kesimpulan kecocokan" />
+        <Text style={cardStyles.body}>{narrative.conclusion}</Text>
+        <Text style={[matchStyles.small, { marginTop: 6 }]}>{narrative.caveat}</Text>
+      </View>
     </SectionBlock>
   );
 }

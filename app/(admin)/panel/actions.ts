@@ -168,13 +168,19 @@ export async function saveNorm(id: number | null, testId: number, rawScore: stri
 export async function batchInsertNorms(testId: number, norms: any[]) {
   await assertAdmin();
 
-  // Simple clear and insert for bulk import
-  await sql`DELETE FROM test_norms WHERE test_id = ${testId}`;
-  
+  // Additive import: update rows with the same raw score, insert the rest. Never deletes existing norms.
   for (const n of norms) {
-    await sql`
-      INSERT INTO test_norms (test_id, raw_score, norm_score, label, description)
-      VALUES (${testId}, ${n.raw_score}, ${n.norm_score}, ${n.label || ''}, ${n.description || ''})
+    const updated = await sql`
+      UPDATE test_norms
+      SET norm_score = ${n.norm_score}, label = ${n.label || ''}, description = ${n.description || ''}
+      WHERE test_id = ${testId} AND raw_score = ${n.raw_score}
+      RETURNING id
     `;
+    if (updated.length === 0) {
+      await sql`
+        INSERT INTO test_norms (test_id, raw_score, norm_score, label, description)
+        VALUES (${testId}, ${n.raw_score}, ${n.norm_score}, ${n.label || ''}, ${n.description || ''})
+      `;
+    }
   }
 }
