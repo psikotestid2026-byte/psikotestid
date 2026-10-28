@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
 import { ShieldAlert, Fingerprint, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -26,10 +27,11 @@ function LoginContent() {
 
   return (
     <div className="space-y-6">
-      <button
+      <Button
+        type="button"
         onClick={handleLogin}
         disabled={isLoading}
-        className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-slate-900 transition-all disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+        className="w-full bg-blue-600 hover:bg-blue-700 focus:ring-offset-slate-900"
       >
         {isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -37,7 +39,7 @@ function LoginContent() {
           <Fingerprint className="w-5 h-5 mr-2" />
         )}
         {isLoading ? "Mengautentikasi..." : "Login with Google"}
-      </button>
+      </Button>
     </div>
   );
 }

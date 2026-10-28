@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import useSWR from 'swr';
 import {
   ArrowLeft,
@@ -17,7 +16,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { RecommendationBadge } from '@/components/ui/RecommendationBadge';
 import { EmployeeImportModal } from './EmployeeImportModal';
@@ -146,12 +145,9 @@ export function BundleCampaignView({
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
-      <Link
-        href="/clients/campaigns"
-        className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm"
-      >
-        <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Campaign
-      </Link>
+      <ActionPillLink href="/clients/campaigns" size="sm" variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>
+        Kembali ke Daftar Campaign
+      </ActionPillLink>
 
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-2">
@@ -190,12 +186,15 @@ export function BundleCampaignView({
           >
             Reset Semua Hasil
           </Button>
-          <a
+          <ActionPillLink
             href={`/api/client/campaigns/${campaignId}/participants/credentials`}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl flex items-center gap-2 border border-white/20"
+            size="sm"
+            variant="ghost"
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+            icon={<KeyRound className="w-4 h-4 text-indigo-300" />}
           >
-            <KeyRound className="w-4 h-4 text-indigo-300" /> Unduh Data Login Karyawan
-          </a>
+            Unduh Data Login Karyawan
+          </ActionPillLink>
         </div>
       </div>
 
@@ -254,32 +253,31 @@ export function BundleCampaignView({
                   </option>
                 ))}
               </select>
-              <a
+              <ActionPillLink
                 href={exportUrl}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700"
+                icon={<Download className="w-3.5 h-3.5" />}
               >
-                <Download className="w-3.5 h-3.5" /> Unduh Rekap Excel
-              </a>
+                Unduh Rekap Excel
+              </ActionPillLink>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {STATUS_CHIPS.map((chip) => (
-              <button
+              <Button
                 key={chip.key}
                 type="button"
+                size="sm"
+                variant={status === chip.key ? 'primary' : 'outline'}
                 onClick={() => {
                   setStatus(chip.key);
                   setPage(1);
                 }}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${
-                  status === chip.key
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'
-                }`}
               >
                 {chip.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -339,32 +337,33 @@ export function BundleCampaignView({
                     </td>
                     <td className="py-3 px-3 text-right whitespace-nowrap">
                       {r.tests_done >= totalTests && r.scoring_status === 'DONE' && (
-                        <a
+                        <ActionPillLink
                           href={`/api/reports/participant/${r.id}/pdf`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-indigo-600 font-bold hover:underline mr-3"
+                          size="sm"
+                          variant="secondary"
+                          className="mr-2"
+                          icon={<FileText className="w-3.5 h-3.5" />}
                         >
-                          <FileText className="w-3.5 h-3.5" /> PDF
-                        </a>
+                          PDF
+                        </ActionPillLink>
                       )}
                       {(r.tests_done > 0 || r.status === 'COMPLETED') && (
-                        <button
+                        <Button
                           type="button"
+                          size="sm"
+                          variant="danger"
+                          className="mr-2"
                           onClick={() => setResetTarget({ id: Number(r.id), full_name: r.full_name })}
-                          className="text-red-600 font-bold hover:underline mr-3"
                         >
                           Reset
-                        </button>
+                        </Button>
                       )}
                       {r.system_recommendation_status && (
-                        <button
-                          type="button"
-                          onClick={() => setOverrideTarget(r)}
-                          className="text-slate-500 font-bold hover:text-indigo-600"
-                        >
+                        <Button type="button" size="sm" variant="outline" onClick={() => setOverrideTarget(r)}>
                           Override
-                        </button>
+                        </Button>
                       )}
                     </td>
                   </tr>

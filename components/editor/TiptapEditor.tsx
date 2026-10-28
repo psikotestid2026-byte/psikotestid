@@ -20,6 +20,7 @@ import {
   FileCode,
   Eye,
 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface TiptapEditorProps {
   content: string;
@@ -74,7 +75,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
     <div className="border border-slate-300 rounded-xl overflow-hidden bg-white shadow-sm">
       {/* Toolbar Header */}
       <div className="bg-slate-100/90 border-b border-slate-200 p-2 flex flex-wrap items-center gap-1">
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -83,9 +84,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Bold"
         >
           <Bold className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -94,9 +95,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Italic"
         >
           <Italic className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -105,11 +106,11 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Strikethrough"
         >
           <Strikethrough className="w-4 h-4" />
-        </button>
+        </Button>
 
         <div className="w-px h-5 bg-slate-300 mx-1" />
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -118,9 +119,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Heading 1"
         >
           <Heading1 className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -129,9 +130,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Heading 2"
         >
           <Heading2 className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -140,11 +141,11 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Heading 3"
         >
           <Heading3 className="w-4 h-4" />
-        </button>
+        </Button>
 
         <div className="w-px h-5 bg-slate-300 mx-1" />
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -153,9 +154,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Bullet List"
         >
           <List className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -164,9 +165,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Ordered List"
         >
           <ListOrdered className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={`p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all ${
@@ -175,11 +176,11 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Blockquote"
         >
           <Quote className="w-4 h-4" />
-        </button>
+        </Button>
 
         <div className="w-px h-5 bg-slate-300 mx-1" />
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -187,9 +188,9 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Undo"
         >
           <Undo className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
@@ -197,19 +198,19 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
           title="Redo"
         >
           <Redo className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button size="sm" variant="ghost"
           type="button"
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
           className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-200 transition-all"
           title="Hapus Format"
         >
           <RemoveFormatting className="w-4 h-4" />
-        </button>
+        </Button>
 
         <div className="ml-auto flex items-center space-x-1">
-          <button
+          <Button size="sm" variant="ghost"
             type="button"
             onClick={() => setIsHtmlMode(!isHtmlMode)}
             className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
@@ -227,7 +228,7 @@ export default function TiptapEditor({ content, onChange, placeholder }: TiptapE
                 <FileCode className="w-3.5 h-3.5" /> Source HTML
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

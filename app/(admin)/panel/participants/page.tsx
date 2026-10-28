@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BulkPdfExportButton } from '@/components/reports/BulkPdfExportButton';
+import { Button, ActionPillLink } from '@/components/ui/Button';
 
 interface ParticipantItem {
   id: number;
@@ -144,18 +145,24 @@ export default function ParticipantsAdminPage() {
             title={bulkBlockedMessage || 'Unduh ZIP laporan PDF seluruh peserta perusahaan ini yang sudah punya hasil tes'}
             className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-60"
           />
-          <button
+          <Button
+            type="button"
+            size="sm"
             onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+            className="bg-emerald-600 hover:bg-emerald-500"
+            icon={<Download className="w-4 h-4" />}
           >
-            <Download className="w-4 h-4" /> Export XLSX
-          </button>
-          <button
+            Export XLSX
+          </Button>
+          <Button
+            type="button"
+            size="sm"
             onClick={() => mutate()}
-            className="px-4 py-2 bg-indigo-900/60 hover:bg-indigo-900 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all border border-indigo-500/40 shrink-0"
+            className="bg-indigo-900/60 hover:bg-indigo-900 border border-indigo-500/40 shrink-0"
+            icon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
-          </button>
+            Refresh Data
+          </Button>
         </div>
       </div>
 
@@ -311,14 +318,15 @@ export default function ParticipantsAdminPage() {
 
                         {/* Action PDF Download Button */}
                         <td className="py-3.5 px-4 text-center">
-                          <a
+                          <ActionPillLink
                             href={`/api/reports/participant/${p.id}/pdf`}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-all shadow-xs"
+                            size="sm"
+                            icon={<Download className="w-3.5 h-3.5" />}
                           >
-                            <Download className="w-3.5 h-3.5" /> PDF Report
-                          </a>
+                            PDF Report
+                          </ActionPillLink>
                         </td>
                       </tr>
                     );
@@ -336,23 +344,29 @@ export default function ParticipantsAdminPage() {
               </div>
 
               <div className="flex items-center space-x-1">
-                <button
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={safePage === 1}
-                  className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Halaman sebelumnya"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                </button>
+                </Button>
                 <span className="px-3 py-1 font-bold text-slate-800">
                   Halaman {safePage} dari {totalPages}
                 </span>
-                <button
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
                   onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={safePage === totalPages}
-                  className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Halaman berikutnya"
                 >
                   <ChevronRight className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             </div>
           </>

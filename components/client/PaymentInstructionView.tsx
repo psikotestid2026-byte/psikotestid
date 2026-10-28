@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -23,7 +22,7 @@ import {
   XCircle,
   HelpCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { compressPaymentProof } from '@/lib/imageCompressor';
 
 interface PaymentInstructionViewProps {
@@ -186,12 +185,9 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
     <div className="w-full max-w-5xl mx-auto space-y-6 animate-fadeUp pb-12">
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between">
-        <Link
-          href="/clients/transactions"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs"
-        >
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Riwayat Transaksi & Tagihan
-        </Link>
+        <ActionPillLink href="/clients/transactions" size="sm" variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>
+          Kembali ke Riwayat Transaksi & Tagihan
+        </ActionPillLink>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400 font-mono">Invoice:</span>
           <span className="text-xs font-mono font-extrabold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
@@ -258,12 +254,9 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                 Saldo wallet atau kuota tes psikotes Anda telah dikreditkan. Anda dapat langsung menggunakan kuota untuk sesi ujian kandidat.
               </p>
             </div>
-            <Link
-              href="/clients/billing"
-              className="ml-auto shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm"
-            >
+            <ActionPillLink href="/clients/billing" size="sm" className="ml-auto shrink-0 bg-emerald-600 hover:bg-emerald-700">
               Lihat Saldo Wallet
-            </Link>
+            </ActionPillLink>
           </div>
         )}
 
@@ -288,13 +281,16 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
               <div className="text-3xl font-extrabold font-mono text-indigo-900 tracking-tight flex items-center gap-3">
                 Rp {Number(order.total_amount).toLocaleString('id-ID')}
                 {!isPaid && (
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
                     onClick={() => copyToClipboard(order.total_amount.toString(), 'Nominal transfer')}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-xl text-xs text-indigo-700 font-bold flex items-center gap-1.5 transition-all border border-indigo-200"
                     title="Salin Nominal Presisi"
+                    icon={<Copy className="w-3.5 h-3.5" />}
                   >
-                    <Copy className="w-3.5 h-3.5" /> Salin Nominal
-                  </button>
+                    Salin Nominal
+                  </Button>
                 )}
               </div>
               {order.fee_amount > 0 && order.payment_provider?.toLowerCase() === 'manual' && (
@@ -356,13 +352,15 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                         {order.payment_token}
                       </span>
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
                       onClick={() => copyToClipboard(order.payment_token, 'Nomor pembayaran')}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                      className="shrink-0"
+                      icon={<Copy className="w-3.5 h-3.5" />}
                     >
-                      <Copy className="w-3.5 h-3.5" /> Salin
-                    </button>
+                      Salin
+                    </Button>
                   </div>
                 )}
 
@@ -392,22 +390,24 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                 </p>
 
                 {order.payment_provider?.toLowerCase() === 'midtrans' && order.payment_token ? (
-                  <button
+                  <Button
                     type="button"
+                    className="w-full"
                     onClick={() => openMidtransSnap(order.payment_token, order.payment_url)}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
+                    icon={<Sparkles className="w-4 h-4" />}
                   >
-                    <Sparkles className="w-4 h-4" /> Buka Pop-up Pembayaran Midtrans (Snap)
-                  </button>
+                    Buka Pop-up Pembayaran Midtrans (Snap)
+                  </Button>
                 ) : (
-                  <a
+                  <ActionPillLink
                     href={order.payment_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
+                    className="w-full"
+                    icon={<ExternalLink className="w-4 h-4" />}
                   >
-                    <ExternalLink className="w-4 h-4" /> Buka Halaman Pembayaran ({order.payment_provider || 'Online'})
-                  </a>
+                    Buka Halaman Pembayaran ({order.payment_provider || 'Online'})
+                  </ActionPillLink>
                 )}
               </div>
             )}
@@ -449,17 +449,19 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                       {order.bank_details?.account_number || '1234567890'}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
                     onClick={() => {
                       copyToClipboard(
                         order.bank_details?.account_number || '1234567890',
                         'Nomor rekening'
                       );
                     }}
-                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+                    icon={<Copy className="w-3.5 h-3.5" />}
                   >
-                    <Copy className="w-3.5 h-3.5" /> Salin Rekening
-                  </button>
+                    Salin Rekening
+                  </Button>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
@@ -534,23 +536,16 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="button"
                     onClick={handleUploadPaymentProof}
                     disabled={isUploadingProof || !selectedFile}
-                    className={`w-full text-white font-extrabold text-xs py-3.5 rounded-full shadow-xl border-2 uppercase tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-600 ${
-                      order.payment_provider?.toLowerCase() === 'manual'
-                        ? 'bg-red-600 hover:bg-red-700 border-red-400'
-                        : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-400 focus-visible:ring-brand-600'
-                    }`}
+                    variant={order.payment_provider?.toLowerCase() === 'manual' ? 'danger' : 'primary'}
+                    className="w-full uppercase tracking-wide"
+                    icon={isUploadingProof ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   >
-                    {isUploadingProof ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4 text-white" />
-                    )}
                     {isUploadingProof ? 'Mengunggah & Mengirim...' : 'KONFIRMASI & UNGGAH BUKTI TRANSFER SEKARANG'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -588,12 +583,9 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <Link
-                href="/clients/transactions"
-                className="text-xs font-bold text-slate-600 hover:text-indigo-600"
-              >
+              <ActionPillLink href="/clients/transactions" size="sm" variant="ghost">
                 Ke Riwayat Transaksi
-              </Link>
+              </ActionPillLink>
               <Button
                 onClick={() => router.push('/clients/transactions')}
                 variant="outline"

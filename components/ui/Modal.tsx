@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,12 +34,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h3 className="font-display font-bold text-lg text-slate-900">{title}</h3>
-          <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
-          >
+          <Button type="button" size="sm" variant="ghost" onClick={onClose} aria-label="Tutup">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <div className="p-6">
           {children}

@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 interface PaginationProps {
   page: number;
@@ -47,27 +48,29 @@ export function Pagination({
         </label>
 
         <div className="flex items-center gap-1">
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="outline"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
-            className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Halaman sebelumnya"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
+          </Button>
           <span className="px-2 font-semibold">
             Halaman {page} / {totalPages}
           </span>
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="outline"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages}
-            className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Halaman berikutnya"
           >
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

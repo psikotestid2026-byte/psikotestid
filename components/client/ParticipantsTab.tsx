@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { Eye, FileDown, Search, Users, X } from 'lucide-react';
@@ -184,20 +183,24 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
 
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Link href={`/clients/participants/${p.id}`}>
-                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 shadow-sm flex items-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5 text-white" /> Lihat Hasil ➔
-                      </Button>
-                    </Link>
+                    <ActionPillLink
+                      href={`/clients/participants/${p.id}`}
+                      size="sm"
+                      icon={<Eye className="w-3.5 h-3.5" />}
+                    >
+                      Lihat Hasil ➔
+                    </ActionPillLink>
 
-                    <a
+                    <ActionPillLink
                       href={`/api/reports/participant/${p.id}/pdf`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      icon={<FileDown className="w-3.5 h-3.5" />}
                     >
-                      <FileDown className="w-3.5 h-3.5" /> PDF
-                    </a>
+                      PDF
+                    </ActionPillLink>
                   </div>
                 </td>
               </tr>

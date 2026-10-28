@@ -4,7 +4,7 @@ import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button, actionPillClass } from '@/components/ui/Button';
 import { MembersCard } from '@/components/ui/MembersCard';
 import { Upload, Building, Image as ImageIcon, CheckCircle2, Loader2, Link as LinkIcon } from 'lucide-react';
 import { updateCustomerBranding } from '@/app/(client)/clients/actions';
@@ -127,7 +127,7 @@ export function SettingsTab({ data }: SettingsTabProps) {
               {/* Upload Input & URL fallback */}
               <div className="flex-1 w-full space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="cursor-pointer px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all">
+                  <label className={actionPillClass('primary', 'sm', 'cursor-pointer')}>
                     {isUploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {isUploadingLogo ? 'Mengunggah ke Vercel Blob...' : 'Upload File Logo (.png, .jpg, .svg)'}
                     <input
@@ -139,13 +139,9 @@ export function SettingsTab({ data }: SettingsTabProps) {
                   </label>
 
                   {logoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setLogoUrl('')}
-                      className="text-xs text-red-600 font-bold hover:underline"
-                    >
+                    <Button type="button" size="sm" variant="danger" onClick={() => setLogoUrl('')}>
                       Hapus Logo
-                    </button>
+                    </Button>
                   )}
                 </div>
 

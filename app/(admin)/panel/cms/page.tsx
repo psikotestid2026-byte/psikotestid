@@ -28,6 +28,7 @@ import {
   Sparkle
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { Button, actionPillClass } from '@/components/ui/Button';
 
 const TiptapEditor = dynamic(() => import('@/components/ui/TiptapEditor'), {
   ssr: false,
@@ -280,12 +281,15 @@ export default function CmsAdminPage() {
           </p>
         </div>
 
-        <button
+        <Button
+          type="button"
+          size="sm"
           onClick={() => mutate()}
-          className="px-4 py-2 bg-indigo-700/80 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all border border-indigo-500/50 shrink-0"
+          className="bg-indigo-700/80 hover:bg-indigo-700 border border-indigo-500/50 shrink-0"
+          icon={<RefreshCw className="w-3.5 h-3.5" />}
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh Konten
-        </button>
+          Refresh Konten
+        </Button>
       </div>
 
       {/* Website Favicon Control Card */}
@@ -308,7 +312,7 @@ export default function CmsAdminPage() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <label className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all shadow-md">
+          <label className={actionPillClass('primary', 'sm', 'cursor-pointer')}>
             {isUploadingFavicon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             {isUploadingFavicon ? 'Mengunggah...' : 'Upload Favicon Baru (.svg/.png/.ico)'}
             <input type="file" accept="image/*" onChange={handleFaviconUpload} className="hidden" />
@@ -360,14 +364,16 @@ export default function CmsAdminPage() {
           </div>
 
           <div className="flex justify-end">
-            <button
+            <Button
+              type="button"
+              size="sm"
               onClick={handleSaveBonus}
               disabled={isSavingBonus}
-              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-full flex items-center justify-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700"
+              icon={isSavingBonus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             >
-              {isSavingBonus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {isSavingBonus ? 'Memuat...' : 'Simpan Pengaturan Bonus Saldo'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -467,12 +473,14 @@ export default function CmsAdminPage() {
                   <span className="text-[11px] text-slate-400">
                     Diperbarui: {new Date(cms.updated_at).toLocaleDateString('id-ID')}
                   </span>
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
                     onClick={() => handleOpenEdit(cms)}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-all"
+                    icon={<Edit2 className="w-3.5 h-3.5" />}
                   >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Section
-                  </button>
+                    Edit Section
+                  </Button>
                 </div>
               </div>
             );
@@ -496,32 +504,29 @@ export default function CmsAdminPage() {
               {/* Mode Toggle: Visual vs JSON */}
               <div className="flex items-center gap-2">
                 <div className="bg-slate-800 p-1 rounded-xl flex items-center gap-1 border border-slate-700">
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="ghost"
                     onClick={() => setEditMode('VISUAL')}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                      editMode === 'VISUAL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={editMode === 'VISUAL' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white hover:bg-white/10'}
                   >
                     Visual Editor
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="ghost"
                     onClick={() => setEditMode('JSON')}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                      editMode === 'JSON' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                    }`}
+                    className={editMode === 'JSON' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white hover:bg-white/10'}
                   >
                     JSON Mode
-                  </button>
+                  </Button>
                 </div>
 
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="text-slate-400 hover:text-white text-sm font-bold p-1 rounded-lg ml-2"
-                >
+                <Button type="button" size="sm" variant="ghost" onClick={() => setIsEditing(false)} aria-label="Tutup" className="text-slate-300 hover:text-white hover:bg-white/10 ml-2">
                   ✕
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -583,13 +588,15 @@ export default function CmsAdminPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <label className="font-bold text-slate-700">Metrics Angka Kepercayaan</label>
-                          <button
+                          <Button
                             type="button"
+                            size="sm"
+                            variant="secondary"
                             onClick={() => setTrustMetrics([...trustMetrics, { label: 'Metric Baru', value: '100+' }])}
-                            className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1"
+                            icon={<Plus className="w-3 h-3" />}
                           >
-                            <Plus className="w-3 h-3" /> Tambah Metric
-                          </button>
+                            Tambah Metric
+                          </Button>
                         </div>
 
                         {trustMetrics.map((m, idx) => (
@@ -616,13 +623,15 @@ export default function CmsAdminPage() {
                               }}
                               className="w-1/2 p-2 border border-slate-300 rounded-lg text-xs bg-white font-mono"
                             />
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
+                              variant="danger"
+                              aria-label="Hapus metric"
                               onClick={() => setTrustMetrics(trustMetrics.filter((_, i) => i !== idx))}
-                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -634,26 +643,30 @@ export default function CmsAdminPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <h4 className="font-bold text-indigo-900 text-sm">Daftar Fitur Unggulan Platform</h4>
-                        <button
+                        <Button
                           type="button"
+                          size="sm"
+                          variant="secondary"
                           onClick={() => setFeatureItems([...featureItems, { icon: 'ShieldCheck', title: 'Fitur Baru', description: 'Deskripsi fitur baru.' }])}
-                          className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1"
+                          icon={<Plus className="w-3 h-3" />}
                         >
-                          <Plus className="w-3 h-3" /> Tambah Item Fitur
-                        </button>
+                          Tambah Item Fitur
+                        </Button>
                       </div>
 
                       {featureItems.map((item, idx) => (
                         <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-slate-800">Fitur #{idx + 1}</span>
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
+                              variant="danger"
+                              aria-label="Hapus fitur"
                               onClick={() => setFeatureItems(featureItems.filter((_, i) => i !== idx))}
-                              className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <input
@@ -700,13 +713,15 @@ export default function CmsAdminPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <h4 className="font-bold text-indigo-900 text-sm">Poin-poin Keunggulan Lisensi</h4>
-                        <button
+                        <Button
                           type="button"
+                          size="sm"
+                          variant="secondary"
                           onClick={() => setPricingHighlights([...pricingHighlights, 'Poin baru'])}
-                          className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1"
+                          icon={<Plus className="w-3 h-3" />}
                         >
-                          <Plus className="w-3 h-3" /> Tambah Poin
-                        </button>
+                          Tambah Poin
+                        </Button>
                       </div>
 
                       {pricingHighlights.map((hl, idx) => (
@@ -721,13 +736,15 @@ export default function CmsAdminPage() {
                             }}
                             className="w-full p-2.5 border border-slate-300 rounded-xl"
                           />
-                          <button
+                          <Button
                             type="button"
+                            size="sm"
+                            variant="danger"
+                            aria-label="Hapus poin"
                             onClick={() => setPricingHighlights(pricingHighlights.filter((_, i) => i !== idx))}
-                            className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -738,26 +755,30 @@ export default function CmsAdminPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <h4 className="font-bold text-indigo-900 text-sm">Daftar Pertanyaan FAQ</h4>
-                        <button
+                        <Button
                           type="button"
+                          size="sm"
+                          variant="secondary"
                           onClick={() => setFaqItems([...faqItems, { q: 'Pertanyaan baru?', a: 'Jawaban FAQ.' }])}
-                          className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-[11px] inline-flex items-center gap-1"
+                          icon={<Plus className="w-3 h-3" />}
                         >
-                          <Plus className="w-3 h-3" /> Tambah FAQ
-                        </button>
+                          Tambah FAQ
+                        </Button>
                       </div>
 
                       {faqItems.map((item, idx) => (
                         <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-slate-800">FAQ #{idx + 1}</span>
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
+                              variant="danger"
+                              aria-label="Hapus FAQ"
                               onClick={() => setFaqItems(faqItems.filter((_, i) => i !== idx))}
-                              className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                           <input
                             type="text"
@@ -851,22 +872,18 @@ export default function CmsAdminPage() {
 
             {/* Modal Footer */}
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50"
-              >
+              <Button type="button" size="sm" variant="outline" onClick={() => setIsEditing(false)}>
                 Batal
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="sm"
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+                icon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {isSaving ? 'Memuat...' : 'Simpan Perubahan Section'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

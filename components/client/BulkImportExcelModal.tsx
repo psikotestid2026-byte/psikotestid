@@ -86,13 +86,15 @@ export function BulkImportExcelModal({
               Unduh template Excel resmi untuk mengisi daftar kandidat.
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={downloadCandidateExcelTemplate}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+            className="bg-emerald-600 hover:bg-emerald-700"
+            icon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" /> Unduh Template (.xlsx)
-          </button>
+            Unduh Template (.xlsx)
+          </Button>
         </div>
 
         {/* Step 2: Upload File Selector */}
