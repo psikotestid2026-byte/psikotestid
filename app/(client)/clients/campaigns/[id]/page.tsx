@@ -26,7 +26,7 @@ export default async function CampaignDetailPage({
   if (campaignData.campaign?.campaign_mode === 'MANDATORY_BUNDLE') {
     // SSR first page so the table paints instantly; SWR takes over on the client.
     const initial = await queryCampaignResults(campaignId, parseResultsQuery(new URLSearchParams()), true);
-    const fallbackData = JSON.parse(JSON.stringify({ success: true, ...initial, page: 1, limit: 25 }));
+    const fallbackData = JSON.parse(JSON.stringify({ success: true, ...initial, page: 1, limit: 10 }));
 
     return (
       <BundleCampaignView

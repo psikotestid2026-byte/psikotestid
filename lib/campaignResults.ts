@@ -35,7 +35,7 @@ export interface ResultsQuery {
 
 export function parseResultsQuery(params: URLSearchParams): ResultsQuery {
   const limitRaw = Number(params.get('limit'));
-  const limit = (RESULT_PAGE_SIZES as readonly number[]).includes(limitRaw) ? limitRaw : 25;
+  const limit = (RESULT_PAGE_SIZES as readonly number[]).includes(limitRaw) ? limitRaw : 10;
   const pageRaw = Math.trunc(Number(params.get('page')));
   const sort = params.get('sort') || 'name';
   return {

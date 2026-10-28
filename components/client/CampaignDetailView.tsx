@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   ArrowLeft,
   Users,
@@ -53,6 +54,8 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
 
   // Filter State
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const campaign = initialCampaignData?.campaign || {};
   const selectedTests = initialCampaignData?.selected_tests || [];
@@ -72,6 +75,9 @@ export function CampaignDetailView({ initialCampaignData, campaignId }: Campaign
       c.phone_number?.includes(q)
     );
   });
+
+  const totalCandidates = filteredCandidates.length;
+  const paginatedCandidates = filteredCandidates.slice((page - 1) * limit, page * limit);
 
   const masterLink = origin
     ? `${origin}/clients/test/${campaignId}`
@@ -269,7 +275,7 @@ Terima kasih dan selamat mengerjakan!`;
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-600" />
             <h3 className="font-display font-bold text-sm text-slate-800">
-              Daftar Peserta Terdaftar ({filteredCandidates.length} Peserta)
+              Daftar Peserta Terdaftar ({totalCandidates} Peserta)
             </h3>
           </div>
 
@@ -279,7 +285,10 @@ Terima kasih dan selamat mengerjakan!`;
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
               placeholder="Cari nama, email, no HP..."
               className="pl-9 w-full py-1.5 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500"
             />
@@ -287,16 +296,21 @@ Terima kasih dan selamat mengerjakan!`;
         </div>
 
         <Table
-          headers={['Nama Kandidat', 'Email & NIK', 'Metode Pendaftaran', 'No WhatsApp & Undangan', 'Link Akses Ujian Personal', 'Status Pengerjaan', 'Aksi']}
-          isEmpty={filteredCandidates.length === 0}
+          headers={['No', 'Nama Kandidat', 'Email & NIK', 'Metode Pendaftaran', 'No WhatsApp & Undangan', 'Link Akses Ujian Personal', 'Status Pengerjaan', 'Aksi']}
+          isEmpty={paginatedCandidates.length === 0}
         >
-          {filteredCandidates.map((cand: any) => {
+          {paginatedCandidates.map((cand: any, idx: number) => {
+            const rowNumber = (page - 1) * limit + idx + 1;
             const personalLink = getPersonalLink(cand.access_token);
             const waUrl = getWhatsAppUrl(cand.phone_number, cand.full_name, cand.email, cand.access_token);
             const regSource = cand.registration_source || 'OPEN_LINK';
 
             return (
               <tr key={cand.id} className="hover:bg-slate-50 transition-colors">
+                <td className="py-3.5 px-4 font-semibold text-slate-500 text-xs w-12 text-center">
+                  {rowNumber}
+                </td>
+
                 <td className="py-3.5 px-4 font-bold text-slate-900 text-xs">
                   <div>{cand.full_name}</div>
                   {cand.nik && <div className="text-[10px] text-slate-400 font-mono">NIK: {cand.nik}</div>}
@@ -368,6 +382,18 @@ Terima kasih dan selamat mengerjakan!`;
             );
           })}
         </Table>
+
+        <Pagination
+          page={page}
+          limit={limit}
+          total={totalCandidates}
+          pageSizes={[10, 25, 50, 100]}
+          onPageChange={(p) => setPage(Math.max(1, p))}
+          onLimitChange={(l) => {
+            setLimit(l);
+            setPage(1);
+          }}
+        />
       </Card>
 
       {/* Bulk Import Excel Modal */}

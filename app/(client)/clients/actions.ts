@@ -28,12 +28,18 @@ export async function getClientData(customerId: number) {
                    'name', mt.name
                  )
                ) FILTER (WHERE mt.id IS NOT NULL), '[]'
-             ) as selected_tests
+             ) as selected_tests,
+             COALESCE(pc.participant_count, 0)::int as participant_count
       FROM campaigns c
       LEFT JOIN campaign_tests ct ON ct.campaign_id = c.id
       LEFT JOIN master_tests mt ON ct.test_id = mt.id
+      LEFT JOIN (
+        SELECT campaign_id, COUNT(*)::int as participant_count
+        FROM participants
+        GROUP BY campaign_id
+      ) pc ON pc.campaign_id = c.id
       WHERE c.customer_id = ${customerId}
-      GROUP BY c.id
+      GROUP BY c.id, pc.participant_count
       ORDER BY c.created_at DESC
     `,
     sql`
@@ -41,22 +47,10 @@ export async function getClientData(customerId: number) {
              p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
              p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
              p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
-             p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes, c.title as campaign_title,
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', tr.id,
-                   'test_id', tr.test_id,
-                   'scoring_data', tr.scoring_data,
-                   'created_at', tr.created_at
-                 )
-               ) FILTER (WHERE tr.id IS NOT NULL), '[]'
-             ) as test_results
+             p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes, c.title as campaign_title
       FROM participants p 
       JOIN campaigns c ON p.campaign_id = c.id 
-      LEFT JOIN test_results tr ON tr.participant_id = p.id
       WHERE c.customer_id = ${customerId} 
-      GROUP BY p.id, c.title
       ORDER BY p.created_at DESC
     `,
     sql`SELECT * FROM master_tests WHERE is_active = TRUE ORDER BY name`,
@@ -75,12 +69,12 @@ export async function getClientData(customerId: number) {
   };
 }
 
-export async function getCampaignDetails(campaignId: number) {
+export async function getCampaignDetails(campaignId: number, includeParticipants: boolean = true) {
   const auth = await assertCustomer();
   const own = await sql`SELECT id FROM campaigns WHERE id = ${campaignId} AND customer_id = ${auth.customer.id} LIMIT 1`;
   if (own.length === 0) throw new Error('Unauthorized');
 
-  const [campaignRows, selectedTests, candidates, customerRows] = await Promise.all([
+  const [campaignRows, selectedTests, customerRows] = await Promise.all([
     sql`SELECT * FROM campaigns WHERE id = ${campaignId} LIMIT 1`,
     sql`
       SELECT mt.* FROM campaign_tests ct
@@ -88,11 +82,6 @@ export async function getCampaignDetails(campaignId: number) {
       WHERE ct.campaign_id = ${campaignId}
       ORDER BY ct.order_number ASC NULLS LAST, mt.id ASC
     `,
-    sql`SELECT p.id, p.campaign_id, p.access_token, p.full_name, p.email, p.phone_number, p.nik,
-      p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
-      p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
-      p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
-      p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes FROM participants p WHERE p.campaign_id = ${campaignId} ORDER BY p.created_at DESC`,
     sql`
       SELECT cust.* FROM campaigns c
       JOIN customers cust ON c.customer_id = cust.id
@@ -102,6 +91,15 @@ export async function getCampaignDetails(campaignId: number) {
   ]);
 
   if (campaignRows.length === 0) return null;
+
+  let candidates: any[] = [];
+  if (includeParticipants && campaignRows[0].campaign_mode !== 'MANDATORY_BUNDLE') {
+    candidates = await sql`SELECT p.id, p.campaign_id, p.access_token, p.full_name, p.email, p.phone_number, p.nik,
+      p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
+      p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
+      p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
+      p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes FROM participants p WHERE p.campaign_id = ${campaignId} ORDER BY p.created_at DESC`;
+  }
 
   return {
     campaign: campaignRows[0],

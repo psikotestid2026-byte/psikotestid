@@ -68,7 +68,7 @@ export function BundleCampaignView({
   const [sort, setSort] = useState('name');
   const [dir, setDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(10);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<{ id: number; full_name: string } | 'ALL' | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<any>(null);
@@ -90,7 +90,7 @@ export function BundleCampaignView({
     return params.toString();
   }, [page, limit, sort, dir, q, status, unit]);
 
-  const isDefaultQuery = page === 1 && limit === 25 && sort === 'name' && dir === 'asc' && !q && status === 'ALL' && !unit;
+  const isDefaultQuery = page === 1 && limit === 10 && sort === 'name' && dir === 'asc' && !q && status === 'ALL' && !unit;
 
   const { data, isLoading, mutate } = useSWR(
     `/api/client/campaigns/${campaignId}/results?${queryString}`,

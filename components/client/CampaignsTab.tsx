@@ -216,7 +216,9 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
           isEmpty={campaigns.length === 0}
         >
           {campaigns.map((c: any) => {
-            const countCandidates = allParticipants.filter((p: any) => String(p.campaign_id) === String(c.id)).length;
+            const countCandidates = typeof c.participant_count === 'number'
+              ? c.participant_count
+              : allParticipants.filter((p: any) => String(p.campaign_id) === String(c.id)).length;
             const selectedTests = c.selected_tests || [];
             const campaignLink = origin ? `${origin}/clients/test/${c.id}` : `/clients/test/${c.id}`;
             const regType = c.registration_type || 'OPEN_LINK';
