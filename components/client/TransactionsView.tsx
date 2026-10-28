@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import Script from 'next/script';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   CreditCard,
@@ -112,16 +111,12 @@ export function TransactionsView({ initialData }: TransactionsViewProps) {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Link href="/clients/billing?topup=true">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 shadow-lg flex items-center gap-2">
-              <PlusCircle className="w-4 h-4" /> Top-Up Saldo
-            </Button>
-          </Link>
-          <Link href="/clients/billing">
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 shadow-lg flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" /> Beli Kuota Tes
-            </Button>
-          </Link>
+          <ActionPillLink href="/clients/billing?topup=true" size="sm" icon={<PlusCircle className="w-4 h-4" />}>
+            Top-Up Saldo
+          </ActionPillLink>
+          <ActionPillLink href="/clients/billing" size="sm" className="bg-emerald-500 hover:bg-emerald-600" icon={<ShoppingBag className="w-4 h-4" />}>
+            Beli Kuota Tes
+          </ActionPillLink>
         </div>
       </div>
 
@@ -129,61 +124,78 @@ export function TransactionsView({ initialData }: TransactionsViewProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Toggle View: Tagihan Invoice vs Mutasi Wallet */}
         <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
-          <button
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
             onClick={() => setActiveTab('ORDERS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={
               activeTab === 'ORDERS'
                 ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+            }
+            icon={<CreditCard className="w-4 h-4" />}
           >
-            <CreditCard className="w-4 h-4" /> Tagihan & Invoice ({orders.length})
-          </button>
-          <button
+            Tagihan & Invoice ({orders.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
             onClick={() => setActiveTab('WALLET')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={
               activeTab === 'WALLET'
                 ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+            }
+            icon={<Wallet className="w-4 h-4" />}
           >
-            <Wallet className="w-4 h-4" /> Mutasi Saldo Wallet ({walletHistory.length})
-          </button>
+            Mutasi Saldo Wallet ({walletHistory.length})
+          </Button>
         </div>
 
         {/* Quick Filter Pill for Orders */}
         {activeTab === 'ORDERS' && (
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+              className={
                 filterStatus === 'ALL'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+              }
             >
               Semua ({orders.length})
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setFilterStatus('PENDING')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+              className={
                 filterStatus === 'PENDING'
-                  ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-                  : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
-              }`}
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'text-amber-700 border-amber-200 hover:bg-amber-50'
+              }
             >
               Menunggu ({pendingOrdersCount})
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setFilterStatus('PAID')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+              className={
                 filterStatus === 'PAID'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                  : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
-              }`}
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+              }
             >
               Lunas ({paidOrdersCount})
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -274,14 +286,17 @@ export function TransactionsView({ initialData }: TransactionsViewProps) {
                 </td>
                 <td className="py-3.5 px-4">
                   {o.proof_url ? (
-                    <a
+                    <ActionPillLink
                       href={o.proof_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                      size="sm"
+                      variant="secondary"
+                      className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      icon={<ImageIcon className="w-3.5 h-3.5" />}
                     >
-                      <ImageIcon className="w-3.5 h-3.5" /> Ter-unggah
-                    </a>
+                      Ter-unggah
+                    </ActionPillLink>
                   ) : (
                     <span className="text-[11px] text-slate-400">
                       {o.order_type === 'BALANCE_PURCHASE' ? 'Potong Saldo' : 'Belum diunggah'}
@@ -300,20 +315,14 @@ export function TransactionsView({ initialData }: TransactionsViewProps) {
                           <Sparkles className="w-3.5 h-3.5 mr-1" /> Bayar Snap
                         </Button>
                       )}
-                      <Link
-                        href={`/clients/payments/${o.id}`}
-                        className="inline-flex items-center text-xs font-bold text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
-                      >
+                      <ActionPillLink href={`/clients/payments/${o.id}`} size="sm" variant="secondary">
                         Petunjuk / Detail
-                      </Link>
+                      </ActionPillLink>
                     </div>
                   ) : (
-                    <Link
-                      href={`/clients/payments/${o.id}`}
-                      className="inline-flex items-center text-xs font-medium text-slate-600 hover:text-indigo-600"
-                    >
+                    <ActionPillLink href={`/clients/payments/${o.id}`} size="sm" variant="outline">
                       Lihat Invoice ➔
-                    </Link>
+                    </ActionPillLink>
                   )}
                 </td>
               </tr>

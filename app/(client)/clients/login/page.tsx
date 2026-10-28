@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 import {
   Building2,
   Loader2,
@@ -216,29 +217,35 @@ function LoginAndRegisterContent() {
 
       {/* Prominent Tab Switcher Header */}
       <div className="grid grid-cols-2 p-1 bg-slate-200/90 rounded-xl border border-slate-300/80">
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="ghost"
           onClick={() => setMode("login")}
-          className={`py-2 px-3 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+          className={
             mode === "login"
-              ? "bg-white text-indigo-700 shadow border border-slate-200 font-display"
-              : "text-slate-600 hover:text-slate-900 font-semibold"
-          }`}
+              ? "bg-white text-indigo-700 shadow border border-slate-200"
+              : "text-slate-600 hover:text-slate-900"
+          }
+          icon={<UserCheck className="w-3.5 h-3.5" />}
         >
-          <UserCheck className="w-3.5 h-3.5" /> Masuk Portal HR
-        </button>
+          Masuk Portal HR
+        </Button>
 
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="ghost"
           onClick={() => setMode("register_email")}
-          className={`py-2 px-3 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+          className={
             mode !== "login"
-              ? "bg-indigo-600 text-white shadow font-display"
-              : "text-slate-600 hover:text-indigo-600 font-semibold"
-          }`}
+              ? "bg-indigo-600 text-white shadow"
+              : "text-slate-600 hover:text-indigo-600"
+          }
+          icon={<Sparkles className="w-3.5 h-3.5 text-amber-300" />}
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Daftar Akun Baru
-        </button>
+          Daftar Akun Baru
+        </Button>
       </div>
 
       {/* MODE 1: Standard Single-View Google SSO Login */}
@@ -254,10 +261,12 @@ function LoginAndRegisterContent() {
             </p>
           </div>
 
-          <button
+          <Button
+            type="button"
+            variant="outline"
             onClick={handleGoogleLogin}
             disabled={isLoginLoading}
-            className="w-full flex justify-center items-center py-3 px-4 border-2 border-slate-300 rounded-full shadow-sm text-xs font-extrabold text-slate-800 bg-white hover:bg-slate-50 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+            className="w-full border-2"
           >
             {isLoginLoading ? (
               <Loader2 className="w-4.5 h-4.5 animate-spin mr-2 text-indigo-600" />
@@ -269,7 +278,7 @@ function LoginAndRegisterContent() {
               />
             )}
             {isLoginLoading ? "Memproses Google SSO..." : "Masuk dengan Google SSO"}
-          </button>
+          </Button>
 
           {/* Prominent Narrative Banner for Unregistered Users */}
           <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-3.5 shadow space-y-2">
@@ -282,13 +291,9 @@ function LoginAndRegisterContent() {
             <p className="text-[11px] text-slate-300 leading-relaxed">
               Daftarkan perusahaan Anda secara instan dan dapatkan instrumen psikotes terstandarisasi serta laporan PDF otomatis.
             </p>
-            <button
-              type="button"
-              onClick={() => setMode("register_email")}
-              className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-lg shadow flex items-center justify-center gap-1.5 transition-all"
-            >
+            <Button type="button" size="sm" onClick={() => setMode("register_email")} className="w-full">
               Daftar Perusahaan Baru Sekarang <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -326,21 +331,13 @@ function LoginAndRegisterContent() {
           </div>
 
           <div className="flex items-center space-x-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              className="w-1/3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-600 bg-white hover:bg-slate-50"
-            >
+            <Button type="button" size="sm" variant="outline" onClick={() => setMode("login")} className="w-1/3">
               Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-2/3 flex justify-center items-center py-2 border border-transparent rounded-full text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 shadow disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
-            >
+            </Button>
+            <Button type="submit" size="sm" disabled={isSubmitting} className="w-2/3">
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ArrowRight className="w-3.5 h-3.5 mr-1.5" />}
               {isSubmitting ? "Mengirim OTP..." : "Kirim OTP Verifikasi"}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -360,13 +357,9 @@ function LoginAndRegisterContent() {
 
           <div className="bg-slate-100 p-2.5 rounded-lg text-xs text-slate-800 flex justify-between items-center border border-slate-200">
             <span className="truncate font-mono font-bold text-slate-900 text-[11px]">{email}</span>
-            <button
-              type="button"
-              onClick={() => setMode("register_email")}
-              className="text-indigo-600 font-bold hover:underline text-[10px] shrink-0 ml-2"
-            >
+            <Button type="button" size="sm" variant="ghost" onClick={() => setMode("register_email")} className="shrink-0 ml-2">
               Ubah Email
-            </button>
+            </Button>
           </div>
 
           <div>
@@ -391,29 +384,27 @@ function LoginAndRegisterContent() {
               <span className="text-slate-500">
                 Kadaluwarsa: <strong className="text-indigo-600 font-mono">{formatTimer(timer)}</strong>
               </span>
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant="ghost"
                 onClick={() => triggerSendOtp(email)}
                 disabled={isSubmitting || timer > 240}
-                className="text-indigo-600 font-bold hover:underline disabled:opacity-40 flex items-center gap-1"
+                icon={<RefreshCw className="w-3 h-3" />}
               >
-                <RefreshCw className="w-3 h-3" /> Kirim Ulang
-              </button>
+                Kirim Ulang
+              </Button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting || otpCode.length !== 6}
-            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-full shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
-          >
+          <Button type="submit" size="sm" disabled={isSubmitting || otpCode.length !== 6} className="w-full">
             {isSubmitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
             ) : (
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
             )}
             {isSubmitting ? "Verifikasi OTP..." : "Verifikasi OTP & Lanjutkan"}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -461,14 +452,10 @@ function LoginAndRegisterContent() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-full shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
-          >
+          <Button type="submit" size="sm" disabled={isSubmitting} className="w-full mt-1">
             {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
             {isSubmitting ? "Mendaftarkan Perusahaan..." : "Selesaikan Pendaftaran Corporate"}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -484,16 +471,19 @@ function LoginAndRegisterContent() {
             <p className="text-[11px] text-emerald-700 mt-0.5">Perusahaan <strong>{companyName}</strong> telah aktif.</p>
           </div>
 
-          <button
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
             onClick={() => {
               setMode("login");
               handleGoogleLogin();
             }}
-            className="w-full flex justify-center items-center py-2.5 px-3 border border-slate-300 rounded-xl shadow-sm text-xs font-extrabold text-slate-800 bg-white hover:bg-slate-50 transition-all"
+            className="w-full"
           >
             <img src="/icons/google-color.svg" className="w-4 h-4 mr-2" alt="Google SSO" />
             Masuk via Google SSO Sekarang
-          </button>
+          </Button>
         </div>
       )}
 

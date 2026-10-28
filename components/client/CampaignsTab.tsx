@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import {
@@ -260,11 +259,14 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                 </td>
 
                 <td className="py-4 px-4">
-                  <Link href={`/clients/campaigns/${c.id}`}>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-lg text-xs font-extrabold transition-all border border-indigo-200 cursor-pointer">
-                      <Users className="w-3.5 h-3.5 text-indigo-600" /> {countCandidates} Peserta Terdaftar
-                    </span>
-                  </Link>
+                  <ActionPillLink
+                    href={`/clients/campaigns/${c.id}`}
+                    size="sm"
+                    variant="secondary"
+                    icon={<Users className="w-3.5 h-3.5" />}
+                  >
+                    {countCandidates} Peserta Terdaftar
+                  </ActionPillLink>
                 </td>
 
                 <td className="py-4 px-4">
@@ -272,13 +274,16 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                     <code className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg truncate max-w-[160px] font-mono">
                       {campaignLink}
                     </code>
-                    <button
-                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
                       title="Salin Link Sesi Ujian"
+                      aria-label="Salin Link Sesi Ujian"
                       onClick={() => copyToClipboard(campaignLink, 'Link Sesi Ujian')}
                     >
                       <Copy className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </td>
 
@@ -288,11 +293,13 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
 
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Link href={`/clients/campaigns/${c.id}`}>
-                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-md">
-                        <Users className="w-4 h-4 text-white" /> Kelola Peserta ({countCandidates}) ➔
-                      </Button>
-                    </Link>
+                    <ActionPillLink
+                      href={`/clients/campaigns/${c.id}`}
+                      size="sm"
+                      icon={<Users className="w-4 h-4" />}
+                    >
+                      Kelola Peserta ({countCandidates}) ➔
+                    </ActionPillLink>
 
                     {c.is_active && (
                       <Button variant="outline" size="sm" onClick={() => setCloseId(c.id)} disabled={loading}>
@@ -423,15 +430,16 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                       ) : (
                         <div className="flex items-center gap-2">
                           {walletBalance >= testPrice ? (
-                            <button
+                            <Button
                               type="button"
+                              size="sm"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleQuickPurchaseQuota(t.id, testPrice);
                               }}
                               disabled={isPurchasingQuota === t.id}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] rounded-full shadow-sm flex items-center gap-1 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+                              className="bg-amber-500 hover:bg-amber-600"
                             >
                               {isPurchasingQuota === t.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -441,15 +449,17 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                               {isPurchasingQuota === t.id
                                 ? 'Membeli...'
                                 : `⚡ Beli 1 Kuota (Rp ${testPrice.toLocaleString('id-ID')})`}
-                            </button>
+                            </Button>
                           ) : (
-                            <Link
+                            <ActionPillLink
                               href="/clients/billing?topup=true"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-[10px] font-bold text-red-600 hover:underline bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 inline-block"
+                              size="sm"
+                              variant="danger"
+                              className="bg-red-50 text-red-700 hover:bg-red-100 shadow-none"
                             >
                               Kuota 0 (Top-Up Saldo ➔)
-                            </Link>
+                            </ActionPillLink>
                           )}
                         </div>
                       )}
@@ -460,12 +470,9 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
             </div>
 
             <div className="mt-2 text-right">
-              <Link
-                href="/clients/billing"
-                className="text-[11px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-1"
-              >
-                <PlusCircle className="w-3 h-3" /> Katalog & Pembelian Kuota Banyak ➔
-              </Link>
+              <ActionPillLink href="/clients/billing" size="sm" variant="secondary" icon={<PlusCircle className="w-3 h-3" />}>
+                Katalog & Pembelian Kuota Banyak ➔
+              </ActionPillLink>
             </div>
           </div>
 
@@ -494,7 +501,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
             <Button variant="outline" onClick={() => setCloseId(null)}>
               Batal
             </Button>
-            <Button onClick={handleClose} disabled={loading} className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs">
+            <Button variant="danger" onClick={handleClose} disabled={loading}>
               {loading ? 'Menutup...' : 'Ya, Tutup Campaign'}
             </Button>
           </div>

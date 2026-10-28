@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { DimensionProfiles } from '@/lib/jobFit';
+import { Button } from '@/components/ui/Button';
 
 const DISC = ['D', 'I', 'S', 'C'];
 const BIGFIVE: Array<[string, string]> = [
@@ -70,9 +71,9 @@ export function DimensionProfileEditor({
           }}
         />
         {jsonError && <p className="text-xs text-red-600">{jsonError}</p>}
-        <button type="button" className="text-xs font-bold text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600" onClick={() => setMode('form')}>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setMode('form')}>
           Kembali ke form
-        </button>
+        </Button>
       </div>
     );
   }
@@ -160,9 +161,10 @@ export function DimensionProfileEditor({
         </div>
       </section>
 
-      <button
+      <Button
         type="button"
-        className="text-xs font-bold text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+        size="sm"
+        variant="ghost"
         onClick={() => {
           setJsonText(JSON.stringify(value, null, 2));
           setJsonError(null);
@@ -170,7 +172,7 @@ export function DimensionProfileEditor({
         }}
       >
         Edit sebagai JSON (lanjutan)
-      </button>
+      </Button>
     </div>
   );
 }

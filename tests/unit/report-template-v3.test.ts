@@ -167,7 +167,7 @@ describe('report v3 view model', () => {
     expect(model.highParagraph.startsWith('Selasmawati cenderung dominan, mengambil inisiatif, dan percaya diri memimpin kelompok.')).toBe(true);
     expect(model.highParagraph).toContain('Selain itu, ia sangat termotivasi oleh apresiasi, pujian, dan sorotan publik.');
     expect(model.highParagraph).toContain('Ia bersifat asertif, kompetitif, dan berani bersikap konfrontatif demi keyakinannya.');
-    expect(model.lowParagraph.startsWith('Di sisi lain, Selasmawati cenderung ragu-ragu atau membutuhkan waktu lama untuk mempertimbangkan keputusan.')).toBe(true);
+    expect(model.lowParagraph.startsWith('Di sisi lain, ia cenderung ragu-ragu atau membutuhkan waktu lama untuk mempertimbangkan keputusan.')).toBe(true);
     expect(model.lowParagraph).toContain('Ia bersifat individualis dan mandiri, tidak terlalu tergantung pada kelompok.');
     expect(model.highParagraph).not.toMatch(/skor|Pada aspek/);
     expect(model.lowParagraph).not.toMatch(/skor|Pada aspek/);

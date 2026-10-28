@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Download, Loader2 } from 'lucide-react';
 import { collectBulkPdfFiles } from '@/lib/bulkPdfClient';
+import { Button } from '@/components/ui/Button';
 
 interface BulkPdfExportButtonProps {
   customerId: number | null;
@@ -77,8 +78,9 @@ export function BulkPdfExportButton({
   }
 
   return (
-    <button
+    <Button
       type="button"
+      size="sm"
       onClick={handleClick}
       disabled={busy}
       aria-busy={busy}
@@ -87,6 +89,6 @@ export function BulkPdfExportButton({
     >
       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
       {busy ? progress || 'Menyusun ZIP...' : label}
-    </button>
+    </Button>
   );
 }

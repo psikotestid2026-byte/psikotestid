@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, BrainCircuit, User, Mail, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { DiscThreeCharts } from '@/components/reports/DiscCharts';
 import { DiscScoreResult } from '@/lib/scoring/disc';
 
@@ -44,20 +45,26 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a
+            <ActionPillLink
               href={`/api/reports/participant/${participant.id}/pdf`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              icon={<Download className="w-4 h-4" />}
             >
-              <Download className="w-4 h-4" /> Download PDF Report
-            </a>
-            <button
+              Download PDF Report
+            </ActionPillLink>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+              aria-label="Tutup"
+              className="text-slate-300 hover:text-white hover:bg-slate-800"
             >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
         </div>
 

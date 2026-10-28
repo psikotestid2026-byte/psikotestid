@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 
 export interface SidebarItem {
   id: string;
@@ -60,13 +61,16 @@ export function Sidebar({ title, subtitle, userWidget, items, activeTab, onTabCh
       </nav>
 
       <div className="p-4 border-t border-slate-100 mt-auto">
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="danger"
           onClick={onLogout}
-          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
+          className="w-full bg-red-50 text-red-700 hover:bg-red-100 shadow-none"
+          icon={<LogOut className="w-4 h-4" />}
         >
-          <LogOut className="w-4 h-4" /> Keluar
-        </button>
+          Keluar
+        </Button>
       </div>
     </aside>
   );

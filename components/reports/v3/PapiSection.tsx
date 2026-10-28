@@ -47,6 +47,7 @@ export function PapiSection({
   participantName?: string | null;
 }) {
   const model = papiSectionModel(scoring, participantName);
+  const paragraphs = [model.highParagraph, model.middleParagraph, model.lowParagraph].filter(Boolean);
   const tableHead = (
     <View style={styles.head}>
       <Text style={[styles.headText, { width: 68 }]}>Kategori</Text>
@@ -93,12 +94,11 @@ export function PapiSection({
           {groupRows(group)}
         </View>
       ))}
-      {model.highParagraph || model.lowParagraph ? (
+      {paragraphs.length > 0 ? (
         <View style={styles.paragraphs}>
-          {model.highParagraph ? <Text style={styles.body}>{model.highParagraph}</Text> : null}
-          {model.lowParagraph ? (
-            <Text style={model.highParagraph ? [styles.body, styles.following] : styles.body}>{model.lowParagraph}</Text>
-          ) : null}
+          {paragraphs.map((text, index) => (
+            <Text key={index} style={index === 0 ? styles.body : [styles.body, styles.following]}>{text}</Text>
+          ))}
         </View>
       ) : null}
     </SectionBlock>

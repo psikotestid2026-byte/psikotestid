@@ -103,7 +103,7 @@ export function AdminsTab({ data }: { data: any }) {
                   <Button variant="outline" size="sm" onClick={() => handleOpenModal(admin)}>
                     <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(admin.id)} className="text-red-500 hover:text-red-600">
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(admin.id)} aria-label="Hapus admin">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
