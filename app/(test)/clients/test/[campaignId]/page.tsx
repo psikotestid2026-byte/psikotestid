@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
 import { getQuestionsForTest } from '@/lib/questionCache';
+import { getAssessmentSecret, mintAssessmentToken } from '@/lib/assessmentToken';
 import AssessmentClient from './AssessmentClient';
 
 // Campaign, branding and test list are identical for every participant of a campaign.
@@ -57,6 +58,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
   let existingParticipant = null;
   let sessionUser = null;
   let completedTestIds: number[] = [];
+  let assessmentToken: string | null = null;
 
   if (session?.user?.email) {
     sessionUser = {
@@ -74,10 +76,31 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
       // Server-side progress so a participant can resume on any device.
       const doneRows = await sql`SELECT test_id FROM test_results WHERE participant_id = ${existingParticipant.id}`;
       completedTestIds = doneRows.map((r) => Number(r.test_id));
+      try {
+        assessmentToken = mintAssessmentToken(
+          {
+            pid: Number(existingParticipant.id),
+            cid: Number(campaign?.id || campaignId),
+            email: String(existingParticipant.email || session.user.email || ''),
+            name: String(existingParticipant.full_name || session.user.name || ''),
+          },
+          getAssessmentSecret()
+        );
+      } catch (err) {
+        console.error('Failed to mint assessment token:', err);
+      }
     }
   }
 
-  const initialData = { campaign, customer, tests, sessionUser, existingParticipant, completedTestIds };
+  const initialData = {
+    campaign,
+    customer,
+    tests,
+    sessionUser,
+    existingParticipant,
+    completedTestIds,
+    assessmentToken,
+  };
 
   return <AssessmentClient initialData={initialData} />;
 }

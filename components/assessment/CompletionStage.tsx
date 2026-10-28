@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
 import { CheckCircle2, ArrowRight, Check, LogOut, ShieldCheck, Loader2 } from 'lucide-react';
+import { clearTabAssessmentBindings } from '@/lib/assessmentSession';
 
 interface TransitionStageProps {
   onConfirm: () => void;
@@ -34,16 +35,24 @@ interface DoneStageProps {
   customer: any;
   /** Set for mandatory-bundle campaigns: shows processing state while scoring runs in the background. */
   bundleParticipantId?: number | null;
+  /** Tab token so status polling stays on this participant after another login overwrites the cookie. */
+  assessmentToken?: string | null;
 }
 
-const statusFetcher = (url: string) => fetch(url).then((res) => res.json());
+const statusFetcher = ([url, token]: [string, string | null]) =>
+  fetch(url, {
+    headers: token ? { 'x-assessment-token': token } : {},
+    cache: 'no-store',
+  }).then((res) => res.json());
 
-export function DoneStage({ userName, customer, bundleParticipantId }: DoneStageProps) {
+export function DoneStage({ userName, customer, bundleParticipantId, assessmentToken }: DoneStageProps) {
   const [countdown, setCountdown] = useState(bundleParticipantId ? 20 : 10);
 
   // Poll until the background scoring is finished (zero-delay feedback, never blocks the submit).
   const { data: statusData } = useSWR(
-    bundleParticipantId ? `/api/test/status?participant_id=${bundleParticipantId}` : null,
+    bundleParticipantId
+      ? ([`/api/test/status?participant_id=${bundleParticipantId}`, assessmentToken || null] as [string, string | null])
+      : null,
     statusFetcher,
     { refreshInterval: (latest) => (latest?.scoring_status === 'DONE' || latest?.scoring_status === 'FAILED' ? 0 : 2000) }
   );
@@ -54,6 +63,7 @@ export function DoneStage({ userName, customer, bundleParticipantId }: DoneStage
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          clearTabAssessmentBindings();
           signOut({ callbackUrl: '/clients/test/login' });
           return 0;
         }
