@@ -89,7 +89,7 @@ export function BulkImportExcelModal({
           <button
             type="button"
             onClick={downloadCandidateExcelTemplate}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             <Download className="w-3.5 h-3.5" /> Unduh Template (.xlsx)
           </button>
@@ -154,7 +154,7 @@ export function BulkImportExcelModal({
             type="button"
             onClick={handleSubmitImport}
             disabled={isImporting || parsedCandidates.length === 0}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 shadow-md flex items-center gap-2"
           >
             {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             {isImporting ? 'Mengimpor Data...' : `SUBMIT & IMPOR ${parsedCandidates.length} KANDIDAT KE DATABASE`}

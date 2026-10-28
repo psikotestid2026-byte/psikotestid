@@ -185,7 +185,7 @@ export function ParticipantsTab({ data }: ParticipantsTabProps) {
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/clients/participants/${p.id}`}>
-                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-1.5 shadow-sm flex items-center gap-1.5">
                         <Eye className="w-3.5 h-3.5 text-white" /> Lihat Hasil ➔
                       </Button>
                     </Link>

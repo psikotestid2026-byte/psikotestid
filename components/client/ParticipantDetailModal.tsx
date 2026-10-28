@@ -54,7 +54,7 @@ export function ParticipantDetailModal({ participant, onClose }: ParticipantDeta
             </a>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-all"
+              className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
             >
               <X className="w-5 h-5" />
             </button>

@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import useSWR from 'swr';
 import { Building, LayoutDashboard, Link as LinkIcon, Users, CreditCard, Settings, Wallet, PlusCircle, LogOut, Ticket, History, ShoppingBag } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink } from '@/components/ui/Button';
 
 interface ClientShellProps {
   initialData: any;
@@ -133,7 +133,7 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
         <div className="p-4 border-t border-slate-100">
           <button
             onClick={() => signOut({ callbackUrl: '/clients/login' })}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+            className="w-full flex items-center justify-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar Akun (Logout)</span>
@@ -154,14 +154,9 @@ export function ClientShell({ initialData, children }: ClientShellProps) {
                 <span>Saldo: Rp {Number(walletBalance).toLocaleString('id-ID')}</span>
               </div>
 
-              <Link href="/clients/billing?topup=true">
-                <Button
-                  size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" /> + Top-Up Saldo
-                </Button>
-              </Link>
+              <ActionPillLink href="/clients/billing?topup=true" size="sm" icon={<PlusCircle className="w-3.5 h-3.5" />}>
+                Top-Up Saldo
+              </ActionPillLink>
 
               {/* Per-Test Quota Balance Badge */}
               <Link href="/clients/billing" className="hidden lg:inline-flex">

@@ -363,7 +363,7 @@ export default function CmsAdminPage() {
             <button
               onClick={handleSaveBonus}
               disabled={isSavingBonus}
-              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-full flex items-center justify-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
             >
               {isSavingBonus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {isSavingBonus ? 'Memuat...' : 'Simpan Pengaturan Bonus Saldo'}
@@ -862,7 +862,7 @@ export default function CmsAdminPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {isSaving ? 'Memuat...' : 'Simpan Perubahan Section'}

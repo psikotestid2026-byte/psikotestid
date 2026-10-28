@@ -450,13 +450,13 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                     </span>
                   </div>
                   <button
-                    onClick={() =>
+                    onClick={() => {
                       copyToClipboard(
                         order.bank_details?.account_number || '1234567890',
                         'Nomor rekening'
-                      )
-                    }
-                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                      );
+                    }}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
                   >
                     <Copy className="w-3.5 h-3.5" /> Salin Rekening
                   </button>
@@ -538,10 +538,10 @@ export function PaymentInstructionView({ orderId, initialOrder }: PaymentInstruc
                     type="button"
                     onClick={handleUploadPaymentProof}
                     disabled={isUploadingProof || !selectedFile}
-                    className={`w-full text-white font-extrabold text-xs py-3.5 rounded-xl shadow-xl border-2 uppercase tracking-wide flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] disabled:opacity-50 ${
+                    className={`w-full text-white font-extrabold text-xs py-3.5 rounded-full shadow-xl border-2 uppercase tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-600 ${
                       order.payment_provider?.toLowerCase() === 'manual'
                         ? 'bg-red-600 hover:bg-red-700 border-red-400'
-                        : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-400'
+                        : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-400 focus-visible:ring-brand-600'
                     }`}
                   >
                     {isUploadingProof ? (

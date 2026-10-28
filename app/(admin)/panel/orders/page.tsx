@@ -162,7 +162,7 @@ export default function OrdersAdminPage() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             <Download className="w-4 h-4" /> Export XLSX
           </button>
@@ -508,7 +508,7 @@ export default function OrdersAdminPage() {
                 type="button"
                 onClick={handleSetPaid}
                 disabled={isConfirming}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50"
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
               >
                 {isConfirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 {isConfirming ? 'Memproses...' : 'Konfirmasi & Set LUNAS Sekarang'}

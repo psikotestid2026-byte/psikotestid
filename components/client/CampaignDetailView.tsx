@@ -256,7 +256,7 @@ Terima kasih dan selamat mengerjakan!`;
             <Button
               type="submit"
               disabled={isSubmittingManual || !candidateName || !candidateEmail}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-md flex items-center justify-center gap-1.5"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 shadow-md flex items-center justify-center gap-1.5"
             >
               {isSubmittingManual ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
