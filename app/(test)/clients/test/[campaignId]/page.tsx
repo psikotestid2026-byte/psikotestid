@@ -3,6 +3,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sql } from '@/lib/neon';
 import { getQuestionsForTest } from '@/lib/questionCache';
 import { getAssessmentSecret, mintAssessmentToken } from '@/lib/assessmentToken';
+import { loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { getRequiredTestsForParticipant } from '@/lib/requiredTests';
 import AssessmentClient from './AssessmentClient';
 
 // Campaign, branding and test list are identical for every participant of a campaign.
@@ -67,7 +69,8 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
     };
 
     const pRows = await sql`
-      SELECT id, full_name, email, status, phone_number, nik, reset_count FROM participants
+      SELECT id, full_name, email, status, phone_number, nik, reset_count, position, job_level_code
+      FROM participants
       WHERE campaign_id = ${campaignId} AND LOWER(email) = ${session.user.email.toLowerCase()}
       LIMIT 1
     `;
@@ -92,10 +95,18 @@ export default async function AssessmentPage({ params }: { params: Promise<{ cam
     }
   }
 
+  let visibleTests = tests;
+  if (existingParticipant && campaign?.campaign_mode === 'MANDATORY_BUNDLE') {
+    const context = await loadRequiredTestsContext();
+    visibleTests = getRequiredTestsForParticipant(existingParticipant, tests, context);
+    const visibleIds = new Set(visibleTests.map((test: any) => Number(test.id)));
+    completedTestIds = completedTestIds.filter((id) => visibleIds.has(id));
+  }
+
   const initialData = {
     campaign,
     customer,
-    tests,
+    tests: visibleTests,
     sessionUser,
     existingParticipant,
     completedTestIds,

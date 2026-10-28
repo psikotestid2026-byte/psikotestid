@@ -6,6 +6,8 @@ import {
   RECOMMENDATION_STATUSES,
   isRecommendationStatus,
 } from '@/lib/jobFit';
+import { loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { getRequiredTestsForParticipant } from '@/lib/requiredTests';
 
 export const RESULT_PAGE_SIZES = [10, 25, 50, 100] as const;
 
@@ -95,6 +97,8 @@ export interface ResultRow {
   completed_at: string | null;
   tests: Record<string, { score: number }> | null;
   tests_done: number;
+  tests_required?: number;
+  has_msdt_result?: boolean;
 }
 
 const SELECT_COLUMNS = `
@@ -107,7 +111,13 @@ const SELECT_COLUMNS = `
   CASE WHEN p.scoring_status = 'DONE' THEN p.score_breakdown->'tests' END AS tests,
   (SELECT COUNT(DISTINCT tr.test_id)::int FROM test_results tr
      JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
-     WHERE tr.participant_id = p.id) AS tests_done`;
+     WHERE tr.participant_id = p.id) AS tests_done,
+  EXISTS (
+    SELECT 1 FROM test_results tr
+    JOIN master_tests mt ON mt.id = tr.test_id
+    JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
+    WHERE tr.participant_id = p.id AND LOWER(mt.code) = 'msdt'
+  ) AS has_msdt_result`;
 
 export async function queryCampaignResults(campaignId: number, query: ResultsQuery, paginate = true) {
   const { where, values } = buildWhere(campaignId, query);
@@ -120,7 +130,7 @@ export async function queryCampaignResults(campaignId: number, query: ResultsQue
     paging = `LIMIT $${pageValues.length - 1} OFFSET $${pageValues.length}`;
   }
 
-  const [rows, totalRows, summaryRows, unitRows, testRows] = await Promise.all([
+  const [rows, totalRows, summaryRows, unitRows, testRows, campaignTestRows, context] = await Promise.all([
     sql.query(`SELECT ${SELECT_COLUMNS} FROM participants p WHERE ${where} ORDER BY ${orderBy} ${paging}`, pageValues),
     sql.query(`SELECT COUNT(*)::int AS total FROM participants p WHERE ${where}`, values),
     sql`
@@ -139,10 +149,25 @@ export async function queryCampaignResults(campaignId: number, query: ResultsQue
       WHERE campaign_id = ${campaignId} AND unit_work IS NOT NULL ORDER BY unit_work
     `,
     sql`SELECT COUNT(*)::int AS total FROM campaign_tests WHERE campaign_id = ${campaignId}`,
+    sql`
+      SELECT mt.id::int AS id, LOWER(mt.code) AS code
+      FROM campaign_tests ct
+      JOIN master_tests mt ON mt.id = ct.test_id
+      WHERE ct.campaign_id = ${campaignId}
+      ORDER BY ct.order_number NULLS LAST, mt.id
+    `,
+    loadRequiredTestsContext(),
   ]);
 
+  const annotated = (rows as unknown as ResultRow[]).map((row) => {
+    const required = getRequiredTestsForParticipant(row, campaignTestRows as any[], context);
+    const needsMsdt = required.some((test) => String(test.code || '').toLowerCase() === 'msdt');
+    const testsDone = Number(row.tests_done) - (!needsMsdt && row.has_msdt_result ? 1 : 0);
+    return { ...row, tests_done: Math.max(0, testsDone), tests_required: required.length };
+  });
+
   return {
-    rows: rows as unknown as ResultRow[],
+    rows: annotated,
     total: Number((totalRows as any[])[0]?.total || 0),
     summary: summaryRows[0],
     units: unitRows.map((u) => String(u.unit_work)),
@@ -184,10 +209,11 @@ export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buf
   ];
   const body = rows.map((r, i) => {
     const t = r.tests || {};
+    const requiredCount = r.tests_required ?? totalTests;
     const status = isRecommendationStatus(r.recommendation_status)
       ? RECOMMENDATION_LABELS[r.recommendation_status]
-      : r.tests_done < totalTests
-        ? `Belum selesai (${r.tests_done}/${totalTests} tes)`
+      : r.tests_done < requiredCount
+        ? `Belum selesai (${r.tests_done}/${requiredCount} tes)`
         : 'Belum diproses';
     return [
       i + 1,
@@ -216,18 +242,45 @@ export interface CredentialRow {
   unit_work: string | null;
   status: string;
   tests_done: number;
+  tests_required?: number;
+  job_level_code?: string | null;
+  has_msdt_result?: boolean;
 }
 
 export async function queryCredentialRows(campaignId: number) {
   const rows = await sql`
     SELECT p.full_name, p.username, p.default_password, p.position, p.unit_work, p.status,
-           (SELECT COUNT(*)::int FROM test_results tr WHERE tr.participant_id = p.id) AS tests_done
+           p.job_level_code,
+           (SELECT COUNT(DISTINCT tr.test_id)::int FROM test_results tr
+              JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
+              WHERE tr.participant_id = p.id) AS tests_done,
+           EXISTS (
+             SELECT 1 FROM test_results tr
+             JOIN master_tests mt ON mt.id = tr.test_id
+             JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
+             WHERE tr.participant_id = p.id AND LOWER(mt.code) = 'msdt'
+           ) AS has_msdt_result
     FROM participants p
     WHERE p.campaign_id = ${campaignId} AND p.username IS NOT NULL
     ORDER BY p.full_name ASC, p.id ASC
   `;
-  const totalTests = await sql`SELECT COUNT(*)::int AS total FROM campaign_tests WHERE campaign_id = ${campaignId}`;
-  return { rows: rows as unknown as CredentialRow[], totalTests: Number(totalTests[0]?.total || 0) };
+  const [totalTests, campaignTests, context] = await Promise.all([
+    sql`SELECT COUNT(*)::int AS total FROM campaign_tests WHERE campaign_id = ${campaignId}`,
+    sql`
+      SELECT mt.id::int AS id, LOWER(mt.code) AS code
+      FROM campaign_tests ct
+      JOIN master_tests mt ON mt.id = ct.test_id
+      WHERE ct.campaign_id = ${campaignId}
+    `,
+    loadRequiredTestsContext(),
+  ]);
+  const annotated = (rows as unknown as CredentialRow[]).map((row) => {
+    const required = getRequiredTestsForParticipant(row, campaignTests as any[], context);
+    const needsMsdt = required.some((test) => String(test.code || '').toLowerCase() === 'msdt');
+    const testsDone = Number(row.tests_done) - (!needsMsdt && row.has_msdt_result ? 1 : 0);
+    return { ...row, tests_done: Math.max(0, testsDone), tests_required: required.length };
+  });
+  return { rows: annotated, totalTests: Number(totalTests[0]?.total || 0) };
 }
 
 export function buildCredentialsWorkbook(rows: CredentialRow[], totalTests: number): Buffer {
@@ -239,7 +292,7 @@ export function buildCredentialsWorkbook(rows: CredentialRow[], totalTests: numb
     'Jabatan',
     'Unit Kerja',
     'Status Tes',
-    `Progres (dari ${totalTests})`,
+    'Progres',
   ];
   const body = rows.map((r, i) => [
     i + 1,
@@ -249,7 +302,7 @@ export function buildCredentialsWorkbook(rows: CredentialRow[], totalTests: numb
     r.position || '',
     r.unit_work || '',
     r.status === 'COMPLETED' ? 'Selesai' : r.tests_done > 0 ? 'Sedang dikerjakan' : 'Belum mulai',
-    `${r.tests_done}/${totalTests}`,
+    `${r.tests_done}/${r.tests_required ?? totalTests}`,
   ]);
   return toBuffer([header, ...body], [6, 32, 24, 18, 40, 22, 18, 16], 'Data Login Karyawan');
 }

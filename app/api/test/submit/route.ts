@@ -4,6 +4,8 @@ import { requireSession } from '@/lib/authGuards';
 import { authorizeAssessmentSubmit } from '@/lib/assessmentSession';
 import { getAssessmentSecret, verifyAssessmentToken } from '@/lib/assessmentToken';
 import { runScoringWithFallback } from '@/lib/participantScoring';
+import { getBundleCompletion, loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { getRequiredTestsForParticipant } from '@/lib/requiredTests';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -78,6 +80,8 @@ export async function POST(req: Request) {
           p.id,
           p.status AS participant_status,
           p.campaign_id,
+          p.position,
+          p.job_level_code,
           LOWER(p.email) AS participant_email,
           LOWER(cust.email) AS customer_email,
           c.campaign_mode
@@ -135,24 +139,21 @@ export async function POST(req: Request) {
 
     if (action === 'mark_completed') {
       if (isBundle) {
-        // Mandatory bundle: every test of the campaign must have a stored result.
-        const missing = await sql`
-          SELECT mt.code
-          FROM campaign_tests ct
-          JOIN master_tests mt ON mt.id = ct.test_id
-          WHERE ct.campaign_id = ${access.campaign_id}
-            AND NOT EXISTS (
-              SELECT 1 FROM test_results tr WHERE tr.participant_id = ${participantId} AND tr.test_id = ct.test_id
-            )
-          ORDER BY ct.order_number NULLS LAST, mt.id
-        `;
-        if (missing.length > 0) {
+        const completion = await getBundleCompletion(participantId);
+        if (!completion.isComplete) {
+          const missingRows = completion.missing_test_ids.length
+            ? await sql`
+                SELECT code FROM master_tests
+                WHERE id = ANY(${completion.missing_test_ids}::int[])
+              `
+            : [];
+          const missingCodes = missingRows.map((row: any) => String(row.code));
           return NextResponse.json(
             {
-              error: `Selesaikan semua tes terlebih dahulu. Belum selesai: ${missing
-                .map((m) => String(m.code).toUpperCase())
+              error: `Selesaikan semua tes terlebih dahulu. Belum selesai: ${missingCodes
+                .map((code) => code.toUpperCase())
                 .join(', ')}.`,
-              missing_tests: missing.map((m) => m.code),
+              missing_tests: missingCodes,
             },
             { status: 409 }
           );
@@ -198,13 +199,26 @@ export async function POST(req: Request) {
 
     if (isBundle) {
       const member = await sql`
-        SELECT 1 FROM campaign_tests ct
+        SELECT LOWER(mt.code) AS code
+        FROM campaign_tests ct
+        JOIN master_tests mt ON mt.id = ct.test_id
         JOIN participants p ON p.campaign_id = ct.campaign_id
         WHERE p.id = ${participantId} AND ct.test_id = ${testId}
         LIMIT 1
       `;
       if (member.length === 0) {
         return NextResponse.json({ error: 'Tes ini bukan bagian dari asesmen Anda.' }, { status: 400 });
+      }
+      if (String(member[0].code) === 'msdt') {
+        const context = await loadRequiredTestsContext();
+        const required = getRequiredTestsForParticipant(access, [{ code: 'msdt' }], context);
+        if (required.length === 0) {
+          return NextResponse.json({
+            success: true,
+            skipped: true,
+            message: 'Tes ini tidak diperlukan untuk level jabatan Anda.',
+          });
+        }
       }
     }
 
