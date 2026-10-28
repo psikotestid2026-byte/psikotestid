@@ -46,6 +46,8 @@ export interface LevelProfile {
   threshold_recommended: number;
   threshold_considered: number;
   dimension_profiles: DimensionProfiles;
+  /** False only for levels that do not take MSDT (seeded STAF). Omitted means required. */
+  requires_msdt?: boolean;
 }
 
 export interface JabatanMapping {
@@ -267,7 +269,7 @@ const TEST_SCORERS: Record<BundleTestCode, (scoring: unknown, profile: LevelProf
 export interface JobFitBreakdown {
   level_code: string;
   level_name: string;
-  tests: Record<BundleTestCode, { score: number; weight: number; min_score: number; below_min: boolean }>;
+  tests: Partial<Record<BundleTestCode, { score: number; weight: number; min_score: number; below_min: boolean }>>;
   composite: number;
   thresholds: { recommended: number; considered: number };
   below_min: BundleTestCode[];
@@ -278,8 +280,15 @@ export interface JobFitBreakdown {
 export interface JobFitResult {
   composite: number;
   status: RecommendationStatus;
-  scores: Record<BundleTestCode, number>;
+  scores: Partial<Record<BundleTestCode, number>>;
   breakdown: JobFitBreakdown;
+}
+
+/** Instruments that count for this level. MSDT is dropped when requires_msdt is false. */
+export function scoredBundleCodes(profile: Pick<LevelProfile, 'requires_msdt'>): BundleTestCode[] {
+  return profile.requires_msdt === false
+    ? BUNDLE_TEST_CODES.filter((code) => code !== 'msdt')
+    : [...BUNDLE_TEST_CODES];
 }
 
 export type JobFitFailure = { ok: false; missing: BundleTestCode[] };
@@ -301,32 +310,33 @@ export function computeJobFit(
   scoringByCode: Partial<Record<string, unknown>>,
   profile: LevelProfile
 ): ({ ok: true } & JobFitResult) | JobFitFailure {
-  const scores = {} as Record<BundleTestCode, number>;
+  const active = scoredBundleCodes(profile);
+  const scores: Partial<Record<BundleTestCode, number>> = {};
   const missing: BundleTestCode[] = [];
 
-  for (const code of BUNDLE_TEST_CODES) {
+  for (const code of active) {
     const value = TEST_SCORERS[code](scoringByCode[code], profile);
     if (value == null) missing.push(code);
     else scores[code] = value;
   }
   if (missing.length > 0) return { ok: false, missing };
 
-  const totalWeight = BUNDLE_TEST_CODES.reduce((sum, code) => sum + profile.weights[code], 0) || 1;
+  const activeWeight = active.reduce((sum, code) => sum + profile.weights[code], 0) || 1;
   const composite = round2(
-    BUNDLE_TEST_CODES.reduce((sum, code) => sum + scores[code] * profile.weights[code], 0) / totalWeight
+    active.reduce((sum, code) => sum + (scores[code] as number) * profile.weights[code], 0) / activeWeight
   );
 
-  const belowMin = BUNDLE_TEST_CODES.filter((code) => scores[code] < profile.min_scores[code]);
+  const belowMin = active.filter((code) => (scores[code] as number) < profile.min_scores[code]);
   let status = statusFromComposite(composite, profile);
   // A high composite cannot hide a clearly failing instrument.
   const gated = status === 'DIREKOMENDASIKAN' && belowMin.length > 0;
   if (gated) status = 'DIPERTIMBANGKAN';
 
-  const tests = {} as JobFitBreakdown['tests'];
-  for (const code of BUNDLE_TEST_CODES) {
+  const tests: JobFitBreakdown['tests'] = {};
+  for (const code of active) {
     tests[code] = {
-      score: scores[code],
-      weight: profile.weights[code],
+      score: scores[code] as number,
+      weight: profile.weights[code] / activeWeight,
       min_score: profile.min_scores[code],
       below_min: belowMin.includes(code),
     };
@@ -373,6 +383,7 @@ export function levelProfileFromRow(row: Record<string, any>): LevelProfile {
     threshold_recommended: num(row.threshold_recommended, 75),
     threshold_considered: num(row.threshold_considered, 55),
     dimension_profiles: (asObject(row.dimension_profiles) as DimensionProfiles) || {},
+    requires_msdt: row.requires_msdt !== false && row.requires_msdt !== 'f',
   };
 }
 
@@ -432,10 +443,12 @@ export function buildFitDetails(scoringByCode: Partial<Record<string, unknown>>,
     details.papi = { high: pick(cfg.high), low: pick(cfg.low) };
   }
 
-  const msdt = asObject(scoringByCode.msdt);
-  const type = String(msdt?.dominantType || '').trim();
-  const fit = finite((profile.dimension_profiles.msdt || {})[type]);
-  if (type && fit != null) details.msdt = { type, fit };
+  if (profile.requires_msdt !== false) {
+    const msdt = asObject(scoringByCode.msdt);
+    const type = String(msdt?.dominantType || '').trim();
+    const fit = finite((profile.dimension_profiles.msdt || {})[type]);
+    if (type && fit != null) details.msdt = { type, fit };
+  }
 
   return details;
 }

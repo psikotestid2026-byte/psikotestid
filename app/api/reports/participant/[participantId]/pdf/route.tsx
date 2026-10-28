@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { renderToStream } from '@react-pdf/renderer';
 import React from 'react';
 import { sql } from '@/lib/neon';
-import { getBundleCompletion, INCOMPLETE_RESULT_MESSAGE } from '@/lib/bundleCompletion';
+import { getBundleCompletion, INCOMPLETE_RESULT_MESSAGE, loadRequiredTestsContext } from '@/lib/bundleCompletion';
+import { omitUnrequiredMsdtFromReport } from '@/lib/requiredTests';
 import { requireParticipantAccess } from '@/lib/authGuards';
 import { UniversalPdfDocument } from '@/components/reports/ParticipantReport';
 import { loadDiscReportDictionary } from '@/lib/loadDiscReportDictionary';
@@ -48,16 +49,22 @@ export async function GET(
       ORDER BY tr.id ASC
     `;
 
+    let reportParticipant = participant;
+    let reportResults = results;
     if (participant.campaign_mode === 'MANDATORY_BUNDLE') {
       const completion = await getBundleCompletion(participantId);
       if (!completion.isComplete || participant.scoring_status !== 'DONE') {
         return NextResponse.json({ error: INCOMPLETE_RESULT_MESSAGE }, { status: 409 });
       }
+      const context = await loadRequiredTestsContext();
+      const stripped = omitUnrequiredMsdtFromReport(participant, results as any[], context);
+      reportParticipant = stripped.participant;
+      reportResults = stripped.results;
     }
 
     const discDictionary = await loadDiscReportDictionary();
     const pdfStream = await renderToStream(
-      <UniversalPdfDocument participant={participant} results={results} discDictionary={discDictionary} />
+      <UniversalPdfDocument participant={reportParticipant} results={reportResults} discDictionary={discDictionary} />
     );
 
     const safeName = (participant.full_name || 'Kandidat').replace(/\s+/g, '_');

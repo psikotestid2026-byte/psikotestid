@@ -6,10 +6,10 @@ import {
   computeJobFit,
   buildFitDetails,
   levelProfileFromRow,
-  resolveJobLevel,
   type JabatanMapping,
   type LevelProfile,
 } from '@/lib/jobFit';
+import { resolveParticipantLevelCode } from '@/lib/requiredTests';
 
 /**
  * Composite scoring for the mandatory 5-test bundle.
@@ -88,7 +88,7 @@ export type ScoreOutcome =
 /** Computes and stores composite score + recommendation for one participant. Safe to call repeatedly. */
 export async function scoreParticipant(participantId: number): Promise<ScoreOutcome> {
   const [participants, results, config] = await Promise.all([
-    sql`SELECT id, position, status, assessor_override FROM participants WHERE id = ${participantId} LIMIT 1`,
+    sql`SELECT id, position, job_level_code, status, assessor_override FROM participants WHERE id = ${participantId} LIMIT 1`,
     sql`
       SELECT LOWER(mt.code) AS code, tr.scoring_data, tr.raw_answers
       FROM test_results tr
@@ -111,7 +111,7 @@ export async function scoreParticipant(participantId: number): Promise<ScoreOutc
     return { ok: false, error: INCOMPLETE_RESULT_MESSAGE, incomplete: true };
   }
 
-  const levelCode = resolveJobLevel(participant.position, config.mappings);
+  const levelCode = resolveParticipantLevelCode(participant, config.mappings);
   const profile = config.profiles.get(levelCode) || config.profiles.get(FALLBACK_LEVEL_PROFILE.level_code) || FALLBACK_LEVEL_PROFILE;
 
   // Use stored scoring_data; recompute from raw answers only if it is missing/incomplete.
