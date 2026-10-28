@@ -146,6 +146,25 @@ export function hasCompletePapiScores(scoring: unknown): boolean {
   return hasEveryScore(parsed?.scores, PAPI_SCORE_CODES);
 }
 
+const DISC_GRAPH_KEYS = ['g1', 'g2', 'g3'] as const;
+const DISC_LETTERS = ['D', 'I', 'S', 'C'] as const;
+
+/** Stored DISC is usable only when every scaled graph has numeric D/I/S/C. Missing points must not become 0 (that graph is Transisi). */
+export function hasCompleteDiscGraphs(scoring: unknown): boolean {
+  const parsed = parseJsonObject(scoring);
+  if (!parsed) return false;
+  return DISC_GRAPH_KEYS.every((key) => hasEveryScore(parsed[key], DISC_LETTERS));
+}
+
+/** In-memory DISC score. Keeps a complete stored payload; otherwise scores raw answers. Never writes. */
+export function resolveDiscScoring(
+  scoring: unknown,
+  rawAnswers: unknown,
+  calculate: AnswerScoreCalculator
+): Record<string, any> | null {
+  return resolveStoredOrComputed(scoring, rawAnswers, hasCompleteDiscGraphs, calculate);
+}
+
 /**
  * Stored MSDT is usable when the dominant style is a known code and every dimension is numeric.
  */

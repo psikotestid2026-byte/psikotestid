@@ -245,7 +245,7 @@ export function calculateDiscScore(answers: Record<number | string, { P?: number
   const dominantLabel = dominantCode;
 
   const isSuperSyndrome = ORDER.every(d => g3[d] > 0);
-  const isUndershift = ORDER.every(d => g3[d] <= 0);
+  const isUndershift = ORDER.every(d => g3[d] < 0);
 
   const domG1 = getDominantCode(g1);
   const domG2 = getDominantCode(g2);
