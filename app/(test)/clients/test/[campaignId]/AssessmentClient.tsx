@@ -10,13 +10,22 @@ import { BiodataStage } from '@/components/assessment/BiodataStage';
 import { InstructionStage } from '@/components/assessment/InstructionStage';
 import { QuestionStage } from '@/components/assessment/QuestionStage';
 import { TransitionStage, DoneStage } from '@/components/assessment/CompletionStage';
-import { submitBiodata, submitTestResult, markTestCompleted } from '../actions';
+import { BundleProgress } from '@/components/assessment/BundleProgress';
+import { submitBiodata, startBundleSession } from '../actions';
 
 export default function AssessmentClient({ initialData }: { initialData: any }) {
   const { campaign, customer, tests, sessionUser, existingParticipant } = initialData;
+  const isBundle = campaign?.campaign_mode === 'MANDATORY_BUNDLE';
+  const [completedTestIds, setCompletedTestIds] = useState<number[]>(initialData.completedTestIds || []);
+  // Mandatory bundle: resume at the first test that has no stored result on the server.
+  const firstPendingIdx = Math.max(
+    0,
+    tests.findIndex((t: any) => !(initialData.completedTestIds || []).includes(t.id))
+  );
   const [stage, setStage] = useState('welcome');
+  const [isStarting, setIsStarting] = useState(false);
   const [participantId, setParticipantId] = useState<number | null>(existingParticipant?.id || null);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(isBundle ? firstPendingIdx : 0);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<any>({});
   const [timeLeft, setTimeLeft] = useState(0);
@@ -53,7 +62,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   };
 
   // LocalStorage Key based on campaign and participant/email
-  const storageKey = campaign?.id ? `psikotest_progress_c${campaign.id}_${email || participantId || 'guest'}` : null;
+  const storageKey = campaign?.id ? `psikotest_progress_c${campaign.id}_${email || participantId || 'guest'}_r${existingParticipant?.reset_count ?? 0}` : null;
 
   // Restore state from LocalStorage on mount
   useEffect(() => {
@@ -67,7 +76,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         }
         if (parsed.participantId) setParticipantId(parsed.participantId);
         if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
-          setActiveIdx(parsed.activeIdx);
+          setActiveIdx(isBundle ? Math.max(parsed.activeIdx, firstPendingIdx) : parsed.activeIdx);
         }
         // Guard against stale progress: if the saved question-count "fingerprint"
         // for the active test no longer matches the freshly loaded question list
@@ -92,17 +101,22 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
             setAnswers(parsed.answers);
           }
           if (parsed.participantId) setParticipantId(parsed.participantId);
+          const behindServer = isBundle && typeof parsed.activeIdx === 'number' && parsed.activeIdx < firstPendingIdx;
           if (typeof parsed.activeIdx === 'number' && parsed.activeIdx < tests.length) {
-            setActiveIdx(parsed.activeIdx);
+            setActiveIdx(isBundle ? Math.max(parsed.activeIdx, firstPendingIdx) : parsed.activeIdx);
           }
-          if (typeof parsed.currentQ === 'number') {
+          if (typeof parsed.currentQ === 'number' && !behindServer) {
             const maxQ = savedTest?.questions?.length ? savedTest.questions.length - 1 : 0;
             setCurrentQ(Math.min(parsed.currentQ, Math.max(maxQ, 0)));
           }
-          if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
+          if (behindServer) {
+            // Local progress points at a test already stored on the server: restart at the next test.
+            setCurrentQ(0);
+            setStage('instruction');
+          } else if (parsed.stage && parsed.stage !== 'done' && parsed.stage !== 'welcome') {
             setStage(parsed.stage);
           }
-          if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0) {
+          if (typeof parsed.timeLeft === 'number' && parsed.timeLeft > 0 && !behindServer) {
             setTimeLeft(parsed.timeLeft);
           }
         }
@@ -229,6 +243,28 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     }
   };
 
+  const handleBundleStart = async () => {
+    if (!participantId || isStarting) return;
+    setIsStarting(true);
+    try {
+      const res = await startBundleSession(participantId);
+      if (res.alreadyCompleted) {
+        setStage('already_completed');
+        return;
+      }
+      // Everything already stored on the server but not yet marked complete: finalize directly.
+      if (completedTestIds.length >= tests.length) {
+        await finalizeBundle();
+        return;
+      }
+      setStage('instruction');
+    } catch (err: any) {
+      toast.error('Gagal memulai asesmen: ' + (err?.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   const startTest = () => {
     const t = tests[activeIdx];
     setCurrentQ(0);
@@ -285,6 +321,20 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     return val !== undefined && val !== null && String(val).trim() !== '';
   };
 
+  const finalizeBundle = async () => {
+    if (!participantId) return;
+    const res = await fetch('/api/test/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_completed', participant_id: participantId }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok || !result.success) {
+      throw new Error(result.error || 'Gagal menyelesaikan asesmen.');
+    }
+    setStage('done');
+  };
+
   const finishActiveTest = async () => {
     const t = tests[activeIdx];
     try {
@@ -307,9 +357,13 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       }
 
       toast.success(`Jawaban tes ${t.name || 'psikotes'} berhasil disimpan!`);
+      const nowCompleted = completedTestIds.includes(t.id) ? completedTestIds : [...completedTestIds, t.id];
+      setCompletedTestIds(nowCompleted);
 
       if (activeIdx < tests.length - 1) {
         setStage('transition');
+      } else if (isBundle) {
+        await finalizeBundle();
       } else {
         if (participantId) {
           await fetch('/api/test/submit', {
@@ -374,6 +428,10 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         </div>
       </header>
 
+      {isBundle && ['instruction', 'questions', 'transition'].includes(stage) && (
+        <BundleProgress tests={tests} activeIdx={activeIdx} completedTestIds={completedTestIds} brandColor={brandColor} />
+      )}
+
       {stage === 'questions' && (
         <div className="bg-white border-b border-slate-100 px-4 py-2 sticky top-14 z-40">
           <div className="max-w-2xl mx-auto">
@@ -413,7 +471,17 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       )}
 
       <main className="flex-1 flex items-center justify-center p-4">
-        {stage === 'welcome' && <WelcomeStage customer={customer} tests={tests} onNext={() => setStage('biodata')} brandColor={brandColor} sessionUser={sessionUser} />}
+        {stage === 'welcome' && (
+          <WelcomeStage
+            customer={customer}
+            tests={tests}
+            onNext={isBundle && participantId ? handleBundleStart : () => setStage('biodata')}
+            brandColor={brandColor}
+            sessionUser={sessionUser}
+            ctaLabel={isBundle && participantId ? (completedTestIds.length > 0 ? 'Lanjutkan Asesmen' : 'Mulai Asesmen') : undefined}
+            isStarting={isStarting}
+          />
+        )}
         {stage === 'biodata' && (
           <BiodataStage 
             userName={userName} 
@@ -432,7 +500,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
         {stage === 'instruction' && <InstructionStage currentTest={currentTest} onStart={startTest} brandColor={brandColor} />}
         {stage === 'questions' && <QuestionStage currentTest={currentTest} currentQ={currentQ} answers={answers} setAnswerValue={setAnswerValue} onPrev={prevQuestion} onNext={nextQuestion} brandColor={brandColor} />}
         {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} />}
-        {stage === 'done' && <DoneStage userName={userName} customer={customer} />}
+        {stage === 'done' && <DoneStage userName={userName} customer={customer} bundleParticipantId={isBundle ? participantId : null} />}
 
         {stage === 'kuota_habis' && (
           <div className="flex flex-col max-w-lg w-full animate-fadeUp">

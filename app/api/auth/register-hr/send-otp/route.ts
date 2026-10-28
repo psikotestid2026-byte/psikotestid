@@ -30,7 +30,8 @@ export async function POST(req: Request) {
 
     // Check if email already exists in customers table using RAW SQL
     const existing = await sql`
-      SELECT id FROM customers WHERE LOWER(email) = ${cleanEmail} LIMIT 1
+      SELECT customer_id AS id FROM customer_members WHERE LOWER(email) = ${cleanEmail}
+      UNION ALL SELECT id FROM customers WHERE LOWER(email) = ${cleanEmail} LIMIT 1
     `;
 
     if (existing.length > 0) {

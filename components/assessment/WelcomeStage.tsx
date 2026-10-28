@@ -8,9 +8,12 @@ interface WelcomeStageProps {
   onNext: () => void;
   brandColor: string;
   sessionUser?: any;
+  /** Mandatory-bundle participants are pre-registered by HR, so no biodata form is shown. */
+  ctaLabel?: string;
+  isStarting?: boolean;
 }
 
-export function WelcomeStage({ customer, tests, onNext, brandColor, sessionUser }: WelcomeStageProps) {
+export function WelcomeStage({ customer, tests, onNext, brandColor, sessionUser, ctaLabel, isStarting }: WelcomeStageProps) {
   const handleGoogleLogin = () => {
     signIn('google', { callbackUrl: window.location.href });
   };
@@ -43,10 +46,11 @@ export function WelcomeStage({ customer, tests, onNext, brandColor, sessionUser 
       {sessionUser ? (
         <button 
           onClick={onNext} 
-          className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all hover:opacity-90" 
+          disabled={isStarting}
+          className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-lg flex items-center justify-center gap-2 group transition-all hover:opacity-90 disabled:opacity-70" 
           style={{ backgroundColor: brandColor }}
         >
-          Isi Data Diri & Mulai Asesmen <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          {ctaLabel || 'Isi Data Diri & Mulai Asesmen'} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
       ) : (
         <button 

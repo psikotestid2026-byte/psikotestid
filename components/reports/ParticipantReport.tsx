@@ -8,6 +8,13 @@ import type { DiscReportDictionary } from '@/lib/scoring/discReportDictionary';
 import { isV3TestCode, orderDetailResults, showsClosingSection } from '@/lib/reportTemplateV3';
 import { ClosingBlock, CoverBlock } from '@/components/reports/v3/CoverAndClosing';
 import { FlowPage } from '@/components/reports/v3/ReportShell';
+import {
+  IdentityStrip,
+  JobFitConclusionBlock,
+  JobFitCoverBlock,
+  JobFitSummaryBlock,
+  buildJobFitReportData,
+} from '@/components/reports/v3/JobFitBlocks';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
 
 const styles = StyleSheet.create({
@@ -455,10 +462,21 @@ export function UniversalPdfDocument({
   const { detail } = partitionReportResults(list);
   const ordered = orderDetailResults(detail);
 
+  const isBundle = participant?.campaign_mode === 'MANDATORY_BUNDLE';
+  const jobFit = isBundle ? buildJobFitReportData(participant) : null;
+
   return (
     <Document>
-      <FlowPage>
-        <CoverBlock participant={participant} />
+      <FlowPage identity={jobFit ? <IdentityStrip data={jobFit} /> : undefined}>
+        {jobFit ? (
+          <>
+            <JobFitCoverBlock data={jobFit} companyName={participant?.company_name} />
+            <CoverBlock participant={participant} />
+            <JobFitSummaryBlock data={jobFit} />
+          </>
+        ) : (
+          <CoverBlock participant={participant} />
+        )}
         {ordered.map((r, idx) => {
           const code = normalizeTestCode(r.test_code);
           const pageKey = r.id || `${code}-${idx}`;
@@ -475,6 +493,7 @@ export function UniversalPdfDocument({
           }
           return <View key={pageKey}>{renderSpecificTestReport(r, idx, participant)}</View>;
         })}
+        {jobFit ? <JobFitConclusionBlock data={jobFit} /> : null}
         {showsClosingSection(ordered) ? <ClosingBlock participant={participant} /> : null}
       </FlowPage>
     </Document>

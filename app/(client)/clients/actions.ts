@@ -37,14 +37,17 @@ export async function getClientData(customerId: number) {
       ORDER BY c.created_at DESC
     `,
     sql`
-      SELECT p.*, c.title as campaign_title,
+      SELECT p.id, p.campaign_id, p.access_token, p.full_name, p.email, p.phone_number, p.nik,
+             p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
+             p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
+             p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
+             p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes, c.title as campaign_title,
              COALESCE(
                json_agg(
                  json_build_object(
                    'id', tr.id,
                    'test_id', tr.test_id,
                    'scoring_data', tr.scoring_data,
-                   'raw_answers', tr.raw_answers,
                    'created_at', tr.created_at
                  )
                ) FILTER (WHERE tr.id IS NOT NULL), '[]'
@@ -83,8 +86,13 @@ export async function getCampaignDetails(campaignId: number) {
       SELECT mt.* FROM campaign_tests ct
       JOIN master_tests mt ON ct.test_id = mt.id
       WHERE ct.campaign_id = ${campaignId}
+      ORDER BY ct.order_number ASC NULLS LAST, mt.id ASC
     `,
-    sql`SELECT * FROM participants WHERE campaign_id = ${campaignId} ORDER BY created_at DESC`,
+    sql`SELECT p.id, p.campaign_id, p.access_token, p.full_name, p.email, p.phone_number, p.nik,
+      p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
+      p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
+      p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
+      p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes FROM participants p WHERE p.campaign_id = ${campaignId} ORDER BY p.created_at DESC`,
     sql`
       SELECT cust.* FROM campaigns c
       JOIN customers cust ON c.customer_id = cust.id
@@ -107,7 +115,12 @@ export async function getParticipantFullDetails(participantId: number) {
   const auth = await assertCustomer();
 
   const targetParticipant = await sql`
-    SELECT p.*, c.title as campaign_title, c.customer_id, cust.company_name
+    SELECT p.id, p.campaign_id, p.access_token, p.full_name, p.email, p.phone_number, p.nik,
+           p.registration_source, p.gender, p.date_of_birth, p.status, p.started_at, p.completed_at,
+           p.created_at, p.username, p.employee_id, p.position, p.unit_work, p.education,
+           p.employment_status, p.job_level_code, p.scoring_status, p.recommendation_status,
+           p.system_recommendation_status, p.recommendation_score, p.assessor_override, p.assessor_notes,
+           c.title as campaign_title, c.customer_id, cust.company_name
     FROM participants p
     JOIN campaigns c ON p.campaign_id = c.id
     JOIN customers cust ON c.customer_id = cust.id

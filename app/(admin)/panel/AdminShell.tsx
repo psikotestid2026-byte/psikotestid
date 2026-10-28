@@ -19,6 +19,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     { id: 'participants', label: 'Peserta Asesmen', icon: <UserCog />, href: '/panel/participants' },
     { id: 'orders', label: 'Transaksi & Invoice', icon: <Receipt />, href: '/panel/orders' },
     { id: 'tests', label: 'Master Alat Tes', icon: <FileSpreadsheet />, href: '/panel/tests' },
+    { id: 'job-fit', label: 'Asesmen Jabatan', icon: <UserCog />, href: '/panel/job-fit' },
     { id: 'norms', label: 'Norma & Skoring', icon: <Scroll />, href: '/panel/norms' },
     { id: 'templates', label: 'Template Email & Notif', icon: <Mail />, href: '/panel/templates' },
     { id: 'payment-methods', label: 'Metode Pembayaran', icon: <Receipt />, href: '/panel/payment-methods' },
@@ -32,6 +33,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   else if (pathname.includes('/panel/participants')) activeTab = 'participants';
   else if (pathname.includes('/panel/orders')) activeTab = 'orders';
   else if (pathname.includes('/panel/tests')) activeTab = 'tests';
+  else if (pathname.includes('/panel/job-fit')) activeTab = 'job-fit';
   else if (pathname.includes('/panel/norms')) activeTab = 'norms';
   else if (pathname.includes('/panel/templates')) activeTab = 'templates';
   else if (pathname.includes('/panel/payment-methods')) activeTab = 'payment-methods';

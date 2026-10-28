@@ -206,3 +206,22 @@ export async function markTestCompleted(participantId: number) {
     console.error('Failed to load email helper in markTestCompleted:', err);
   }
 }
+
+/**
+ * Mandatory-bundle participants are pre-registered by HR, so there is no biodata step.
+ * Marks the session as started (idempotent) and confirms the caller owns the participant.
+ */
+export async function startBundleSession(participantId: number) {
+  const auth = await requireSession();
+  if (!auth.ok) throw new Error('Unauthorized');
+
+  const rows = await sql`
+    UPDATE participants
+    SET started_at = COALESCE(started_at, NOW())
+    WHERE id = ${participantId} AND LOWER(email) = ${auth.email}
+    RETURNING id, status
+  `;
+  if (!rows.length) throw new Error('Unauthorized');
+
+  return { success: true, alreadyCompleted: rows[0].status === 'COMPLETED' };
+}

@@ -146,10 +146,11 @@ export function ReportPage({
 }
 
 /** Continuing page for every test section and the closing block. */
-export function FlowPage({ children }: { children: React.ReactNode }) {
+export function FlowPage({ children, identity }: { children: React.ReactNode; identity?: React.ReactNode }) {
   return (
-    <Page size="A4" style={styles.page} wrap>
+    <Page size="A4" style={identity ? [styles.page, { paddingTop: 70 }] : styles.page} wrap>
       <ReportChrome badgeColor="#1D1D1D" />
+      {identity}
       {children}
     </Page>
   );
