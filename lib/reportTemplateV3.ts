@@ -310,23 +310,18 @@ export function papiZone(score: number): PapiBand {
   return 'Low';
 }
 
-function papiNarratives(scores: Record<string, unknown>, band: 'High' | 'Low'): PapiNarrativeItem[] {
+function papiNarratives(scores: Record<string, unknown>, band: PapiBand): PapiNarrativeItem[] {
   const items = PAPI_ASPECT_ORDER.flatMap((code) => {
     const detail = PAPI_ASPECT_DETAILS[code];
     const score = Math.max(0, finiteNumber(scores[code]) ?? 0);
     const zone = papiZone(score);
     if (zone !== band) return [];
     const scoreText = formatDecimal(score);
-    return [{
-      code,
-      name: detail.name,
-      score,
-      scoreText,
-      narrative: band === 'High' ? detail.high : detail.low,
-    }];
+    const narrative = band === 'High' ? detail.high : band === 'Middle' ? detail.middle : detail.low;
+    return [{ code, name: detail.name, score, scoreText, narrative }];
   });
   items.sort((left, right) => {
-    const byScore = band === 'High' ? right.score - left.score : left.score - right.score;
+    const byScore = band === 'Low' ? left.score - right.score : right.score - left.score;
     if (byScore !== 0) return byScore;
     return PAPI_ASPECT_ORDER.indexOf(left.code) - PAPI_ASPECT_ORDER.indexOf(right.code);
   });
@@ -339,7 +334,7 @@ function lowerFirstLetter(text: string): string {
   return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
 }
 
-const PAPI_PREDICATE_STARTERS = new Set(['sangat', 'lebih', 'kurang', 'cenderung', 'suka']);
+const PAPI_PREDICATE_STARTERS = new Set(['sangat', 'lebih', 'kurang', 'cenderung', 'suka', 'cukup', 'mampu', 'dapat', 'mau']);
 
 /** A bare adjective cannot follow "Ia" directly. Verbs and licensed adverbs can. */
 function papiPredicate(narrative: string): string {
@@ -350,26 +345,33 @@ function papiPredicate(narrative: string): string {
   return `bersifat ${lowered}`;
 }
 
+/** Sentence openers after the first sentence of a paragraph, so "Ia" does not start every line. */
+const PAPI_INNER_OPENERS = ['Ia', 'Selain itu, ia', 'Ia juga', 'Di samping itu, ia', 'Ia', 'Lebih lanjut, ia', 'Ia juga'];
+
+/** Opening connector for a paragraph that follows another PAPI paragraph. */
+const PAPI_PARAGRAPH_OPENERS: Record<PapiBand, string> = {
+  High: 'Selain itu, ia',
+  Middle: 'Sementara itu, ia',
+  Low: 'Di sisi lain, ia',
+};
+
 /**
- * One paragraph per band. First sentence uses the participant name.
- * Later sentences use "Ia". Kamus text stays verbatim after the subject.
+ * One paragraph per band (Tinggi, Sedang, Rendah). The participant name is the
+ * subject of the first sentence of the first paragraph only; later sentences and
+ * paragraphs use "Ia" with connectors. Kamus text stays verbatim after the subject.
  */
 export function papiNarrativeParagraph(
   items: PapiNarrativeItem[],
   participantName: string,
-  band: 'High' | 'Low',
-  contrastLow = false
+  band: PapiBand,
+  followsAnother = false
 ): string {
   if (items.length === 0) return '';
   const name = participantName.trim() || 'Kandidat';
-  const besidesIndex = items.length >= 4 ? 2 : -1;
   return items.map((item, index) => {
     const body = papiPredicate(item.narrative);
-    if (index === 0) {
-      return band === 'Low' && contrastLow ? `Di sisi lain, ${name} ${body}` : `${name} ${body}`;
-    }
-    if (index === besidesIndex) return `Selain itu, ia ${body}`;
-    return `Ia ${body}`;
+    if (index === 0) return followsAnother ? `${PAPI_PARAGRAPH_OPENERS[band]} ${body}` : `${name} ${body}`;
+    return `${PAPI_INNER_OPENERS[(index - 1) % PAPI_INNER_OPENERS.length]} ${body}`;
   }).join(' ');
 }
 
@@ -396,6 +398,7 @@ export function papiSectionModel(
   }));
 
   const high = papiNarratives(scores, 'High');
+  const middle = papiNarratives(scores, 'Middle');
   const low = papiNarratives(scores, 'Low');
   const name = typeof participantName === 'string' ? participantName : '';
   return {
@@ -403,9 +406,11 @@ export function papiSectionModel(
       'Asesmen PAPI Kostick mengukur 20 dimensi kebutuhan dan peran yang berkaitan dengan lingkungan profesional dan gaya kerja.',
     groups,
     high,
+    middle,
     low,
     highParagraph: papiNarrativeParagraph(high, name, 'High'),
-    lowParagraph: papiNarrativeParagraph(low, name, 'Low', high.length > 0),
+    middleParagraph: papiNarrativeParagraph(middle, name, 'Middle', high.length > 0),
+    lowParagraph: papiNarrativeParagraph(low, name, 'Low', high.length + middle.length > 0),
   };
 }
 
