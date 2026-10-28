@@ -1,6 +1,8 @@
 import { NextResponse, after } from 'next/server';
 import { sql } from '@/lib/neon';
 import { requireSession } from '@/lib/authGuards';
+import { authorizeAssessmentSubmit } from '@/lib/assessmentSession';
+import { getAssessmentSecret, verifyAssessmentToken } from '@/lib/assessmentToken';
 import { runScoringWithFallback } from '@/lib/participantScoring';
 
 export const runtime = 'nodejs';
@@ -55,10 +57,9 @@ async function calculateScoring(code: string, testId: number, answers: any): Pro
 export async function POST(req: Request) {
   try {
     const auth = await requireSession();
-    if (!auth.ok) return auth.response;
-
     const body = await req.json();
-    const { action, participant_id, test_id, answers } = body;
+    const { action, participant_id, test_id, answers, assessment_token } = body;
+    const presentedToken = typeof assessment_token === 'string' && assessment_token.length > 0;
 
     const participantId = Number(participant_id);
     if (!participantId) {
@@ -94,19 +95,40 @@ export async function POST(req: Request) {
     }
 
     const access = accessRows[0];
-    const isParticipant = access.participant_email === auth.email;
+    let verifiedToken = null;
+    if (presentedToken) {
+      try {
+        verifiedToken = verifyAssessmentToken(assessment_token, getAssessmentSecret());
+      } catch {
+        verifiedToken = null;
+      }
+    }
 
     let isAdmin = false;
-    if (!isParticipant) {
+    const cookieEmail = auth.ok ? auth.email : '';
+    if (!presentedToken && cookieEmail && cookieEmail !== String(access.participant_email || '')) {
       const admins = await sql`
-        SELECT id, role FROM admins WHERE LOWER(email) = ${auth.email} LIMIT 1
+        SELECT id, role FROM admins WHERE LOWER(email) = ${cookieEmail} LIMIT 1
       `;
       isAdmin = admins.length > 0 && (admins[0].role === 'SUPERADMIN' || admins[0].role === 'ADMIN');
     }
 
-    // Only the participant (or admin) may submit answers / mark completed
-    if (!isAdmin && !isParticipant) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // The tab token wins over the shared browser cookie. A mismatched token is
+    // rejected even when the cookie belongs to the participant id in the body.
+    const allowed = authorizeAssessmentSubmit({
+      verifiedToken,
+      presentedToken,
+      cookieEmail: auth.ok ? auth.email : null,
+      isAdmin,
+      participantId,
+      participantEmail: String(access.participant_email || ''),
+      campaignId: Number(access.campaign_id),
+    });
+    if (!allowed.ok) {
+      return NextResponse.json(
+        { error: allowed.error === 'Forbidden' ? 'Forbidden' : allowed.error, code: allowed.code },
+        { status: allowed.status }
+      );
     }
 
     const isBundle = access.campaign_mode === 'MANDATORY_BUNDLE';

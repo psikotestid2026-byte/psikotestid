@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
+import { clearTabAssessmentBindings } from "@/lib/assessmentSession";
 import { toast } from "sonner";
 import { UserCircle2, Loader2, ArrowRight, Eye, EyeOff, LogIn } from "lucide-react";
 
@@ -19,6 +20,12 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    // This tab is explicitly logging in, so drop any participant bound earlier in it.
+    // Other tabs keep their own sessionStorage and are not affected.
+    clearTabAssessmentBindings();
+  }, []);
 
   useEffect(() => {
     const error = searchParams.get("error");
