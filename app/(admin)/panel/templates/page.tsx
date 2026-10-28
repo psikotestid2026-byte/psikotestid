@@ -183,7 +183,7 @@ export default function TemplatesAdminPage() {
           </button>
           <button
             onClick={handleOpenCreate}
-            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md"
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             <Plus className="w-4 h-4" /> Tambah Template Baru
           </button>
@@ -437,7 +437,7 @@ export default function TemplatesAdminPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-bold flex items-center gap-2 shadow-md disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {isSaving ? 'Simpan...' : 'Simpan Template'}
@@ -484,7 +484,7 @@ export default function TemplatesAdminPage() {
               <button
                 onClick={handleSendTestEmail}
                 disabled={isSendingTest}
-                className="px-4 py-1.5 bg-indigo-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-1.5 bg-indigo-600 text-white font-bold text-xs rounded-full flex items-center gap-1.5 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
               >
                 {isSendingTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 {isSendingTest ? 'Mengirim...' : 'Kirim Email Uji Coba'}

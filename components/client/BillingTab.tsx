@@ -248,7 +248,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         </div>
 
         <Link href="/clients/campaigns">
-          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 shrink-0">
+          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-3 shadow-lg flex items-center gap-2 shrink-0">
             Ke Halaman Campaign & Peserta ➔
           </Button>
         </Link>
@@ -371,7 +371,7 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
         </div>
 
         <Link href="/clients/transactions">
-          <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-sm flex items-center gap-2 shrink-0">
+          <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-3 shadow-sm flex items-center gap-2 shrink-0">
             <CreditCard className="w-4 h-4" /> Buka Riwayat Transaksi & Tagihan ➔
           </Button>
         </Link>

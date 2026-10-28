@@ -257,7 +257,7 @@ function LoginAndRegisterContent() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoginLoading}
-            className="w-full flex justify-center items-center py-3 px-4 border-2 border-slate-300 rounded-xl shadow-sm text-xs font-extrabold text-slate-800 bg-white hover:bg-slate-50 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
+            className="w-full flex justify-center items-center py-3 px-4 border-2 border-slate-300 rounded-full shadow-sm text-xs font-extrabold text-slate-800 bg-white hover:bg-slate-50 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             {isLoginLoading ? (
               <Loader2 className="w-4.5 h-4.5 animate-spin mr-2 text-indigo-600" />
@@ -336,7 +336,7 @@ function LoginAndRegisterContent() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-2/3 flex justify-center items-center py-2 border border-transparent rounded-lg text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 shadow disabled:opacity-50"
+              className="w-2/3 flex justify-center items-center py-2 border border-transparent rounded-full text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 shadow disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
             >
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ArrowRight className="w-3.5 h-3.5 mr-1.5" />}
               {isSubmitting ? "Mengirim OTP..." : "Kirim OTP Verifikasi"}
@@ -405,7 +405,7 @@ function LoginAndRegisterContent() {
           <button
             type="submit"
             disabled={isSubmitting || otpCode.length !== 6}
-            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-lg shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50"
+            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-full shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             {isSubmitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -464,7 +464,7 @@ function LoginAndRegisterContent() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-lg shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 mt-1"
+            className="w-full flex justify-center items-center py-2.5 px-3 border border-transparent rounded-full shadow text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
             {isSubmitting ? "Mendaftarkan Perusahaan..." : "Selesaikan Pendaftaran Corporate"}

@@ -139,7 +139,7 @@ export function ClientOverviewTab({ data }: ClientOverviewTabProps) {
 
               <div className="pt-3 mt-2 border-t border-white/10">
                 <Link href={st.href}>
-                  <button className="w-full py-1.5 px-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-sm transition-all">
+                  <button className="w-full py-1.5 px-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] rounded-full flex items-center justify-center gap-1 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600">
                     <span>{st.buttonText}</span> <ArrowRight className="w-3 h-3" />
                   </button>
                 </Link>

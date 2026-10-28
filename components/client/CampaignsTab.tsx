@@ -273,7 +273,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                       {campaignLink}
                     </code>
                     <button
-                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all"
+                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
                       title="Salin Link Sesi Ujian"
                       onClick={() => copyToClipboard(campaignLink, 'Link Sesi Ujian')}
                     >
@@ -289,7 +289,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                 <td className="py-4 px-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/clients/campaigns/${c.id}`}>
-                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md">
+                      <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-md">
                         <Users className="w-4 h-4 text-white" /> Kelola Peserta ({countCandidates}) ➔
                       </Button>
                     </Link>
@@ -431,7 +431,7 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                                 handleQuickPurchaseQuota(t.id, testPrice);
                               }}
                               disabled={isPurchasingQuota === t.id}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow-sm flex items-center gap-1 transition-all disabled:opacity-50"
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] rounded-full shadow-sm flex items-center gap-1 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
                             >
                               {isPurchasingQuota === t.id ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />

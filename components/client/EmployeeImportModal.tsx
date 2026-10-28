@@ -81,7 +81,7 @@ export function EmployeeImportModal({ isOpen, onClose, campaignId, campaignTitle
           <button
             type="button"
             onClick={downloadEmployeeExcelTemplate}
-            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shrink-0"
+            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
           >
             <Download className="w-3.5 h-3.5" /> Unduh Template
           </button>

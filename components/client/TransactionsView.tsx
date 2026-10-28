@@ -113,12 +113,12 @@ export function TransactionsView({ initialData }: TransactionsViewProps) {
 
         <div className="flex items-center gap-3 shrink-0">
           <Link href="/clients/billing?topup=true">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 shadow-lg flex items-center gap-2">
               <PlusCircle className="w-4 h-4" /> Top-Up Saldo
             </Button>
           </Link>
           <Link href="/clients/billing">
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 shadow-lg flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" /> Beli Kuota Tes
             </Button>
           </Link>
