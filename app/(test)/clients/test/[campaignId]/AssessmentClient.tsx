@@ -19,6 +19,14 @@ import {
   progressStorageKey,
   tabSessionStorageKey,
 } from '@/lib/assessmentSession';
+import {
+  acquireSubmitLock,
+  planConfirmNext,
+  planQuestionAdvance,
+  releaseSubmitLock,
+  routeToMissingTest,
+  type SubmitLock,
+} from '@/lib/assessmentAdvance';
 import { submitBiodata, startBundleSession } from '../actions';
 
 export default function AssessmentClient({ initialData }: { initialData: any }) {
@@ -39,6 +47,10 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const [timeLeft, setTimeLeft] = useState(0);
   const [copiedHrMsg, setCopiedHrMsg] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const submitLockRef = useRef<SubmitLock>({ held: false });
+  const questionStepRef = useRef(false);
+  const confirmLockRef = useRef(false);
 
   const initialName = existingParticipant?.full_name || sessionUser?.name || '';
   const initialEmail = existingParticipant?.email || sessionUser?.email || '';
@@ -342,6 +354,14 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   }, [sessionUser, existingParticipant, boundReady, userName, email]);
 
   useEffect(() => {
+    questionStepRef.current = false;
+  }, [currentQ]);
+
+  useEffect(() => {
+    if (stage !== 'transition') confirmLockRef.current = false;
+  }, [stage]);
+
+  useEffect(() => {
     if (customer?.brand_color) {
       document.documentElement.style.setProperty('--brand-color', customer.brand_color);
     }
@@ -362,20 +382,23 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
 
     if (!haltedRef.current && !sessionHalt && stage === 'questions' && timeLeft > 0) {
       timer = setInterval(() => {
+        let expired = false;
         setTimeLeft(prev => {
           if (prev <= 1) {
-            clearInterval(timer);
-            if (haltedRef.current) return 0;
-            if (currentTestCode === 'wpt') {
-              toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
-              finishActiveTest();
-            } else {
-              toast.warning('Waktu alokasi pengerjaan telah selesai, namun Anda masih dapat meninjau dan menyelesaikan jawaban sebelum menekan tombol Selesai.');
-            }
+            expired = true;
             return 0;
           }
           return prev - 1;
         });
+        if (!expired) return;
+        clearInterval(timer);
+        if (haltedRef.current) return;
+        if (currentTestCode === 'wpt') {
+          toast.info('Waktu pengerjaan tes WPT telah habis! Jawaban Anda otomatis dikirim.');
+          void finishActiveTest();
+        } else {
+          toast.warning('Waktu alokasi pengerjaan telah selesai, namun Anda masih dapat meninjau dan menyelesaikan jawaban sebelum menekan tombol Selesai.');
+        }
       }, 1000);
     }
     return () => clearInterval(timer);
@@ -496,18 +519,28 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
   const brandColor = customer?.brand_color || '#2563eb';
 
   const nextQuestion = () => {
-    if (currentQ < totalQuestions - 1) {
-      setCurrentQ(prev => prev + 1);
-    } else {
-      finishActiveTest();
+    const plan = planQuestionAdvance({
+      locked: submitLockRef.current.held,
+      stepping: questionStepRef.current,
+      currentQ,
+      totalQuestions,
+    });
+    if (plan.type === 'ignore') return;
+    if (plan.type === 'next-question') {
+      questionStepRef.current = true;
+      setCurrentQ((prev) => prev + 1);
+      return;
     }
+    void finishActiveTest();
   };
 
   const prevQuestion = () => {
+    if (submitLockRef.current.held || questionStepRef.current) return;
     if (currentQ > 0) setCurrentQ(prev => prev - 1);
   };
 
   const jumpToQuestion = (idx: number) => {
+    if (submitLockRef.current.held || questionStepRef.current) return;
     if (idx >= 0 && idx < totalQuestions) {
       setCurrentQ(idx);
     }
@@ -557,18 +590,31 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
     return { res, result };
   };
 
+  const reopenMissingTest = (result: { missing_tests?: unknown; error?: string }) => {
+    const target = routeToMissingTest(tests, result?.missing_tests);
+    if (!target) return false;
+    toast.error(result?.error || 'Masih ada tes yang belum selesai. Silakan kerjakan tes tersebut.');
+    setActiveIdx(target.index);
+    setCurrentQ(0);
+    setStage('instruction');
+    return true;
+  };
+
   const finalizeBundle = async () => {
     const { res, result } = await postSubmit({ action: 'mark_completed' });
     if (!res.ok || !result.success) {
+      if (reopenMissingTest(result)) return;
       throw new Error(result.error || 'Gagal menyelesaikan asesmen.');
     }
     setStage('done');
   };
 
   const finishActiveTest = async () => {
+    if (haltedRef.current) return;
+    if (!acquireSubmitLock(submitLockRef.current)) return;
+    setIsSaving(true);
     const t = tests[activeIdx];
     try {
-      if (haltedRef.current) return;
       const { res, result } = await postSubmit({
         testId: t.id,
         answers: answers[t.id] || {},
@@ -587,19 +633,25 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
       } else if (isBundle) {
         await finalizeBundle();
       } else {
-        const { res, result } = await postSubmit({ action: 'mark_completed' });
-        if (!res.ok || !result.success) {
-          toast.error(result.error || 'Gagal menyelesaikan asesmen.');
+        const marked = await postSubmit({ action: 'mark_completed' });
+        if (!marked.res.ok || !marked.result.success) {
+          if (reopenMissingTest(marked.result)) return;
+          toast.error(marked.result.error || 'Gagal menyelesaikan asesmen.');
           return;
         }
         setStage('done');
       }
     } catch (err: any) {
       toast.error('Terjadi kesalahan saat menyimpan jawaban: ' + err.message);
+    } finally {
+      releaseSubmitLock(submitLockRef.current);
+      setIsSaving(false);
     }
   };
 
   const confirmNextTest = () => {
+    if (planConfirmNext(confirmLockRef.current || submitLockRef.current.held) === 'ignore') return;
+    confirmLockRef.current = true;
     setActiveIdx(prev => prev + 1);
     setStage('instruction');
   };
@@ -680,6 +732,7 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
                   <button
                     key={idx}
                     type="button"
+                    disabled={isSaving}
                     onClick={() => jumpToQuestion(idx)}
                     title={`Soal ${idx + 1}${answered ? ' (terjawab)' : ''}`}
                     className={`shrink-0 w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center border transition-all ${
@@ -728,8 +781,19 @@ export default function AssessmentClient({ initialData }: { initialData: any }) 
           />
         )}
         {stage === 'instruction' && <InstructionStage currentTest={currentTest} onStart={startTest} brandColor={brandColor} />}
-        {stage === 'questions' && <QuestionStage currentTest={currentTest} currentQ={currentQ} answers={answers} setAnswerValue={setAnswerValue} onPrev={prevQuestion} onNext={nextQuestion} brandColor={brandColor} />}
-        {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} />}
+        {stage === 'questions' && (
+          <QuestionStage
+            currentTest={currentTest}
+            currentQ={currentQ}
+            answers={answers}
+            setAnswerValue={setAnswerValue}
+            onPrev={prevQuestion}
+            onNext={nextQuestion}
+            brandColor={brandColor}
+            isSubmitting={isSaving}
+          />
+        )}
+        {stage === 'transition' && <TransitionStage onConfirm={confirmNextTest} brandColor={brandColor} disabled={confirmLockRef.current} />}
         {stage === 'done' && (
           <DoneStage
             userName={userName}

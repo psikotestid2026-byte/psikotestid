@@ -9,9 +9,10 @@ import { clearTabAssessmentBindings } from '@/lib/assessmentSession';
 interface TransitionStageProps {
   onConfirm: () => void;
   brandColor: string;
+  disabled?: boolean;
 }
 
-export function TransitionStage({ onConfirm, brandColor }: TransitionStageProps) {
+export function TransitionStage({ onConfirm, brandColor, disabled = false }: TransitionStageProps) {
   return (
     <div className="flex flex-col items-center text-center max-w-md w-full animate-fadeUp">
       <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center mb-6 animate-pulse2">
@@ -19,9 +20,11 @@ export function TransitionStage({ onConfirm, brandColor }: TransitionStageProps)
       </div>
       <h2 className="text-2xl font-extrabold text-slate-900 mb-2 font-display">Tes Selesai!</h2>
       <p className="text-slate-500 mb-8 leading-relaxed">Bagus! Lanjut ke tes berikutnya.</p>
-      <button 
-        onClick={onConfirm} 
-        className="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 hover:opacity-90" 
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={disabled}
+        className="w-full text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:pointer-events-none"
         style={{ backgroundColor: brandColor }}
       >
         Lanjut ke Tes Berikutnya <ArrowRight className="w-5 h-5" />
