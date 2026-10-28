@@ -84,8 +84,7 @@ export async function PATCH(req: Request) {
 
     const body = await req.json().catch(() => null);
     const id = Number(body?.id);
-    const status = body?.status;
-    if (!Number.isInteger(id) || id <= 0 || (status !== 'ACTIVE' && status !== 'INACTIVE')) {
+    if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ success: false, error: 'Data tidak valid.' }, { status: 400 });
     }
 
@@ -94,20 +93,85 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, error: 'Akun HR tidak ditemukan.' }, { status: 404 });
     }
 
-    if (status === 'INACTIVE') {
-      const active = await sql`SELECT COUNT(*)::int AS total FROM customer_members WHERE customer_id = ${scope.customerId} AND status = 'ACTIVE' AND id <> ${id}`;
-      if (active[0].total === 0) {
-        return NextResponse.json({ success: false, error: 'Minimal satu akun HR harus tetap aktif.' }, { status: 409 });
+    // Status change
+    if (body?.status !== undefined) {
+      const status = body.status;
+      if (status !== 'ACTIVE' && status !== 'INACTIVE') {
+        return NextResponse.json({ success: false, error: 'Status tidak valid.' }, { status: 400 });
       }
-      if (!scope.isAdmin && targets[0].email === scope.email) {
-        return NextResponse.json({ success: false, error: 'Anda tidak dapat menonaktifkan akun sendiri.' }, { status: 409 });
+
+      if (status === 'INACTIVE') {
+        const active = await sql`SELECT COUNT(*)::int AS total FROM customer_members WHERE customer_id = ${scope.customerId} AND status = 'ACTIVE' AND id <> ${id}`;
+        if (active[0].total === 0) {
+          return NextResponse.json({ success: false, error: 'Minimal satu akun HR harus tetap aktif.' }, { status: 409 });
+        }
+        if (!scope.isAdmin && targets[0].email === scope.email) {
+          return NextResponse.json({ success: false, error: 'Anda tidak dapat menonaktifkan akun sendiri.' }, { status: 409 });
+        }
+      }
+
+      await sql`UPDATE customer_members SET status = ${status} WHERE id = ${id} AND customer_id = ${scope.customerId}`;
+      return NextResponse.json({ success: true });
+    }
+
+    // Edit member profile (name, email)
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const fullName = typeof body?.full_name === 'string' ? body.full_name.trim().slice(0, 255) : null;
+
+    if (!EMAIL_RE.test(email) || email.length > 255) {
+      return NextResponse.json({ success: false, error: 'Format email tidak valid.' }, { status: 400 });
+    }
+
+    // Check if email changed and if already taken by another account
+    if (email !== targets[0].email) {
+      const exists = await sql`SELECT id FROM customer_members WHERE LOWER(email) = ${email} AND id <> ${id} LIMIT 1`;
+      if (exists.length > 0) {
+        return NextResponse.json({ success: false, error: 'Email ini sudah terdaftar pada sebuah perusahaan.' }, { status: 409 });
       }
     }
 
-    await sql`UPDATE customer_members SET status = ${status} WHERE id = ${id} AND customer_id = ${scope.customerId}`;
+    await sql`
+      UPDATE customer_members
+      SET email = ${email}, full_name = ${fullName}
+      WHERE id = ${id} AND customer_id = ${scope.customerId}
+    `;
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('PATCH client/members error:', err);
     return NextResponse.json({ success: false, error: 'Gagal memperbarui akun HR.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const scope = await resolveScope(new URL(req.url).searchParams.get('customer_id'));
+    if ('error' in scope) return scope.error;
+
+    const body = await req.json().catch(() => null);
+    const id = Number(body?.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ success: false, error: 'ID tidak valid.' }, { status: 400 });
+    }
+
+    const targets = await sql`SELECT id, LOWER(email) AS email FROM customer_members WHERE id = ${id} AND customer_id = ${scope.customerId} LIMIT 1`;
+    if (targets.length === 0) {
+      return NextResponse.json({ success: false, error: 'Akun HR tidak ditemukan.' }, { status: 404 });
+    }
+
+    const active = await sql`SELECT COUNT(*)::int AS total FROM customer_members WHERE customer_id = ${scope.customerId} AND status = 'ACTIVE' AND id <> ${id}`;
+    if (active[0].total === 0) {
+      return NextResponse.json({ success: false, error: 'Minimal satu akun HR harus tetap aktif.' }, { status: 409 });
+    }
+
+    if (!scope.isAdmin && targets[0].email === scope.email) {
+      return NextResponse.json({ success: false, error: 'Anda tidak dapat menghapus akun sendiri.' }, { status: 409 });
+    }
+
+    await sql`DELETE FROM customer_members WHERE id = ${id} AND customer_id = ${scope.customerId}`;
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('DELETE client/members error:', err);
+    return NextResponse.json({ success: false, error: 'Gagal menghapus akun HR.' }, { status: 500 });
   }
 }
