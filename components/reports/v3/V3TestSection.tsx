@@ -1,10 +1,12 @@
 import React from 'react';
 import { calculateBigFiveScore } from '@/lib/scoring/bigfive';
+import { calculateDiscScore } from '@/lib/scoring/disc';
 import { calculatePapiScore } from '@/lib/scoring/papi';
 import { calculateMsdtScore } from '@/lib/scoring/msdt';
 import {
   normalizeTestCode,
   resolveBigFiveScoring,
+  resolveDiscScoring,
   resolveMsdtScoring,
   resolvePapiScoring,
 } from '@/lib/combinedReport';
@@ -30,7 +32,8 @@ export function V3TestSection({
   const scoring = result.scoring_data || {};
 
   if (code === 'disc') {
-    return <DiscSection scoring={scoring} sectionNumber={sectionNumber} dictionary={discDictionary} />;
+    const resolved = resolveDiscScoring(result.scoring_data, result.raw_answers, calculateDiscScore);
+    return <DiscSection scoring={resolved ?? scoring} sectionNumber={sectionNumber} dictionary={discDictionary} />;
   }
   if (code === 'bigfive') {
     const resolved = resolveBigFiveScoring(result.scoring_data, result.raw_answers, calculateBigFiveScore);

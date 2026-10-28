@@ -30,15 +30,19 @@ export function calcDiscType(graph: DiscGraphValues): string {
 }
 
 /**
- * checkStatus from refs/disc.md section 4.5.
- * Transisi is tested first because its closed range overlaps the other two
- * when every score sits near zero.
+ * checkStatus from refs/disc.md section 4.5, applied to one scaled graph
+ * (g1 Most, g2 Least, or g3 Change). Not the raw Most/Least/Change counts.
+ *
+ * The closed Transisi band overlaps Super Syndrom (all > 0) and Undershift
+ * (all < 0). Those two are exact and are decided first. Transisi is only the
+ * near-zero graph that is not uniformly positive or uniformly negative.
+ * Checking Transisi first labeled {1,1,1,1} and {-1,-1,-1,-1} as Transisi.
  */
 export function checkDiscStatus(graph: DiscGraphValues): DiscSpecialStatusName | null {
   const values = ORDER.map((dimension) => graph[dimension]);
-  if (values.every((value) => value >= -2 && value <= 2)) return 'Transisi';
   if (values.every((value) => value > 0)) return 'Super Syndrom';
   if (values.every((value) => value < 0)) return 'Undershift';
+  if (values.every((value) => value >= -2 && value <= 2)) return 'Transisi';
   return null;
 }
 

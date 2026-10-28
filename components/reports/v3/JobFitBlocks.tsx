@@ -32,7 +32,6 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
   },
   identityText: { fontSize: 8, color: theme.ink },
-  identityName: { fontWeight: 'bold' },
   pill: { fontSize: 7.5, fontWeight: 'bold', borderRadius: 8, paddingVertical: 2, paddingHorizontal: 7 },
   bigPill: { fontSize: 13, fontWeight: 'bold', borderRadius: 10, paddingVertical: 5, paddingHorizontal: 12 },
   row: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: theme.line, paddingVertical: 3 },
@@ -89,8 +88,6 @@ export function IdentityStrip({ data }: { data: JobFitReportData }) {
   return (
     <View style={styles.identity} fixed>
       <Text style={styles.identityText}>
-        <Text style={styles.identityName}>{data.fullName}</Text>
-        {'  |  '}
         {data.position}
         {'  |  '}
         {data.unitWork}

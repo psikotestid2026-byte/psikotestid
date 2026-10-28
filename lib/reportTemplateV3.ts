@@ -134,7 +134,6 @@ function textOrDash(value: unknown): string {
 export function coverFields(participant: Record<string, unknown> | null | undefined) {
   const source = participant || {};
   return [
-    { label: 'Nama kandidat', value: textOrDash(source.full_name) },
     { label: 'Email kandidat', value: textOrDash(source.email) },
     { label: 'No. telepon', value: textOrDash(source.phone_number || source.masked_phone) },
     { label: 'Posisi (level posisi)', value: textOrDash(source.position || source.job_title || source.level) },

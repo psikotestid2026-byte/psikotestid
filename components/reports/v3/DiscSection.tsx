@@ -304,26 +304,6 @@ export function DiscSection({
           </View>
         </View>
       ))}
-      <View style={chart.block}>
-        <View wrap={false}>
-          <View style={chart.bar}>
-            <Text style={chart.barText}>{model.traits.heading}</Text>
-          </View>
-          <View style={chart.body}>
-            <Text style={chart.aspectLabel}>{model.traits.aspects[0]?.label}</Text>
-            <Text style={chart.paragraph}>{(model.traits.aspects[0]?.items || []).join(' · ')}</Text>
-          </View>
-        </View>
-        <View style={chart.body}>
-          {model.traits.aspects.slice(1).map((aspect) => (
-            <View key={aspect.label} wrap={false}>
-              <View style={chart.divider} />
-              <Text style={chart.aspectLabel}>{aspect.label}</Text>
-              <Text style={chart.paragraph}>{aspect.items.join(' · ')}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
       {model.development.items.length > 0 ? (
         <View style={chart.block}>
           <View style={chart.bar} minPresenceAhead={48}>

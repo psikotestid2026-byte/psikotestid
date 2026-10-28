@@ -265,7 +265,8 @@ describe('report v3 view model', () => {
         completed_at: '2026-10-16T01:42:00.000Z',
       }).map((field) => [field.label, field.value])
     );
-    expect(fields['Nama kandidat']).toBe('Sari Wulandari');
+    expect(fields['Nama kandidat']).toBeUndefined();
+    expect(fields['Email kandidat']).toBe('sari@example.com');
     expect(fields['No. telepon']).toBe('081234567890');
     expect(fields['Posisi (level posisi)']).toBe('-');
     expect(fields['Kurikulum']).toBe('-');

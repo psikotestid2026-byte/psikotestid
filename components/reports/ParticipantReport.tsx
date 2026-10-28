@@ -11,9 +11,6 @@ import { FlowPage } from '@/components/reports/v3/ReportShell';
 import {
   IdentityStrip,
   JobFitConclusionBlock,
-  JobFitCoverBlock,
-  JobFitSummaryBlock,
-  JobMatchBlock,
   buildJobFitReportData,
 } from '@/components/reports/v3/JobFitBlocks';
 import { V3TestSection } from '@/components/reports/v3/V3TestSection';
@@ -469,16 +466,7 @@ export function UniversalPdfDocument({
   return (
     <Document>
       <FlowPage identity={jobFit ? <IdentityStrip data={jobFit} /> : undefined}>
-        {jobFit ? (
-          <>
-            <JobFitCoverBlock data={jobFit} companyName={participant?.company_name} />
-            <CoverBlock participant={participant} />
-            <JobFitSummaryBlock data={jobFit} />
-            <JobMatchBlock data={jobFit} />
-          </>
-        ) : (
-          <CoverBlock participant={participant} />
-        )}
+        <CoverBlock participant={participant} />
         {ordered.map((r, idx) => {
           const code = normalizeTestCode(r.test_code);
           const pageKey = r.id || `${code}-${idx}`;

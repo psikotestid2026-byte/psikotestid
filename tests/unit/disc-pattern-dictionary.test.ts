@@ -133,11 +133,30 @@ describe('disc calcType and checkStatus', () => {
     expect(findDiscTypeInfo(bundledDiscReportDictionary(), 'Z')).toEqual({ matchedCode: null, pattern: null });
 
     expect(checkDiscStatus({ D: 0, I: 0, S: 0, C: 0 })).toBe('Transisi');
-    expect(checkDiscStatus({ D: 1, I: 1, S: 1, C: 1 })).toBe('Transisi');
-    expect(checkDiscStatus({ D: -1, I: -1, S: -1, C: -1 })).toBe('Transisi');
-    expect(checkDiscStatus({ D: 2, I: 2, S: 2, C: 2 })).toBe('Transisi');
+    expect(checkDiscStatus({ D: 1, I: 1, S: 1, C: 1 })).toBe('Super Syndrom');
+    expect(checkDiscStatus({ D: -1, I: -1, S: -1, C: -1 })).toBe('Undershift');
+    expect(checkDiscStatus({ D: 2, I: 2, S: 2, C: 2 })).toBe('Super Syndrom');
     expect(checkDiscStatus({ D: 3, I: 3, S: 3, C: 3 })).toBe('Super Syndrom');
     expect(checkDiscStatus({ D: -3, I: -4, S: -5, C: -6 })).toBe('Undershift');
+  });
+
+  it('follows refs/disc.md 4.5, with Super Syndrom and Undershift ahead of the Transisi band', () => {
+    // before = Transisi checked first (the previous bug). after = current checkDiscStatus.
+    const samples: { label: string; graph: { D: number; I: number; S: number; C: number }; before: string | null; after: string | null }[] = [
+      { label: 'semua nol', graph: { D: 0, I: 0, S: 0, C: 0 }, before: 'Transisi', after: 'Transisi' },
+      { label: 'datar campur tanda', graph: { D: 2, I: -2, S: 1, C: 0 }, before: 'Transisi', after: 'Transisi' },
+      { label: 'tepi +2', graph: { D: 2, I: 2, S: 2, C: 2 }, before: 'Transisi', after: 'Super Syndrom' },
+      { label: 'semua positif kecil', graph: { D: 1, I: 1, S: 1, C: 1 }, before: 'Transisi', after: 'Super Syndrom' },
+      { label: 'semua positif di luar pita', graph: { D: 3, I: 4, S: 5, C: 6 }, before: 'Super Syndrom', after: 'Super Syndrom' },
+      { label: 'tepi -2', graph: { D: -2, I: -2, S: -2, C: -2 }, before: 'Transisi', after: 'Undershift' },
+      { label: 'semua negatif kecil', graph: { D: -1, I: -1, S: -1, C: -1 }, before: 'Transisi', after: 'Undershift' },
+      { label: 'semua negatif di luar pita', graph: { D: -3, I: -4, S: -5, C: -6 }, before: 'Undershift', after: 'Undershift' },
+      { label: 'satu dimensi di luar pita', graph: { D: 3, I: 0, S: 0, C: 0 }, before: null, after: null },
+      { label: 'nol menutup Super Syndrom', graph: { D: 2, I: 2, S: 2, C: 0 }, before: 'Transisi', after: 'Transisi' },
+    ];
+    for (const sample of samples) {
+      expect(checkDiscStatus(sample.graph), sample.label).toBe(sample.after);
+    }
   });
 });
 
@@ -184,8 +203,8 @@ describe('disc description blocks', () => {
     const flat = buildDiscGraphCards(
       {
         g1: { D: 0, I: 0, S: 0, C: 0 },
-        g2: { D: 1, I: 1, S: 1, C: 1 },
-        g3: { D: -1, I: -1, S: -1, C: -1 },
+        g2: { D: 2, I: -2, S: 1, C: 0 },
+        g3: { D: -2, I: 2, S: -1, C: 1 },
       },
       dictionary
     );
