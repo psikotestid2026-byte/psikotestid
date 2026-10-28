@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import Link from 'next/link';
 
 export type ActionPillVariant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
@@ -26,6 +26,22 @@ const sizes: Record<ActionPillSize, string> = {
   lg: 'px-6 py-3.5 text-base',
 };
 
+const RADIUS_UTILITY = /^(?:[\w-]+:)*!?rounded-(?:none|sm|md|lg|xl|2xl|3xl|full)!?$/;
+
+/**
+ * Caller classes customize color and layout, but must not turn the pill back
+ * into a rectangle. Tailwind v4 resolves conflicting utilities by stylesheet
+ * order, so overrides are marked important after radius utilities are removed.
+ */
+function callerOverrides(className: string): string {
+  return className
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token && !RADIUS_UTILITY.test(token))
+    .map((token) => (token.includes('!') ? token : `${token}!`))
+    .join(' ');
+}
+
 /** Shared pill for action buttons and action links on /clients and /panel. */
 export function actionPillClass(
   variant: ActionPillVariant = 'primary',
@@ -38,7 +54,7 @@ export function actionPillClass(
     'disabled:cursor-not-allowed disabled:opacity-50',
     variants[variant],
     sizes[size],
-    className,
+    callerOverrides(className),
   ]
     .filter(Boolean)
     .join(' ');
@@ -68,6 +84,10 @@ interface ActionPillLinkProps {
   className?: string;
   icon?: ReactNode;
   ariaLabel?: string;
+  target?: string;
+  rel?: string;
+  title?: string;
+  onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }
 
 /** Same pill as Button, for an action that navigates. */
@@ -79,9 +99,21 @@ export function ActionPillLink({
   className = '',
   icon,
   ariaLabel,
+  target,
+  rel,
+  title,
+  onClick,
 }: ActionPillLinkProps) {
   return (
-    <Link href={href} aria-label={ariaLabel} className={actionPillClass(variant, size, className)}>
+    <Link
+      href={href}
+      aria-label={ariaLabel}
+      target={target}
+      rel={rel}
+      title={title}
+      onClick={onClick}
+      className={actionPillClass(variant, size, className)}
+    >
       {icon ? <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span> : null}
       {children}
     </Link>

@@ -159,23 +159,29 @@ export function CustomersTab({ data, onAdjustQuota, loading = false }: Customers
           </div>
 
           <div className="flex items-center space-x-1">
-            <button
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={safePage === 1}
-              className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Halaman sebelumnya"
             >
               <ChevronLeft className="w-4 h-4" />
-            </button>
+            </Button>
             <span className="px-3 py-1 font-bold text-slate-800">
               Halaman {safePage} dari {totalPages}
             </span>
-            <button
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={safePage === totalPages}
-              className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Halaman berikutnya"
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </Card>

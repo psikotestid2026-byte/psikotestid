@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import {
@@ -150,12 +149,9 @@ Terima kasih dan selamat mengerjakan!`;
     <div className="w-full space-y-6 animate-fadeUp">
       {/* Breadcrumb & Navigation Bar */}
       <div className="flex items-center justify-between">
-        <Link
-          href="/clients/campaigns"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Campaign
-        </Link>
+        <ActionPillLink href="/clients/campaigns" size="sm" variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>
+          Kembali ke Daftar Campaign
+        </ActionPillLink>
       </div>
 
       {/* Campaign Details Header Banner Card */}
@@ -198,12 +194,15 @@ Terima kasih dan selamat mengerjakan!`;
             <Upload className="w-4 h-4" /> 📁 Bulk Import Excel (.xlsx)
           </Button>
 
-          <button
+          <Button
+            type="button"
+            size="sm"
             onClick={() => copyToClipboard(masterLink, 'Link Sesi Ujian Utama')}
-            className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all border border-white/20"
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 shadow-none"
+            icon={<Copy className="w-4 h-4 text-indigo-300" />}
           >
-            <Copy className="w-4 h-4 text-indigo-300" /> Salin Link Utama Sesi
-          </button>
+            Salin Link Utama Sesi
+          </Button>
         </div>
       </div>
 
@@ -332,14 +331,16 @@ Terima kasih dan selamat mengerjakan!`;
 
                 <td className="py-3.5 px-4">
                   {cand.phone_number ? (
-                    <a
+                    <ActionPillLink
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all"
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      icon={<MessageSquare className="w-3.5 h-3.5" />}
                     >
-                      <MessageSquare className="w-3.5 h-3.5" /> Kirim WA ({cand.phone_number})
-                    </a>
+                      Kirim WA ({cand.phone_number})
+                    </ActionPillLink>
                   ) : (
                     <span className="text-[11px] text-slate-400 italic">Tanpa No HP</span>
                   )}
@@ -350,13 +351,16 @@ Terima kasih dan selamat mengerjakan!`;
                     <code className="text-[10px] bg-slate-100 text-slate-700 font-mono px-2.5 py-1 rounded-lg truncate max-w-[200px]">
                       {personalLink}
                     </code>
-                    <button
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
                       onClick={() => copyToClipboard(personalLink, 'Link Ujian Personal')}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                       title="Salin Link Personal"
+                      aria-label="Salin Link Personal"
                     >
                       <Copy className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </td>
 

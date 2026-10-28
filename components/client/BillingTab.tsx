@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import useSWR, { mutate } from 'swr';
@@ -24,7 +23,7 @@ declare global {
 }
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
+import { ActionPillLink, Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { compressPaymentProof } from '@/lib/imageCompressor';
@@ -247,11 +246,9 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           </p>
         </div>
 
-        <Link href="/clients/campaigns">
-          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-3 shadow-lg flex items-center gap-2 shrink-0">
-            Ke Halaman Campaign & Peserta ➔
-          </Button>
-        </Link>
+        <ActionPillLink href="/clients/campaigns" size="sm" className="bg-emerald-500 hover:bg-emerald-600 shrink-0">
+          Ke Halaman Campaign & Peserta ➔
+        </ActionPillLink>
       </div>
 
       {/* Header Saldo Wallet Summary Card */}
@@ -370,11 +367,14 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
           </div>
         </div>
 
-        <Link href="/clients/transactions">
-          <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-3 shadow-sm flex items-center gap-2 shrink-0">
-            <CreditCard className="w-4 h-4" /> Buka Riwayat Transaksi & Tagihan ➔
-          </Button>
-        </Link>
+        <ActionPillLink
+          href="/clients/transactions"
+          size="sm"
+          className="bg-slate-900 hover:bg-slate-800 shrink-0"
+          icon={<CreditCard className="w-4 h-4" />}
+        >
+          Buka Riwayat Transaksi & Tagihan ➔
+        </ActionPillLink>
       </div>
 
       {/* Modal 1: Top-Up Saldo Form */}
@@ -391,18 +391,16 @@ export function BillingTab({ data, openTopUpOnMount = false }: BillingTabProps) 
                 { label: 'Rp 2.500.000', value: 2500000 },
                 { label: 'Rp 5.000.000', value: 5000000 },
               ].map((item) => (
-                <button
+                <Button
                   key={item.value}
                   type="button"
+                  size="sm"
+                  variant={selectedPreset === item.value && customAmount === item.value.toString() ? 'primary' : 'outline'}
                   onClick={() => handleSelectPreset(item.value)}
-                  className={`py-2.5 px-3 text-xs font-mono font-bold rounded-xl border transition-all ${
-                    selectedPreset === item.value && customAmount === item.value.toString()
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                      : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
-                  }`}
+                  className="font-mono"
                 >
                   {item.label}
-                </button>
+                </Button>
               ))}
             </div>
 

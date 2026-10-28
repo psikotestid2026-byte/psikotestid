@@ -78,13 +78,15 @@ export function EmployeeImportModal({ isOpen, onClose, campaignId, campaignTitle
               Tanpa email. Username & password dibuat otomatis.
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={downloadEmployeeExcelTemplate}
-            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full flex items-center gap-1.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-600"
+            className="shrink-0 bg-emerald-600 hover:bg-emerald-700"
+            icon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" /> Unduh Template
-          </button>
+            Unduh Template
+          </Button>
         </div>
 
         <div>

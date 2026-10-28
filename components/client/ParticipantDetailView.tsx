@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { ActionPillLink } from '@/components/ui/Button';
 import {
   ArrowLeft,
   Download,
@@ -41,12 +41,9 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
     <div className="w-full space-y-6 animate-fadeUp">
       {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
-        <Link
-          href="/clients/participants"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Hasil Kandidat
-        </Link>
+        <ActionPillLink href="/clients/participants" size="sm" variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>
+          Kembali ke Daftar Hasil Kandidat
+        </ActionPillLink>
       </div>
 
       {/* Candidate Profile Header Card */}
@@ -80,14 +77,16 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
 
         {/* Action Button Header */}
         <div className="flex items-center gap-3 shrink-0">
-          <a
+          <ActionPillLink
             href={`/api/reports/participant/${candidate.id || participantId}/pdf`}
             target="_blank"
             rel="noreferrer"
-            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all"
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700"
+            icon={<Download className="w-4 h-4" />}
           >
-            <Download className="w-4 h-4" /> Download PDF Report Resmi
-          </a>
+            Download PDF Report Resmi
+          </ActionPillLink>
         </div>
       </div>
 
