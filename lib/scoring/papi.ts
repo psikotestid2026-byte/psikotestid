@@ -105,8 +105,8 @@ const PAPI_KEYS: [string, PapiAspect, string, PapiAspect][] = [
 
 /**
  * Kamus section 5: name, desc, High (>=6) and Low (<=3) are verbatim.
- * `middle` (Sedang, 4-5) is a DRAFT derived from the High and Low texts,
- * pending owner approval (see refs/papi-sedang-draft.md).
+ * `middle` (Sedang, 4-5) is derived from the High and Low texts and was
+ * approved by Abadi on 2026-10-28 (see refs/papi-sedang-draft.md).
  */
 export const PAPI_ASPECT_DETAILS: Record<PapiAspect, { name: string; desc: string; high: string; middle: string; low: string }> = {
   N: { name: 'Need to Finish a Task', desc: 'Dorongan untuk menyelesaikan pekerjaan sampai tuntas', high: 'Sangat berkomitmen dan berorientasi pada penyelesaian tugas secara tuntas.', middle: 'Cukup berkomitmen menyelesaikan tugas secara tuntas, tetapi masih fleksibel dalam penyelesaian akhir tugas bila situasi menuntut.', low: 'Kurang mendesak atau fleksibel dalam penyelesaian akhir tugas.' },

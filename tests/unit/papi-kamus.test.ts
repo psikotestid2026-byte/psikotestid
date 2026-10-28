@@ -39,7 +39,7 @@ describe('PAPI kamus section 5', () => {
         high: row.high,
         low: row.low,
       });
-      expect(draft).toContain(`| ${row.code} | ${row.name} | ${row.high} | ${row.low} | DRAFT: ${middle} |`);
+      expect(draft).toContain(`| ${row.code} | ${row.name} | ${row.high} | ${row.low} | ${middle} |`);
       expect(middle).not.toMatch(/[—–]/);
       expect(middle.endsWith('.')).toBe(true);
       expect(markdown).toContain(row.high);
