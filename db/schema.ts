@@ -430,6 +430,7 @@ export const jabatan_level_profiles = pgTable('jabatan_level_profiles', {
   threshold_recommended: numeric('threshold_recommended', { precision: 5, scale: 2 }).notNull().default('75'),
   threshold_considered: numeric('threshold_considered', { precision: 5, scale: 2 }).notNull().default('55'),
   dimension_profiles: jsonb('dimension_profiles').notNull().default({}),
+  requires_msdt: boolean('requires_msdt').notNull().default(true),
   is_active: boolean('is_active').notNull().default(true),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),

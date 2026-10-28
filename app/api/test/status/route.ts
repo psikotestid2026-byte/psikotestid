@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sql } from '@/lib/neon';
 import { requireSession } from '@/lib/authGuards';
 import { getAssessmentSecret, verifyAssessmentToken } from '@/lib/assessmentToken';
+import { getBundleCompletion } from '@/lib/bundleCompletion';
 
 export const runtime = 'nodejs';
 
@@ -38,8 +39,7 @@ export async function GET(req: Request) {
     }
 
     const rows = await sql`
-      SELECT p.status, p.scoring_status,
-             (SELECT COUNT(*)::int FROM test_results tr WHERE tr.participant_id = p.id) AS tests_done
+      SELECT p.status, p.scoring_status
       FROM participants p
       WHERE p.id = ${participantId} AND LOWER(p.email) = ${email}
       LIMIT 1
@@ -48,8 +48,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Peserta tidak ditemukan.' }, { status: 404 });
     }
 
+    const completion = await getBundleCompletion(participantId);
     return NextResponse.json(
-      { success: true, ...rows[0] },
+      {
+        success: true,
+        ...rows[0],
+        tests_done: completion.completed,
+        tests_required: completion.required,
+      },
       { headers: { 'Cache-Control': 'private, no-store' } }
     );
   } catch (err) {

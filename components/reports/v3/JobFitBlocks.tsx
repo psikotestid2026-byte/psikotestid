@@ -143,7 +143,7 @@ export function JobFitSummaryBlock({ data }: { data: JobFitReportData }) {
         <Text style={[styles.cellHead, { width: '16%' }]}>Bobot</Text>
         <Text style={[styles.cellHead, { width: '20%' }]}>Batas Minimum</Text>
       </View>
-      {BUNDLE_TEST_CODES.map((code) => {
+      {BUNDLE_TEST_CODES.filter((code) => tests[code]).map((code) => {
         const t = tests[code];
         return (
           <View key={code} style={styles.row} wrap={false}>

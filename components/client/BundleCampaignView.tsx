@@ -332,11 +332,11 @@ export function BundleCampaignView({
                       />
                     </td>
                     <td className="py-3 px-3 text-center font-mono text-slate-600">
-                      {r.tests_done}/{totalTests}
-                      {r.tests_done >= totalTests ? ' ✓' : ''}
+                      {r.tests_done}/{r.tests_required ?? totalTests}
+                      {r.tests_done >= (r.tests_required ?? totalTests) ? ' ✓' : ''}
                     </td>
                     <td className="py-3 px-3 text-right whitespace-nowrap">
-                      {r.tests_done >= totalTests && r.scoring_status === 'DONE' && (
+                      {r.tests_done >= (r.tests_required ?? totalTests) && r.scoring_status === 'DONE' && (
                         <ActionPillLink
                           href={`/api/reports/participant/${r.id}/pdf`}
                           target="_blank"
