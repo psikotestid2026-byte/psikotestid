@@ -40,7 +40,7 @@ const CORRECT_OPTIONS: Record<number, string[]> = {
   14: ['Dekat'],
   15: ['20 rupiah'],
   16: ['2'],
-  17: ['A'],
+  17: ['A', 'S', 'P', 'D', 'M'],
   18: ['13 tahun'],
   19: ['Memiliki tata bahasa dan arti berbeda'],
   20: ['Benar'],
@@ -50,7 +50,7 @@ const CORRECT_OPTIONS: Record<number, string[]> = {
   24: ['2 detik'],
   25: ['Memiliki arti berbeda'],
   26: ['Benar'],
-  27: ['3.33 sen'],
+  27: ['3.33 sen', '3 sen'],
   28: ['Memiliki arti berbeda'],
   29: ['6 ikan'],
   30: ['216 m³'],
@@ -105,13 +105,13 @@ describe('WPT scoring', () => {
     expect(result.iq).toBe(WPT_RS_TO_IQ[50]);
   });
 
-  it('scores empty answers as raw_score 0', () => {
+  it('awards item 17 on a blank sheet and scores every other blank item as 0', () => {
     const result = calculateWptScore({});
-    expect(result.raw_score).toBe(0);
-    expect(result.iq).toBe(WPT_RS_TO_IQ[0]);
+    expect(result.raw_score).toBe(1);
+    expect(result.iq).toBe(WPT_RS_TO_IQ[1]);
   });
 
-  it('scores each seeded option: the correct option is 1 and every other option is 0', () => {
+  it('scores each seeded option against the accepted set', () => {
     const options = loadWptOptionsFromSeed();
     expect(options).toHaveLength(50);
 
@@ -133,7 +133,15 @@ describe('WPT scoring', () => {
     }
   });
 
-  it('rejects the substring false positives on items 4, 8, 17, 23, 27, and 31', () => {
+  it('awards item 17 for every option and a blank answer', () => {
+    for (const option of ['A', 'S', 'P', 'D', 'M', '', '   ', 'G']) {
+      expect(checkWptAnswer(17, option)).toBe(true);
+    }
+    expect(checkWptAnswer(17, null)).toBe(true);
+    expect(checkWptAnswer(17, undefined)).toBe(true);
+  });
+
+  it('rejects the substring false positives on items 4, 8, 23, 27, and 31', () => {
     expect(checkWptAnswer(4, 'Tidak')).toBe(true);
     expect(checkWptAnswer(4, 'Ya')).toBe(false);
     expect(checkWptAnswer(4, 'Tidak Tahu')).toBe(false);
@@ -148,12 +156,6 @@ describe('WPT scoring', () => {
     expect(checkWptAnswer(8, '1/16')).toBe(false);
     expect(checkWptAnswer(8, '1/2')).toBe(false);
 
-    expect(checkWptAnswer(17, 'A')).toBe(true);
-    expect(checkWptAnswer(17, 'S')).toBe(false);
-    expect(checkWptAnswer(17, 'P')).toBe(false);
-    expect(checkWptAnswer(17, 'D')).toBe(false);
-    expect(checkWptAnswer(17, 'M')).toBe(false);
-
     expect(checkWptAnswer(23, '1 dan 3')).toBe(true);
     expect(checkWptAnswer(23, '1,3')).toBe(true);
     expect(checkWptAnswer(23, '1 & 3')).toBe(true);
@@ -165,10 +167,12 @@ describe('WPT scoring', () => {
     expect(checkWptAnswer(27, '3,33 sen')).toBe(true);
     expect(checkWptAnswer(27, '3.33')).toBe(true);
     expect(checkWptAnswer(27, '3,33')).toBe(true);
-    expect(checkWptAnswer(27, '3 sen')).toBe(false);
-    expect(checkWptAnswer(27, '3')).toBe(false);
+    expect(checkWptAnswer(27, '3 sen')).toBe(true);
+    expect(checkWptAnswer(27, '3')).toBe(true);
     expect(checkWptAnswer(27, '1/30')).toBe(false);
     expect(checkWptAnswer(27, '10 sen')).toBe(false);
+    expect(checkWptAnswer(27, '30 sen')).toBe(false);
+    expect(checkWptAnswer(27, '1 sen')).toBe(false);
 
     expect(checkWptAnswer(31, '1/100000')).toBe(true);
     expect(checkWptAnswer(31, '1/100.000')).toBe(true);
