@@ -11,7 +11,7 @@ function OptionBody({ text, image }: { text: string; image?: string }) {
   return (
     <span className="flex min-w-0 items-center gap-3">
       {image ? (
-        <img src={image} alt="" className="h-16 w-24 max-w-[42%] shrink-0 object-contain" />
+        <img src={image} alt="" className="h-20 w-28 max-w-[34vw] shrink-0 object-contain sm:h-24 sm:w-32 sm:max-w-none" />
       ) : null}
       <span className="text-base md:text-lg font-bold leading-relaxed">{text}</span>
     </span>
@@ -234,7 +234,7 @@ export function QuestionStage({
                         : {}
                     }
                   >
-                    <div className="flex items-center gap-3.5">
+                    <div className="flex min-w-0 flex-1 items-center gap-3.5">
                       <span
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-extrabold shrink-0 border ${
                           isSelected ? 'text-white border-transparent' : 'bg-slate-100 text-slate-600 border-slate-200'

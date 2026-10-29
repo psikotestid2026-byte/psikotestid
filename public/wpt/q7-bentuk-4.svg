@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Bentuk 4, segitiga menempel di bawah persegi panjang">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Bentuk 4">
   <rect width="240" height="160" rx="12" fill="#ffffff"/>
   <polygon points="50,36 170,36 170,96 50,96" fill="#1d4ed8"/>
   <polygon points="94,96 126,96 110,128" fill="#0f766e"/>
