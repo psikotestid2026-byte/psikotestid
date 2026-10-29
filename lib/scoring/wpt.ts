@@ -67,11 +67,35 @@ export const WPT_CATEGORIES = [
   { minIQ: 0,   label: 'Sangat Rendah', description: 'Kapasitas intelektual memerlukan pendampingan intensif.' },
 ];
 
+/**
+ * Accepted answers per item. The first entry is the option (or its canonical
+ * spelling) that the question bank marks correct. Extra entries are explicit
+ * spellings of that same answer — never a different option.
+ *
+ * Numeric / free-text decisions (the bank itself is multiple choice):
+ * - 8: 1/8, 0.125, and 0,125 are the same value. "0" is a different option.
+ * - 12, 15, 16, 18, 21, 24, 29, 34, 36, 40, 50: the bare number matches the
+ *   option that states that number with a unit.
+ * - 27: 100 sen / 30 days rounds to 3.33 sen. "3.33" / "3,33" (with or without
+ *   "sen") match. "3", "3 sen", and "1/30" do not — 1/30 is a fraction of a
+ *   dollar, and the item asks for sen.
+ * - 30: "216 m3" matches "216 m³" after superscript normalization. "216" is the
+ *   same volume without the unit.
+ * - 31: 1/100000 and 1/100.000 (thousands dot) are the next term. "1/10000"
+ *   is the previous term. "1/9" is unrelated.
+ * - 35, 43: a decimal comma is the same value as the dotted option.
+ * - 45, 48: "1.250" / "300.000" keep their thousands dots. The digit-only
+ *   form (1250, 300000) is the same amount, with or without the "Rp" prefix.
+ * - 6 and 10 intentionally accept two options each.
+ * - 17 accepts only A (last letter of the third word, "seorang").
+ * - 23 accepts proverbs 1 and 3, including "1,3" and "1 & 3". "1 dan 2" is
+ *   a different option.
+ */
 export const WPT_ANSWER_KEYS: Record<number, string | string[]> = {
   1: 'Desember',
   2: 'Membebaskan',
   3: 'Mobil',
-  4: ['Tidak', 'jawablah yang tidak perlu', 'jawablah jika tidak perlu'],
+  4: 'Tidak',
   5: 'Berpartisipasi',
   6: ['Jarang', 'Luar Biasa'],
   7: 'Bentuk 3',
@@ -84,21 +108,21 @@ export const WPT_ANSWER_KEYS: Record<number, string | string[]> = {
   14: 'Dekat',
   15: ['20', '20 rupiah'],
   16: ['2', '2 pasang'],
-  17: ['A', 'S', 'P', 'D', 'M'],
+  17: 'A',
   18: ['13', '13 tahun'],
   19: 'Memiliki tata bahasa dan arti berbeda',
   20: 'Benar',
   21: ['20', '20 barel'],
   22: 'Salah',
-  23: ['1 dan 3', '1,3', '1 & 3', '1 dan 2'],
+  23: ['1 dan 3', '1,3', '1 & 3'],
   24: ['2', '2 detik'],
   25: 'Memiliki arti berbeda',
   26: 'Benar',
-  27: ['3.33 sen', '3,33', '3.33', '1/30'],
+  27: ['3.33 sen', '3,33 sen', '3,33', '3.33'],
   28: 'Memiliki arti berbeda',
   29: ['6', '6 ikan'],
   30: ['216 m³', '216', '216 m3'],
-  31: ['1/100000', '1/100.000', '1/9'],
+  31: ['1/100000', '1/100.000'],
   32: 'Ya',
   33: 'Memiliki arti berbeda',
   34: ['20', '20 rok'],
@@ -110,43 +134,42 @@ export const WPT_ANSWER_KEYS: Record<number, string | string[]> = {
   40: ['3', '3 pasangan'],
   41: ['1 dan 3', '1,3', '1 & 3'],
   42: 'Dua trapesium siku-siku',
-  43: '0.33',
+  43: ['0.33', '0,33'],
   44: 'Kejujuran adalah nilai moral yang tidak perlu disesali',
-  45: ['Rp 1.250', '1250', '1.250'],
+  45: ['Rp 1.250', '1250', '1.250', 'Rp 1250'],
   46: 'Kubus',
   47: 'Salah (Sesat Pikir)',
-  48: ['Rp 300.000', '300000', '300.000'],
+  48: ['Rp 300.000', '300000', '300.000', 'Rp 300000'],
   49: ['Potongan 1, 2, 4, 5', '1,2,4,5', '1245'],
   50: ['50 menit', '50'],
 };
 
-export function normalizeWptAnswer(val: any): string {
+/** Trim, lowercase, collapse whitespace, and fold quotes / superscripts. */
+export function normalizeWptAnswer(val: unknown): string {
   if (val === undefined || val === null) return '';
   let s = String(val).trim().toLowerCase();
-  // Strip common trailing zeroes or punctuation
+  s = s.replace(/[\u2018\u2019\u201A\u201B]/g, "'").replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+  s = s.replace(/³/g, '3').replace(/²/g, '2');
+  s = s.replace(/\s+/g, ' ').trim();
+  s = s.replace(/\s*\/\s*/g, '/');
+  s = s.replace(/(\d)\s*,\s*(?=\d)/g, '$1,');
+  s = s.replace(/\brp\s*/g, 'rp ');
   if (s.endsWith('.0') && !s.includes('/')) {
     s = s.slice(0, -2);
   }
   return s;
 }
 
-export function checkWptAnswer(qNum: number, rawAns: any): boolean {
-  if (rawAns === undefined || rawAns === null) return false;
+/** True only when the answer exactly matches the key or an explicit alternative. */
+export function checkWptAnswer(qNum: number, rawAns: unknown): boolean {
   const ans = normalizeWptAnswer(rawAns);
   if (!ans) return false;
 
   const key = WPT_ANSWER_KEYS[qNum];
   if (!key) return false;
 
-  if (Array.isArray(key)) {
-    return key.some(k => {
-      const normK = normalizeWptAnswer(k);
-      return ans === normK || ans.includes(normK) || normK.includes(ans);
-    });
-  }
-
-  const normKey = normalizeWptAnswer(key);
-  return ans === normKey || ans.includes(normKey) || normKey.includes(ans);
+  const accepted = Array.isArray(key) ? key : [key];
+  return accepted.some((candidate) => normalizeWptAnswer(candidate) === ans);
 }
 
 export function calculateWptScore(rawAnswers: Record<string, any>) {
