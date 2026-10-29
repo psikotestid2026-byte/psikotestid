@@ -9,10 +9,16 @@
  * --force-composite also re-runs scoreParticipant for completed participants
  * whose WPT score is already current (retry after a composite failure).
  *
+ * Rows whose scoring_data has no raw_score field are skipped and logged.
+ * That covers legacy rows such as participant 10 (campaign 13 demo).
+ * --exclude=<ids> and --only=<ids> filter by participant id (comma-separated).
+ *
  * Does not write raw_answers. Does not insert or delete rows.
  *
  *   npx tsx scripts/rescore-wpt.ts
  *   npx tsx scripts/rescore-wpt.ts --apply
+ *   npx tsx scripts/rescore-wpt.ts --exclude=10
+ *   npx tsx scripts/rescore-wpt.ts --only=15,16 --apply
  *   npx tsx scripts/rescore-wpt.ts --apply --force-composite
  */
 import { config } from 'dotenv';
@@ -61,9 +67,48 @@ function formatMetric(value: number | null): string {
   return value == null ? '—' : String(value);
 }
 
+function hasRawScoreField(value: unknown): boolean {
+  if (typeof value === 'string') {
+    try {
+      return hasRawScoreField(JSON.parse(value) as unknown);
+    } catch {
+      return false;
+    }
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.prototype.hasOwnProperty.call(value, 'raw_score');
+}
+
+/** `--exclude=1,2` or `--exclude 1,2`. Null when the flag is absent. */
+function readParticipantIds(flag: '--exclude' | '--only'): Set<number> | null {
+  const inline = process.argv.find((arg) => arg.startsWith(`${flag}=`));
+  let raw: string | null = null;
+  if (inline) {
+    raw = inline.slice(flag.length + 1);
+  } else {
+    const index = process.argv.indexOf(flag);
+    if (index >= 0) raw = process.argv[index + 1] ?? '';
+  }
+  if (raw == null) return null;
+  if (raw.trim() === '' || raw.startsWith('--')) {
+    throw new Error(`${flag} membutuhkan daftar id peserta, misalnya ${flag}=10`);
+  }
+  const ids = new Set<number>();
+  for (const part of raw.split(',')) {
+    const token = part.trim();
+    if (!/^\d+$/.test(token)) {
+      throw new Error(`${flag} berisi id yang tidak valid: ${token}`);
+    }
+    ids.add(Number(token));
+  }
+  return ids;
+}
+
 async function main() {
   const apply = process.argv.includes('--apply');
   const forceComposite = process.argv.includes('--force-composite');
+  const onlyIds = readParticipantIds('--only');
+  const excludeIds = readParticipantIds('--exclude');
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     console.error('DATABASE_URL belum diisi. Skor WPT tidak dihitung ulang.');
@@ -87,12 +132,35 @@ async function main() {
   `) as WptRow[];
 
   console.log(apply ? 'Mode tulis (--apply).' : 'Mode uji (dry-run). Tidak ada baris yang ditulis.');
+  if (onlyIds) console.log(`Hanya peserta: ${[...onlyIds].join(', ')}`);
+  if (excludeIds) console.log(`Kecuali peserta: ${[...excludeIds].join(', ')}`);
   console.log(`${rows.length} hasil WPT.`);
 
   const affectedCompleted: number[] = [];
   let changed = 0;
+  let skippedLegacy = 0;
+  let skippedFilter = 0;
 
   for (const row of rows) {
+    const participantId = Number(row.participant_id);
+    const label = `#${row.participant_id} ${row.full_name}`;
+
+    if (onlyIds && !onlyIds.has(participantId)) {
+      skippedFilter += 1;
+      console.log(`lewati ${label}: di luar --only`);
+      continue;
+    }
+    if (excludeIds && excludeIds.has(participantId)) {
+      skippedFilter += 1;
+      console.log(`lewati ${label}: ada di --exclude`);
+      continue;
+    }
+    if (!hasRawScoreField(row.scoring_data)) {
+      skippedLegacy += 1;
+      console.log(`lewati ${label}: scoring_data tidak memiliki raw_score (format lama)`);
+      continue;
+    }
+
     const previous = asObject(row.scoring_data);
     const oldRaw = readNumber(previous.raw_score);
     const oldIq = readNumber(previous.iq);
@@ -101,7 +169,6 @@ async function main() {
     const differs = oldRaw !== next.raw_score || oldIq !== next.iq;
     if (differs) changed += 1;
 
-    const participantId = Number(row.participant_id);
     const completed = String(row.status || '').toUpperCase() === 'COMPLETED';
     console.log(
       `#${row.participant_id} ${row.full_name} [${row.status || 'UNKNOWN'}] raw ${formatMetric(oldRaw)} -> ${next.raw_score}  IQ ${formatMetric(oldIq)} -> ${next.iq}${differs ? '  BERUBAH' : ''}`
@@ -166,8 +233,9 @@ async function main() {
     }
   }
 
+  const considered = rows.length - skippedLegacy - skippedFilter;
   console.log(
-    `Selesai. ${changed} dari ${rows.length} skor WPT berbeda.${apply ? '' : ' Jalankan dengan --apply untuk menulis.'}`
+    `Selesai. ${changed} dari ${considered} skor WPT berbeda. ${skippedLegacy} baris dilewati karena tidak ada raw_score. ${skippedFilter} baris dilewati oleh --only/--exclude.${apply ? '' : ' Jalankan dengan --apply untuk menulis.'}`
   );
 }
 

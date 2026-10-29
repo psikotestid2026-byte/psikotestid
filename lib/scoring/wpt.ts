@@ -68,17 +68,16 @@ export const WPT_CATEGORIES = [
 ];
 
 /**
- * Accepted answers per item. The first entry is the option (or its canonical
- * spelling) that the question bank marks correct. Extra entries are explicit
- * spellings of that same answer — never a different option.
+ * Accepted answers per item. The first entry is the canonical spelling.
+ * Extra entries are explicit alternatives of that answer, except items 17 and 27
+ * which are called out below.
  *
  * Numeric / free-text decisions (the bank itself is multiple choice):
  * - 8: 1/8, 0.125, and 0,125 are the same value. "0" is a different option.
  * - 12, 15, 16, 18, 21, 24, 29, 34, 36, 40, 50: the bare number matches the
  *   option that states that number with a unit.
- * - 27: 100 sen / 30 days rounds to 3.33 sen. "3.33" / "3,33" (with or without
- *   "sen") match. "3", "3 sen", and "1/30" do not — 1/30 is a fraction of a
- *   dollar, and the item asks for sen.
+ * - 27: 100 sen / 30 days is 3.33 sen. Also accept the whole-sen forms "3 sen"
+ *   and "3". "10 sen", "30 sen", "1 sen", and "1/30" do not match.
  * - 30: "216 m3" matches "216 m³" after superscript normalization. "216" is the
  *   same volume without the unit.
  * - 31: 1/100000 and 1/100.000 (thousands dot) are the next term. "1/10000"
@@ -87,7 +86,9 @@ export const WPT_CATEGORIES = [
  * - 45, 48: "1.250" / "300.000" keep their thousands dots. The digit-only
  *   form (1250, 300000) is the same amount, with or without the "Rp" prefix.
  * - 6 and 10 intentionally accept two options each.
- * - 17 accepts only A (last letter of the third word, "seorang").
+ * - 17: "penyanyi dia seorang merupakan" rearranges to "Dia merupakan seorang
+ *   penyanyi". The third word, "seorang", ends in G, which is not an option
+ *   (A/S/P/D/M). The point is awarded for every response, including a blank.
  * - 23 accepts proverbs 1 and 3, including "1,3" and "1 & 3". "1 dan 2" is
  *   a different option.
  */
@@ -108,7 +109,8 @@ export const WPT_ANSWER_KEYS: Record<number, string | string[]> = {
   14: 'Dekat',
   15: ['20', '20 rupiah'],
   16: ['2', '2 pasang'],
-  17: 'A',
+  // Unconditional: the true letter is G, which the bank does not offer.
+  17: ['A', 'S', 'P', 'D', 'M'],
   18: ['13', '13 tahun'],
   19: 'Memiliki tata bahasa dan arti berbeda',
   20: 'Benar',
@@ -118,7 +120,7 @@ export const WPT_ANSWER_KEYS: Record<number, string | string[]> = {
   24: ['2', '2 detik'],
   25: 'Memiliki arti berbeda',
   26: 'Benar',
-  27: ['3.33 sen', '3,33 sen', '3,33', '3.33'],
+  27: ['3.33 sen', '3,33 sen', '3,33', '3.33', '3 sen', '3'],
   28: 'Memiliki arti berbeda',
   29: ['6', '6 ikan'],
   30: ['216 m³', '216', '216 m3'],
@@ -160,8 +162,14 @@ export function normalizeWptAnswer(val: unknown): string {
   return s;
 }
 
-/** True only when the answer exactly matches the key or an explicit alternative. */
+/**
+ * True only when the answer exactly matches the key or an explicit alternative.
+ * Item 17 is the exception: its correct letter is not an option, so every
+ * response scores, including an empty or missing answer.
+ */
 export function checkWptAnswer(qNum: number, rawAns: unknown): boolean {
+  if (qNum === 17) return true;
+
   const ans = normalizeWptAnswer(rawAns);
   if (!ans) return false;
 
