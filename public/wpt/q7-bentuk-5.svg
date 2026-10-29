@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Bentuk 5">
+  <rect width="240" height="160" rx="12" fill="#ffffff"/>
+  <polygon points="78,40 198,40 198,120 78,120" fill="#1d4ed8"/>
+  <polygon points="78,64 78,96 46,80" fill="#0f766e"/>
+  <circle cx="28" cy="28" r="14" fill="#0f172a"/>
+  <text x="28" y="33" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="700" fill="#ffffff">5</text>
+</svg>
