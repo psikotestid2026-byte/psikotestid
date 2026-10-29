@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Bentuk 2, dua potongan masih terpisah">
+  <rect width="240" height="160" rx="12" fill="#ffffff"/>
+  <polygon points="28,52 118,52 118,72 90,86 118,100 118,120 28,120" fill="#1d4ed8"/>
+  <polygon points="196,72 168,86 196,100" fill="#0f766e"/>
+  <circle cx="28" cy="28" r="14" fill="#0f172a"/>
+  <text x="28" y="33" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="700" fill="#ffffff">2</text>
+</svg>

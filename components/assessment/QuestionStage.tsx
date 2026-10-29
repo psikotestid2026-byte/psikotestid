@@ -1,5 +1,23 @@
 import { ChevronLeft, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
 
+function optionImageAt(questionData: { option_images?: unknown }, index: number): string | undefined {
+  const images = questionData.option_images;
+  if (!Array.isArray(images)) return undefined;
+  const image = images[index];
+  return typeof image === 'string' && image ? image : undefined;
+}
+
+function OptionBody({ text, image }: { text: string; image?: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      {image ? (
+        <img src={image} alt="" className="h-16 w-24 max-w-[42%] shrink-0 object-contain" />
+      ) : null}
+      <span className="text-base md:text-lg font-bold leading-relaxed">{text}</span>
+    </span>
+  );
+}
+
 interface QuestionStageProps {
   currentTest: any;
   currentQ: number;
@@ -111,6 +129,13 @@ export function QuestionStage({
           <h3 className="text-xl md:text-3xl font-extrabold text-slate-900 leading-snug font-display">
             {questionText}
           </h3>
+          {typeof questionData.image_url === 'string' && questionData.image_url ? (
+            <img
+              src={questionData.image_url}
+              alt=""
+              className="mx-auto mt-5 h-auto max-h-48 w-full max-w-md object-contain"
+            />
+          ) : null}
         </div>
 
         {/* DISC Dual Selection View */}
@@ -135,9 +160,7 @@ export function QuestionStage({
                     <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-xs md:text-sm font-extrabold shrink-0">
                       {String.fromCharCode(65 + idx)}
                     </span>
-                    <span className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">
-                      {opt}
-                    </span>
+                    <OptionBody text={opt} image={optionImageAt(questionData, idx)} />
                   </div>
 
                   {/* P & K Action Buttons */}
@@ -220,7 +243,7 @@ export function QuestionStage({
                       >
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      <span className="text-base md:text-lg leading-relaxed font-bold">{opt}</span>
+                      <OptionBody text={opt} image={optionImageAt(questionData, idx)} />
                     </div>
                     {isSelected && (
                       <div

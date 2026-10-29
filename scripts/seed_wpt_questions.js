@@ -7,10 +7,21 @@ const wptQuestions = [
   { text: "Bulan lalu pada awal tahun ini adalah:", options: ["Januari", "Maret", "Juli", "Desember", "Oktober"] },
   { text: "MENANGKAP adalah lawan kata dari:", options: ["Meletakkan", "Membebaskan", "Membiarkan", "Menahan", "Turun tingkat"] },
   { text: "Sebagian besar hal di bawah ini serupa satu sama lain. Manakah yang kurang serupa?", options: ["Kucing", "Anjing", "Mobil", "Kuda", "Sapi"] },
-  { text: "Apakah RSVP berarti 'jawablah jika tidak perlu'?", options: ["Ya", "Tidak", "Tidak Tahu"] },
+  { text: "Pada sebuah undangan, apakah singkatan RSVP berarti 'tidak perlu membalas'?", options: ["Ya", "Tidak", "Tidak Tahu"] },
   { text: "Dalam kelompok kata berikut, manakah kata yang berbeda?", options: ["Pasukan", "Liga", "Berpartisipasi", "Paket", "Kelompok"] },
   { text: "BIASA adalah lawan kata dari:", options: ["Jarang", "Terbiasa", "Berhenti", "Luar Biasa", "Selalu"] },
-  { text: "Manakah dari bentuk berikut yang merupakan gabungan dua potongan gambar?", options: ["Bentuk 1", "Bentuk 2", "Bentuk 3", "Bentuk 4", "Bentuk 5"] },
+  {
+    text: "Manakah dari bentuk berikut yang merupakan gabungan dua potongan gambar?",
+    image_url: "/wpt/q7-potongan.svg",
+    options: ["Bentuk 1", "Bentuk 2", "Bentuk 3", "Bentuk 4", "Bentuk 5"],
+    option_images: [
+      "/wpt/q7-bentuk-1.svg",
+      "/wpt/q7-bentuk-2.svg",
+      "/wpt/q7-bentuk-3.svg",
+      "/wpt/q7-bentuk-4.svg",
+      "/wpt/q7-bentuk-5.svg",
+    ],
+  },
   { text: "Perhatikan urutan angka berikut. Angka berapa yang muncul berikutnya? 8, 4, 2, 1, 1/2, 1/4, ...", options: ["1/8", "1/6", "1/16", "0", "1/2"] },
   { text: "Klien dan Pelanggan. Apakah kata-kata ini:", options: ["Memiliki arti yang sama", "Memiliki arti berlawanan", "Tidak memiliki arti sama atau berlawanan"] },
   { text: "Manakah kata berikut ini yang berhubungan dengan mencium, seperti halnya gigi dengan mengunyah?", options: ["Manis", "Bersih", "Bau tak sedap", "Bau wangi", "Hidung"] },
@@ -75,7 +86,12 @@ async function seed() {
   for (let i = 0; i < wptQuestions.length; i++) {
     const q = wptQuestions[i];
     const orderNumber = i + 1;
-    const questionData = JSON.stringify({ text: q.text, options: q.options });
+    const questionData = JSON.stringify({
+      text: q.text,
+      options: q.options,
+      ...(q.image_url ? { image_url: q.image_url } : {}),
+      ...(q.option_images ? { option_images: q.option_images } : {}),
+    });
     await sql`
       INSERT INTO question_banks (test_id, question_type, question_data, order_number)
       VALUES (${wptTestId}, 'multiple_choice', ${questionData}::jsonb, ${orderNumber})
