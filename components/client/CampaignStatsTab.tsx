@@ -20,6 +20,7 @@ import {
   PolarRadiusAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { ActionPillLink } from '@/components/ui/Button';
 import {
   PieChart as PieIcon,
   BarChart3,
@@ -28,6 +29,8 @@ import {
   Layers,
   Award,
   Users,
+  FileDown,
+  AlertTriangle,
   Loader2,
 } from 'lucide-react';
 
@@ -92,6 +95,37 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Action Header: Download PDF */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h3 className="font-display font-bold text-sm text-slate-900">
+            Ringkasan Statistik & Grafik Evaluasi
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Visualisasi analisis hasil psikotes dan pemetaan kompetensi karyawan sesi ini.
+          </p>
+        </div>
+
+        <ActionPillLink
+          href={`/api/client/campaigns/${campaignId}/stats/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="sm"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 self-start sm:self-auto shadow-sm"
+          icon={<FileDown className="w-3.5 h-3.5" />}
+        >
+          Unduh PDF Statistik
+        </ActionPillLink>
+      </div>
+
+      {/* Verification Notice Banner */}
+      <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-900 leading-relaxed">
+          <strong className="font-bold text-amber-950">Data ini belum divalidasi secara manual.</strong> Nilai dan status rekomendasi bersifat sementara dan dapat berubah setelah proses verifikasi oleh tim HR.
+        </p>
+      </div>
+
       {/* KPI Highlight Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
