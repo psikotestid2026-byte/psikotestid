@@ -60,11 +60,14 @@ function buildWhere(campaignId: number, query: ResultsQuery) {
   const values: unknown[] = [campaignId];
 
   if (query.q) {
-    values.push(`%${escapeLike(query.q)}%`);
-    const i = values.length;
-    conditions.push(
-      `(p.full_name ILIKE $${i} OR p.position ILIKE $${i} OR p.unit_work ILIKE $${i} OR p.username ILIKE $${i} OR p.employee_id ILIKE $${i})`
-    );
+    const rawTokens = query.q.split(/\s+/).filter(Boolean);
+    for (const token of rawTokens) {
+      values.push(`%${escapeLike(token)}%`);
+      const i = values.length;
+      conditions.push(
+        `(p.full_name ILIKE $${i} OR p.position ILIKE $${i} OR p.unit_work ILIKE $${i} OR p.username ILIKE $${i} OR p.employee_id ILIKE $${i})`
+      );
+    }
   }
   if (query.unit) {
     values.push(query.unit);
