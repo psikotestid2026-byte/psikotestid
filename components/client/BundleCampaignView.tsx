@@ -190,15 +190,6 @@ export function BundleCampaignView({
             Reset Semua Hasil
           </Button>
           <ActionPillLink
-            href={`/clients/campaigns/${campaignId}/stats`}
-            size="sm"
-            variant="ghost"
-            className="bg-indigo-500/30 hover:bg-indigo-500/50 text-white border border-indigo-400/40"
-            icon={<BarChart3 className="w-4 h-4 text-indigo-300" />}
-          >
-            Buka Halaman Statistik (Dashboard)
-          </ActionPillLink>
-          <ActionPillLink
             href={`/api/client/campaigns/${campaignId}/participants/credentials`}
             size="sm"
             variant="ghost"
@@ -224,17 +215,6 @@ export function BundleCampaignView({
             <div className={`text-2xl font-extrabold ${item.tone || 'text-slate-900'}`}>{item.value ?? '-'}</div>
           </div>
         ))}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <ActionPillLink
-          href={`/clients/campaigns/${campaignId}/stats`}
-          size="sm"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-          icon={<BarChart3 className="w-4 h-4" />}
-        >
-          Lihat Statistik & Visualisasi Grafik
-        </ActionPillLink>
       </div>
 
       <Card noPadding className="overflow-hidden border border-slate-200 shadow-sm">

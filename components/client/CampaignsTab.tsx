@@ -16,6 +16,7 @@ import {
   Loader2,
   AlertTriangle,
   Wallet,
+  BarChart3,
 } from 'lucide-react';
 import { createCampaign, closeCampaign } from '@/app/(client)/clients/actions';
 
@@ -292,7 +293,17 @@ export function CampaignsTab({ data }: CampaignsTabProps) {
                 </td>
 
                 <td className="py-4 px-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
+                    <ActionPillLink
+                      href={`/clients/campaigns/${c.id}/stats`}
+                      size="sm"
+                      variant="outline"
+                      className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-semibold"
+                      icon={<BarChart3 className="w-3.5 h-3.5" />}
+                    >
+                      Statistik
+                    </ActionPillLink>
+
                     <ActionPillLink
                       href={`/clients/campaigns/${c.id}`}
                       size="sm"

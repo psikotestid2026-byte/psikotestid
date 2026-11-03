@@ -129,7 +129,18 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
         </div>
 
         {/* Action Button Header */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <ActionPillLink
+            href={`/api/reports/participant/${candidate.id || participantId}/answers/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700"
+            icon={<Download className="w-4 h-4" />}
+          >
+            Download PDF Rincian Jawaban Soal
+          </ActionPillLink>
+
           <ActionPillLink
             href={`/api/reports/participant/${candidate.id || participantId}/pdf`}
             target="_blank"
@@ -250,7 +261,7 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
 
       {/* SECTION B: HASIL JAWABAN LENGKAP SEMUA TES & SEMUA PERTANYAAN */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-3">
           <div className="space-y-0.5">
             <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
               <FileQuestion className="w-5 h-5 text-indigo-600" /> Hasil Jawaban per Alat Tes & Pertanyaan
@@ -259,9 +270,21 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
               Rincian seluruh butir soal dan jawaban yang dipilih oleh kandidat untuk setiap instrumen tes yang dikerjakan.
             </p>
           </div>
-          <span className="text-xs text-slate-500 font-medium font-mono">
-            {currentTestResults.length} Alat Tes Tersimpan
-          </span>
+          <div className="flex items-center gap-2">
+            <ActionPillLink
+              href={`/api/reports/participant/${candidate.id || participantId}/answers/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+              icon={<Download className="w-3.5 h-3.5" />}
+            >
+              Unduh PDF Jawaban
+            </ActionPillLink>
+            <span className="text-xs text-slate-500 font-medium font-mono hidden sm:inline">
+              {currentTestResults.length} Alat Tes
+            </span>
+          </div>
         </div>
 
         {currentTestResults.length === 0 ? (

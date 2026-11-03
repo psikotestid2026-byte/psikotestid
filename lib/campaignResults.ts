@@ -133,8 +133,38 @@ export async function queryCampaignResults(campaignId: number, query: ResultsQue
     paging = `LIMIT $${pageValues.length - 1} OFFSET $${pageValues.length}`;
   }
 
+  // Optimized query: paginate the filtered participants FIRST, then LATERAL join test counts for the paginated slice
+  const fastQuery = `
+    SELECT
+      p.id, p.full_name, p.username, p.employee_id, p.position, p.unit_work, p.status,
+      p.job_level_code, p.scoring_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.recommendation_status END AS recommendation_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.system_recommendation_status END AS system_recommendation_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.recommendation_score END AS recommendation_score,
+      p.assessor_override, p.assessor_notes, p.completed_at,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.score_breakdown->'tests' END AS tests,
+      COALESCE(tr_agg.done_count, 0)::int AS tests_done,
+      COALESCE(tr_agg.has_msdt, false) AS has_msdt_result
+    FROM (
+      SELECT *
+      FROM participants p
+      WHERE ${where}
+      ORDER BY ${orderBy}
+      ${paging}
+    ) p
+    LEFT JOIN LATERAL (
+      SELECT 
+        COUNT(DISTINCT tr.test_id) as done_count,
+        BOOL_OR(LOWER(mt.code) = 'msdt') as has_msdt
+      FROM test_results tr
+      JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
+      JOIN master_tests mt ON mt.id = tr.test_id
+      WHERE tr.participant_id = p.id
+    ) tr_agg ON true
+  `;
+
   const [rows, totalRows, summaryRows, unitRows, testRows, campaignTestRows, context] = await Promise.all([
-    sql.query(`SELECT ${SELECT_COLUMNS} FROM participants p WHERE ${where} ORDER BY ${orderBy} ${paging}`, pageValues),
+    sql.query(fastQuery, pageValues),
     sql.query(`SELECT COUNT(*)::int AS total FROM participants p WHERE ${where}`, values),
     sql`
       SELECT
