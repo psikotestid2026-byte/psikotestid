@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import useSWR from 'swr';
 import {
   ResponsiveContainer,
@@ -13,25 +13,21 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { ActionPillLink } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { RecommendationBadge } from '@/components/ui/RecommendationBadge';
 import {
   PieChart as PieIcon,
-  BarChart3,
-  Radar as RadarIcon,
-  Activity,
   Layers,
   Award,
   Users,
   FileDown,
   AlertTriangle,
   Loader2,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 
 interface CampaignStatsTabProps {
@@ -61,6 +57,8 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
     }
   );
 
+  const [selectedUnit, setSelectedUnit] = useState<any | null>(null);
+
   if (isLoading && !data) {
     return (
       <Card className="p-16 flex flex-col items-center justify-center text-slate-400 gap-3">
@@ -71,12 +69,11 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
   }
 
   const summary = data?.summary || {};
-  const unitStats = data?.unitStats || [];
+  const unitStats: any[] = data?.unitStats || [];
   const jobLevelStats = data?.jobLevelStats || [];
   const avgScores = data?.avgScores || {};
-  const scoreDistribution = data?.scoreDistribution || [];
 
-  // 1. Data Pie Chart Status Rekomendasi
+  // Data Pie Chart Status Rekomendasi
   const pieData = [
     { name: 'Direkomendasikan', value: Number(summary.direkomendasikan || 0), color: RECOMMENDATION_COLORS['Direkomendasikan'] },
     { name: 'Dipertimbangkan', value: Number(summary.dipertimbangkan || 0), color: RECOMMENDATION_COLORS['Dipertimbangkan'] },
@@ -84,14 +81,13 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
     { name: 'Belum Selesai', value: Number(summary.belum || 0), color: RECOMMENDATION_COLORS['Belum Selesai'] },
   ].filter((item) => item.value > 0);
 
-  // 2. Data Radar Rata-Rata Alat Tes
-  const radarData = [
-    { subject: 'WPT (Logika/Kognitif)', score: Number(avgScores.avg_wpt || 0), fullMark: 100 },
-    { subject: 'DISC (Kepribadian)', score: Number(avgScores.avg_disc || 0), fullMark: 100 },
-    { subject: 'Big Five (Karakter)', score: Number(avgScores.avg_bigfive || 0), fullMark: 100 },
-    { subject: 'PAPI (Gaya Kerja)', score: Number(avgScores.avg_papi || 0), fullMark: 100 },
-    { subject: 'MSDT (Gaya Manajerial)', score: Number(avgScores.avg_msdt || 0), fullMark: 100 },
-  ];
+  const handleBarClick = (entry: any) => {
+    if (entry && (entry.unit || entry.activePayload?.[0]?.payload?.unit)) {
+      const clickedUnitName = entry.unit || entry.activePayload[0].payload.unit;
+      const found = unitStats.find((u) => u.unit === clickedUnitName);
+      if (found) setSelectedUnit(found);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -155,7 +151,7 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Tes Selesai Dinilai</span>
-            <Activity className="w-4 h-4 text-blue-600" />
+            <Users className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-3xl font-extrabold text-blue-600">
             {summary.done ?? (Number(summary.total || 0) - Number(summary.belum || 0))}
@@ -173,7 +169,7 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
         </div>
       </div>
 
-      {/* Row 1: Pie Chart & Radar Chart */}
+      {/* Row 1: Pie Chart & Hasil Rekomendasi per Level Jabatan */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart: Status Rekomendasi */}
         <Card className="border border-slate-200 shadow-sm p-5 space-y-4">
@@ -216,72 +212,6 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
           </div>
         </Card>
 
-        {/* Radar Chart: Average Test Scores */}
-        <Card className="border border-slate-200 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <RadarIcon className="w-4 h-4 text-indigo-600" />
-              <h4 className="font-display font-bold text-sm text-slate-900">
-                Profil Rata-Rata per Alat Tes
-              </h4>
-            </div>
-            <span className="text-[11px] text-slate-400 font-medium">
-              Skala 0 - 100
-            </span>
-          </div>
-
-          <div className="w-full h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} outerRadius={90}>
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#cbd5e1" />
-                <Radar
-                  name="Rata-rata Skor"
-                  dataKey="score"
-                  stroke="#4f46e5"
-                  fill="#6366f1"
-                  fillOpacity={0.45}
-                />
-                <Tooltip
-                  formatter={(val: any) => [`${val} Poin`, 'Rata-Rata']}
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', fontSize: '12px' }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      {/* Row 2: Bar Chart - Distribusi Skor & Status per Level Jabatan */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart: Sebaran Rentang Skor */}
-        <Card className="border border-slate-200 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-indigo-600" />
-              <h4 className="font-display font-bold text-sm text-slate-900">
-                Sebaran Rentang Nilai Rekomendasi
-              </h4>
-            </div>
-            <span className="text-[11px] text-slate-400 font-medium">Jumlah Peserta</span>
-          </div>
-
-          <div className="w-full h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={scoreDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <XAxis dataKey="bucket" tick={{ fill: '#64748b', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
-                <Tooltip
-                  formatter={(val: any) => [`${val} Orang`, 'Jumlah Karyawan']}
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', fontSize: '12px' }}
-                />
-                <Bar dataKey="count" fill="#4f46e5" radius={[6, 6, 0, 0]} name="Jumlah Peserta" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
         {/* Stacked Bar Chart: Status per Level Jabatan */}
         <Card className="border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -312,16 +242,18 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
         </Card>
       </div>
 
-      {/* Row 3: Unit Kerja Bar Chart */}
+      {/* Row 2: Unit Kerja Bar Chart with Drill Down Modal */}
       <Card className="border border-slate-200 shadow-sm p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-indigo-600" />
             <h4 className="font-display font-bold text-sm text-slate-900">
               Distribusi Rekomendasi per Unit Kerja (Top 12 Terbanyak)
             </h4>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Berdasarkan Unit Penempatan</span>
+          <span className="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-lg">
+            💡 Klik bar / nama unit kerja untuk melihat daftar orangnya
+          </span>
         </div>
 
         <div className="w-full h-80">
@@ -330,6 +262,8 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
               data={unitStats}
               layout="vertical"
               margin={{ top: 10, right: 20, left: 80, bottom: 10 }}
+              onClick={handleBarClick}
+              className="cursor-pointer"
             >
               <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} />
               <YAxis
@@ -349,8 +283,86 @@ export function CampaignStatsTab({ campaignId }: CampaignStatsTabProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Quick Click Badges per Unit */}
+        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-slate-500 mr-1">Pilih Detail Unit:</span>
+          {unitStats.map((u) => (
+            <button
+              key={u.unit}
+              type="button"
+              onClick={() => setSelectedUnit(u)}
+              className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-slate-700 font-medium transition-colors border border-slate-200 flex items-center gap-1"
+            >
+              <span>{u.unit}</span>
+              <span className="text-[10px] bg-white px-1.5 py-0.2 rounded font-bold text-slate-600 border border-slate-200">
+                {u.total}
+              </span>
+            </button>
+          ))}
+        </div>
       </Card>
+
+      {/* Modal Drill Detail Unit Kerja */}
+      <Modal
+        isOpen={selectedUnit !== null}
+        onClose={() => setSelectedUnit(null)}
+        title={`Daftar Karyawan: ${selectedUnit?.unit || ''} (${selectedUnit?.total || 0} Orang)`}
+        maxWidthClassName="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+            <span className="text-emerald-700 font-semibold">
+              Direkomendasikan: <strong>{selectedUnit?.direkomendasikan || 0}</strong>
+            </span>
+            <span className="text-amber-700 font-semibold">
+              Dipertimbangkan: <strong>{selectedUnit?.dipertimbangkan || 0}</strong>
+            </span>
+            <span className="text-red-700 font-semibold">
+              Tidak Rekomendasi: <strong>{selectedUnit?.tidak_direkomendasikan || 0}</strong>
+            </span>
+            <span className="text-slate-500 font-semibold">
+              Belum Selesai: <strong>{selectedUnit?.belum || 0}</strong>
+            </span>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+            {(!selectedUnit?.participants || selectedUnit.participants.length === 0) ? (
+              <p className="p-6 text-center text-xs text-slate-400">Tidak ada data peserta pada unit ini.</p>
+            ) : (
+              selectedUnit.participants.map((person: any, idx: number) => (
+                <div key={person.id || idx} className="p-3 hover:bg-slate-50 flex items-center justify-between gap-3 text-xs">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-slate-400 text-[11px] w-6 text-right shrink-0">{idx + 1}.</span>
+                      <span className="font-bold text-slate-900 truncate">{person.name}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 pl-8 truncate">{person.position || '-'}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {person.score ? (
+                      <span className="font-mono text-xs font-extrabold text-slate-700">
+                        {person.score}
+                      </span>
+                    ) : null}
+                    <RecommendationBadge status={person.status} />
+                    <ActionPillLink
+                      href={`/clients/participants/${person.id}`}
+                      target="_blank"
+                      size="sm"
+                      variant="ghost"
+                      className="text-indigo-600 hover:text-indigo-700 p-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </ActionPillLink>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
-

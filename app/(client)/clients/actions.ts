@@ -144,6 +144,23 @@ export async function getParticipantFullDetails(participantId: number) {
     WHERE tr.participant_id = ${participantId}
   `;
 
+  // Fetch question banks for all tests taken by current participant
+  const testIds = currentTestResults.map((r: any) => Number(r.test_id)).filter((id: number) => Boolean(id));
+  let questionsByTest: Record<number, any[]> = {};
+  if (testIds.length > 0) {
+    const questions = await sql`
+      SELECT id, test_id, order_number, question_type, question_data
+      FROM question_banks
+      WHERE test_id = ANY(${testIds}::int[])
+      ORDER BY test_id, order_number ASC
+    `;
+    for (const q of questions) {
+      const tid = Number(q.test_id);
+      if (!questionsByTest[tid]) questionsByTest[tid] = [];
+      questionsByTest[tid].push(q);
+    }
+  }
+
   // Fetch cumulative history for all campaigns attended by this candidate email
   const cumulativeHistory = await sql`
     SELECT p.id as participant_id, p.created_at, p.status, c.id as campaign_id, c.title as campaign_title,
@@ -171,6 +188,7 @@ export async function getParticipantFullDetails(participantId: number) {
   return {
     participant: candidate,
     current_test_results: currentTestResults,
+    questions_by_test: questionsByTest,
     cumulative_history: cumulativeHistory,
   };
 }

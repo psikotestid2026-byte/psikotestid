@@ -17,6 +17,9 @@ import {
   CheckCircle2,
   Clock,
   Building,
+  FileQuestion,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { DiscThreeCharts } from '@/components/reports/DiscCharts';
 import { DiscScoreResult } from '@/lib/scoring/disc';
@@ -30,12 +33,62 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
   const candidate = participantData?.participant || {};
   const currentTestResults = participantData?.current_test_results || [];
   const cumulativeHistory = participantData?.cumulative_history || [];
+  const questionsByTest = participantData?.questions_by_test || {};
+
+  const [activeTestAccordion, setActiveTestAccordion] = useState<number | null>(
+    currentTestResults.length > 0 ? Number(currentTestResults[0].test_id) : null
+  );
 
   const discResult = currentTestResults.find((r: any) => r.scoring_data && r.scoring_data.g1);
   const scoring: DiscScoreResult | null = discResult?.scoring_data || null;
 
   const enneagramResult = currentTestResults.find((r: any) => r.test_code?.toLowerCase() === 'enneagram' && r.scoring_data);
   const enneagramScoring = enneagramResult?.scoring_data || null;
+
+  const renderAnswerValue = (q: any, rawAns: any) => {
+    if (rawAns === undefined || rawAns === null || rawAns === '') {
+      return <span className="text-slate-400 italic font-mono text-[11px]">Tidak dijawab</span>;
+    }
+
+    if (typeof rawAns === 'object' && ('K' in rawAns || 'P' in rawAns)) {
+      const options = q?.question_data?.options || [];
+      const kIndex = rawAns.K;
+      const pIndex = rawAns.P;
+      const kText = options[kIndex] ?? `Pilihan ${kIndex + 1}`;
+      const pText = options[pIndex] ?? `Pilihan ${pIndex + 1}`;
+
+      return (
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+              PALING SESUAI (P):
+            </span>
+            <span className="font-semibold text-slate-900">{pText}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">
+              KURANG SESUAI (K):
+            </span>
+            <span className="font-semibold text-slate-900">{kText}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (typeof rawAns === 'object') {
+      return (
+        <pre className="text-[11px] font-mono bg-slate-100 p-2 rounded text-slate-800">
+          {JSON.stringify(rawAns, null, 2)}
+        </pre>
+      );
+    }
+
+    return (
+      <span className="inline-block px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold rounded-lg text-xs">
+        {String(rawAns)}
+      </span>
+    );
+  };
 
   return (
     <div className="w-full space-y-6 animate-fadeUp">
@@ -195,7 +248,144 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
         </div>
       </div>
 
-      {/* SECTION B: Detail Report Analisis Hasil Tes (DISC Charts & Tables) */}
+      {/* SECTION B: HASIL JAWABAN LENGKAP SEMUA TES & SEMUA PERTANYAAN */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="space-y-0.5">
+            <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
+              <FileQuestion className="w-5 h-5 text-indigo-600" /> Hasil Jawaban per Alat Tes & Pertanyaan
+            </h3>
+            <p className="text-xs text-slate-500">
+              Rincian seluruh butir soal dan jawaban yang dipilih oleh kandidat untuk setiap instrumen tes yang dikerjakan.
+            </p>
+          </div>
+          <span className="text-xs text-slate-500 font-medium font-mono">
+            {currentTestResults.length} Alat Tes Tersimpan
+          </span>
+        </div>
+
+        {currentTestResults.length === 0 ? (
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
+            <FileQuestion className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-slate-700">Belum ada hasil tes yang dikerjakan.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {currentTestResults.map((tr: any) => {
+              const testId = Number(tr.test_id);
+              const isOpen = activeTestAccordion === testId;
+              const questions: any[] = questionsByTest[testId] || [];
+              const rawAnswers = tr.raw_answers || {};
+              const answeredCount = Object.keys(rawAnswers).length;
+
+              return (
+                <div key={tr.id} className="border border-slate-200 rounded-2xl overflow-hidden transition-all">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTestAccordion(isOpen ? null : testId)}
+                    className="w-full p-4 bg-slate-50 hover:bg-slate-100/80 flex items-center justify-between gap-4 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs font-mono shrink-0">
+                        {tr.test_code?.toUpperCase() || 'TES'}
+                      </div>
+                      <div>
+                        <h4 className="font-display font-bold text-sm text-slate-900">
+                          {tr.test_name} ({tr.test_code?.toUpperCase()})
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          {questions.length > 0 ? `${questions.length} Total Soal` : `${answeredCount} Jawaban Tersimpan`}
+                          {' · '}
+                          Diselesaikan pada {new Date(tr.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">
+                        {answeredCount} Terjawab
+                      </span>
+                      {isOpen ? (
+                        <ChevronUp className="w-4 h-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-slate-500" />
+                      )}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="p-4 bg-white border-t border-slate-200 space-y-3">
+                      {questions.length > 0 ? (
+                        <div className="divide-y divide-slate-100">
+                          {questions.map((q: any, qIdx: number) => {
+                            const keyZero = String(qIdx);
+                            const keyOrder = String(q.order_number ?? qIdx + 1);
+                            const rawAns = rawAnswers[keyZero] !== undefined ? rawAnswers[keyZero] : rawAnswers[keyOrder];
+
+                            return (
+                              <div key={q.id || qIdx} className="py-3 space-y-1.5">
+                                <div className="flex items-start gap-2.5">
+                                  <span className="font-mono font-bold text-indigo-600 text-xs mt-0.5 shrink-0 w-7 text-right">
+                                    #{q.order_number ?? qIdx + 1}.
+                                  </span>
+                                  <div className="flex-1 space-y-1">
+                                    {q.question_data?.text && (
+                                      <p className="text-xs font-semibold text-slate-900 leading-relaxed">
+                                        {q.question_data.text}
+                                      </p>
+                                    )}
+
+                                    {Array.isArray(q.question_data?.options) && (
+                                      <div className="text-[11px] text-slate-500 flex flex-wrap gap-1.5 pt-0.5">
+                                        <span className="font-medium text-slate-400">Pilihan:</span>
+                                        {q.question_data.options.map((opt: string, optIdx: number) => (
+                                          <span
+                                            key={optIdx}
+                                            className="px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-600"
+                                          >
+                                            {opt}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    <div className="pt-1.5 flex items-center gap-2">
+                                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Jawaban Kandidat:
+                                      </span>
+                                      {renderAnswerValue(q, rawAns)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {Object.entries(rawAnswers).map(([k, val], idx) => (
+                            <div key={k} className="py-2.5 flex items-start gap-3 text-xs">
+                              <span className="font-mono font-bold text-indigo-600 w-8 text-right shrink-0">
+                                #{idx + 1}.
+                              </span>
+                              <div className="flex-1">
+                                <span className="font-semibold text-slate-700">Soal Item {Number(k) + 1}</span>
+                                <div className="pt-1">{renderAnswerValue(null, val)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION C: Detail Report Analisis Hasil Tes (DISC Charts & Tables) */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">

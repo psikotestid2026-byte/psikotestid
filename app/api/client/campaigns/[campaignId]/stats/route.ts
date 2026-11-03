@@ -36,7 +36,17 @@ export async function GET(
           COUNT(*) FILTER (WHERE recommendation_status = 'DIREKOMENDASIKAN')::int AS direkomendasikan,
           COUNT(*) FILTER (WHERE recommendation_status = 'DIPERTIMBANGKAN')::int AS dipertimbangkan,
           COUNT(*) FILTER (WHERE recommendation_status = 'TIDAK_DIREKOMENDASIKAN')::int AS tidak_direkomendasikan,
-          COUNT(*) FILTER (WHERE recommendation_status IS NULL)::int AS belum
+          COUNT(*) FILTER (WHERE recommendation_status IS NULL)::int AS belum,
+          json_agg(
+            json_build_object(
+              'id', id,
+              'name', full_name,
+              'position', position,
+              'status', recommendation_status,
+              'score', recommendation_score,
+              'scoring_status', scoring_status
+            ) ORDER BY full_name
+          ) as participants
         FROM participants
         WHERE campaign_id = ${campaignId}
         GROUP BY 1

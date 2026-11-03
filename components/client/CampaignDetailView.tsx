@@ -21,6 +21,7 @@ import {
   Link as LinkIcon,
   Loader2,
   ExternalLink,
+  BarChart3,
 } from 'lucide-react';
 import { addCandidateToCampaign } from '@/app/(client)/clients/actions';
 import { BulkImportExcelModal } from './BulkImportExcelModal';
@@ -187,6 +188,16 @@ Terima kasih dan selamat mengerjakan!`;
 
         {/* Action Buttons Header */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <ActionPillLink
+            href={`/clients/campaigns/${campaignId}/stats`}
+            size="sm"
+            variant="ghost"
+            className="bg-indigo-500/30 hover:bg-indigo-500/50 text-white border border-indigo-400/40"
+            icon={<BarChart3 className="w-4 h-4 text-indigo-300" />}
+          >
+            Dashboard Statistik
+          </ActionPillLink>
+
           <Button
             onClick={() => setIsBulkModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2"
