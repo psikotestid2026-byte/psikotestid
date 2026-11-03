@@ -14,8 +14,11 @@ import {
   Search,
   Upload,
   UserCheck,
+  UserPlus,
   BarChart3,
   List,
+  Edit2,
+  Trash2,
   X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -25,6 +28,9 @@ import { RecommendationBadge } from '@/components/ui/RecommendationBadge';
 import { EmployeeImportModal } from './EmployeeImportModal';
 import { OverrideStatusModal } from './OverrideStatusModal';
 import { ResetResultModal } from './ResetResultModal';
+import { ParticipantFormModal } from './ParticipantFormModal';
+import { ParticipantEditModal } from './ParticipantEditModal';
+import { ParticipantDeleteModal } from './ParticipantDeleteModal';
 
 interface BundleCampaignViewProps {
   campaignId: number;
@@ -72,6 +78,9 @@ export function BundleCampaignView({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<any>(null);
+  const [deletingParticipant, setDeletingParticipant] = useState<any>(null);
   const [resetTarget, setResetTarget] = useState<{ id: number; full_name: string } | 'ALL' | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<any>(null);
 
@@ -174,10 +183,17 @@ export function BundleCampaignView({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Button
+            onClick={() => setIsAddParticipantOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-xl shadow-sm"
+            icon={<UserPlus className="w-4 h-4" />}
+          >
+            Tambah Peserta
+          </Button>
           <Button
             onClick={() => setIsImportOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl shadow-sm"
             icon={<Upload className="w-4 h-4" />}
           >
             Impor Karyawan
@@ -382,10 +398,30 @@ export function BundleCampaignView({
                         </Button>
                       )}
                       {r.system_recommendation_status && (
-                        <Button type="button" size="sm" variant="outline" onClick={() => setOverrideTarget(r)}>
+                        <Button type="button" size="sm" variant="outline" className="mr-2" onClick={() => setOverrideTarget(r)}>
                           Override
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-500 hover:text-indigo-600 mr-1 p-1"
+                        title="Edit data peserta"
+                        onClick={() => setEditingParticipant(r)}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-400 hover:text-red-600 p-1"
+                        title="Hapus peserta"
+                        onClick={() => setDeletingParticipant({ id: Number(r.id), full_name: r.full_name })}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -426,6 +462,26 @@ export function BundleCampaignView({
         campaignId={campaignId}
         participant={overrideTarget}
         onSaved={() => mutate()}
+      />
+      <ParticipantFormModal
+        isOpen={isAddParticipantOpen}
+        onClose={() => setIsAddParticipantOpen(false)}
+        campaignId={campaignId}
+        onSuccess={() => mutate()}
+      />
+      <ParticipantEditModal
+        isOpen={editingParticipant !== null}
+        onClose={() => setEditingParticipant(null)}
+        campaignId={campaignId}
+        participant={editingParticipant}
+        onSuccess={() => mutate()}
+      />
+      <ParticipantDeleteModal
+        isOpen={deletingParticipant !== null}
+        onClose={() => setDeletingParticipant(null)}
+        campaignId={campaignId}
+        participant={deletingParticipant}
+        onSuccess={() => mutate()}
       />
     </div>
   );
