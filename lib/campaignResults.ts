@@ -224,7 +224,12 @@ function toBuffer(rows: (string | number | null)[][], widths: number[], sheetNam
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
 }
 
-export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buffer {
+export function buildResultsWorkbook(
+  rows: ResultRow[],
+  totalTests: number,
+  options?: { hideRecommendation?: boolean }
+): Buffer {
+  const hideRecommendation = Boolean(options?.hideRecommendation);
   const header = [
     'No',
     'Nama',
@@ -236,7 +241,7 @@ export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buf
     'Skor PAPI',
     'Skor MSDT',
     'Skor Gabungan',
-    'Status Rekomendasi',
+    ...(hideRecommendation ? [] : ['Status Rekomendasi']),
     'Catatan Asesor',
     'Tanggal Selesai',
   ];
@@ -259,12 +264,15 @@ export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buf
       t.papi?.score ?? '',
       t.msdt?.score ?? '',
       r.recommendation_score != null ? Number(r.recommendation_score) : '',
-      status,
+      ...(hideRecommendation ? [] : [status]),
       r.assessor_override ? r.assessor_notes || 'Override asesor' : r.assessor_notes || '',
       formatDate(r.completed_at),
     ];
   });
-  return toBuffer([header, ...body], [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 24, 40, 20], 'Rekap Hasil');
+  const widths = hideRecommendation
+    ? [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 40, 20]
+    : [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 24, 40, 20];
+  return toBuffer([header, ...body], widths, 'Rekap Hasil');
 }
 
 export interface CredentialRow {

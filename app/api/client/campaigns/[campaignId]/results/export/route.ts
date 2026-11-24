@@ -20,9 +20,11 @@ export async function GET(
     const auth = await requireCampaignAccess(Number(rawId));
     if (!auth.ok) return auth.response;
 
-    const query = parseResultsQuery(new URL(req.url).searchParams);
+    const searchParams = new URL(req.url).searchParams;
+    const query = parseResultsQuery(searchParams);
+    const hideRecommendation = searchParams.get('hideRecommendation') === '1';
     const { rows, total_tests: totalTests } = await queryCampaignResults(Number(auth.campaign.id), query, false);
-    const buffer = buildResultsWorkbook(rows, Number(totalTests) || 0);
+    const buffer = buildResultsWorkbook(rows, Number(totalTests) || 0, { hideRecommendation });
     const safeTitle = String(auth.campaign.title).replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 60);
 
     return new Response(new Uint8Array(buffer), {

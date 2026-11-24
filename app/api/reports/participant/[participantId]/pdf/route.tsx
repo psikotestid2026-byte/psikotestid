@@ -62,9 +62,15 @@ export async function GET(
       reportResults = stripped.results;
     }
 
+    const hideRecommendation = new URL(request.url).searchParams.get('hideRecommendation') === '1';
     const discDictionary = await loadDiscReportDictionary();
     const pdfStream = await renderToStream(
-      <UniversalPdfDocument participant={reportParticipant} results={reportResults} discDictionary={discDictionary} />
+      <UniversalPdfDocument
+        participant={reportParticipant}
+        results={reportResults}
+        discDictionary={discDictionary}
+        hideRecommendation={hideRecommendation}
+      />
     );
 
     const safeName = (participant.full_name || 'Kandidat').replace(/\s+/g, '_');
