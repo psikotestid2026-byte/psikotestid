@@ -1,0 +1,998 @@
+{
+  "timestamp": "2026-11-04T14:46:59.848Z",
+  "total": 77,
+  "statusChangesCount": 33,
+  "changes": [
+    {
+      "id": 4,
+      "name": "Abi ",
+      "beforeScore": null,
+      "afterScore": null,
+      "beforeStatus": null,
+      "afterStatus": null
+    },
+    {
+      "id": 9,
+      "name": "Abi ",
+      "beforeScore": null,
+      "afterScore": null,
+      "beforeStatus": null,
+      "afterStatus": null
+    },
+    {
+      "id": 82,
+      "name": "DEDE SUGIH HARTONO",
+      "beforeScore": "54.44",
+      "afterScore": "54.44",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 10,
+        "type": "Ds"
+      },
+      "msdtScore": 10
+    },
+    {
+      "id": 166,
+      "name": "ARIS SETIAWAN",
+      "beforeScore": "50.99",
+      "afterScore": "50.99",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 277,
+      "name": "VITA FEBRIARINI",
+      "beforeScore": "56.72",
+      "afterScore": "56.72",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 222,
+      "name": "MUCHAMAT ZUSUF",
+      "beforeScore": "50.67",
+      "afterScore": "57.42",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 37,
+      "name": "ALI DIMYATI",
+      "beforeScore": "60.97",
+      "afterScore": "60.97",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 20,
+        "type": "Ds"
+      },
+      "msdtScore": 20
+    },
+    {
+      "id": 174,
+      "name": "DENY RIZKY SETIAWAN",
+      "beforeScore": "50.06",
+      "afterScore": "50.06",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 175,
+      "name": "CHOYRUNNISA",
+      "beforeScore": "50.48",
+      "afterScore": "57.23",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 209,
+      "name": "UJANG SADILI",
+      "beforeScore": "51.34",
+      "afterScore": "58.09",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 217,
+      "name": "FARDAN FAUZI",
+      "beforeScore": "55.56",
+      "afterScore": "55.56",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 314,
+      "name": "NORDIANSYAH",
+      "beforeScore": "56.29",
+      "afterScore": "63.04",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 79,
+      "name": "MADA SUMRINGAH SARI",
+      "beforeScore": "56.68",
+      "afterScore": "69.43",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 84,
+      "name": "RICKY HEKSAGANI",
+      "beforeScore": "55.10",
+      "afterScore": "62.60",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 70,
+        "type": "Bu"
+      },
+      "msdtScore": 70
+    },
+    {
+      "id": 36,
+      "name": "NANANG ABDUL AZIZ",
+      "beforeScore": "60.27",
+      "afterScore": "60.27",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 81,
+      "name": "MUHAMMAD PANJI NASRUL RAHMAN",
+      "beforeScore": "55.72",
+      "afterScore": "55.72",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 10,
+        "type": "Ds"
+      },
+      "msdtScore": 10
+    },
+    {
+      "id": 224,
+      "name": "SITI KURNIAWATI",
+      "beforeScore": "66.41",
+      "afterScore": "76.91",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 85,
+        "type": "Ba"
+      },
+      "msdtScore": 85
+    },
+    {
+      "id": 177,
+      "name": "IBNU SOFYAN ATS TSAURI",
+      "beforeScore": "56.93",
+      "afterScore": "68.93",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 76,
+      "name": "INDRA PERMANA",
+      "beforeScore": "65.42",
+      "afterScore": "78.17",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 68,
+      "name": "SOPYAN SUPRIYADI",
+      "beforeScore": "59.15",
+      "afterScore": "65.15",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 50,
+        "type": "Bu"
+      },
+      "msdtScore": 50
+    },
+    {
+      "id": 73,
+      "name": "JAMAL MIRDAD",
+      "beforeScore": "49.98",
+      "afterScore": "62.73",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 284,
+      "name": "DENDI PRASOJO",
+      "beforeScore": "43.63",
+      "afterScore": "50.38",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 130,
+      "name": "WINDARI ADE FRANSISKA",
+      "beforeScore": "58.89",
+      "afterScore": "65.64",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 192,
+      "name": "IIP SUPRIATNA",
+      "beforeScore": "49.69",
+      "afterScore": "56.44",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 203,
+      "name": "MOCHAMMAD NOVIAN",
+      "beforeScore": "60.02",
+      "afterScore": "72.02",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 140,
+      "name": "JONI SUSANTO",
+      "beforeScore": "56.31",
+      "afterScore": "63.06",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 154,
+      "name": "ANDIAN PRADITA",
+      "beforeScore": "62.94",
+      "afterScore": "74.94",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 225,
+      "name": "ADE RAHMATILAH",
+      "beforeScore": "56.48",
+      "afterScore": "68.48",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 169,
+      "name": "FABYAN ANDARA PRATAMA",
+      "beforeScore": "49.95",
+      "afterScore": "56.70",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 13,
+      "name": "AZIZ ASMOROKONDI",
+      "beforeScore": "62.03",
+      "afterScore": "74.03",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 327,
+      "name": "HARUN MASYKUR",
+      "beforeScore": "45.70",
+      "afterScore": "56.95",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 85,
+        "type": "Ba"
+      },
+      "msdtScore": 85
+    },
+    {
+      "id": 51,
+      "name": "CECEP IWAN SETIAWAN",
+      "beforeScore": "53.65",
+      "afterScore": "53.65",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 31,
+      "name": "MUHAMMAD IHSAN",
+      "beforeScore": "57.61",
+      "afterScore": "70.36",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 176,
+      "name": "DWINA FURQAN",
+      "beforeScore": "55.45",
+      "afterScore": "55.45",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 118,
+      "name": "KHAIRUL ASBAH",
+      "beforeScore": "65.19",
+      "afterScore": "77.19",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 223,
+      "name": "ENDAR SUNANDAR",
+      "beforeScore": "46.98",
+      "afterScore": "53.73",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 78,
+      "name": "LUTFI ABDILAH FAUZAN",
+      "beforeScore": "46.79",
+      "afterScore": "59.54",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 67,
+      "name": "MUHAMMAD GHAZI ALGIFARI",
+      "beforeScore": "56.29",
+      "afterScore": "69.04",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 159,
+      "name": "REDI ANSAH",
+      "beforeScore": "49.38",
+      "afterScore": "49.38",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 72,
+      "name": "TITA WARTIKA",
+      "beforeScore": "49.69",
+      "afterScore": "55.69",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 50,
+        "type": "Bu"
+      },
+      "msdtScore": 50
+    },
+    {
+      "id": 309,
+      "name": "HASMIRAH",
+      "beforeScore": "42.30",
+      "afterScore": "55.05",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 100,
+        "type": "E"
+      },
+      "msdtScore": 100
+    },
+    {
+      "id": 135,
+      "name": "ASRIFA RAHMA WATI BATEE",
+      "beforeScore": "49.18",
+      "afterScore": "61.18",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 123,
+      "name": "ESTY ISWAHYUNI",
+      "beforeScore": "52.20",
+      "afterScore": "58.95",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 305,
+      "name": "JOKO CAHYONO",
+      "beforeScore": "52.68",
+      "afterScore": "59.43",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 102,
+      "name": "CERAH RUPIAN",
+      "beforeScore": "49.60",
+      "afterScore": "57.10",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 70,
+        "type": "Bu"
+      },
+      "msdtScore": 70
+    },
+    {
+      "id": 33,
+      "name": "RIZKIA ANANDA WINDA",
+      "beforeScore": "50.33",
+      "afterScore": "57.08",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 149,
+      "name": "NUR ASIAH",
+      "beforeScore": "43.80",
+      "afterScore": "50.55",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 32,
+      "name": "ERNA NURALIAH MARDIANA",
+      "beforeScore": "52.92",
+      "afterScore": "59.67",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 252,
+      "name": "ABAR",
+      "beforeScore": "57.76",
+      "afterScore": "64.51",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 75,
+      "name": "KOKON NUGRAHA",
+      "beforeScore": "60.32",
+      "afterScore": "66.32",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 50,
+        "type": "Bu"
+      },
+      "msdtScore": 50
+    },
+    {
+      "id": 77,
+      "name": "KEVIN ADHYTAMA",
+      "beforeScore": "60.22",
+      "afterScore": "66.22",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 50,
+        "type": "Bu"
+      },
+      "msdtScore": 50
+    },
+    {
+      "id": 326,
+      "name": "MUJI RAHAYU WULANDARI",
+      "beforeScore": "49.96",
+      "afterScore": "61.96",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 35,
+      "name": "GANJAR HARDIANTO",
+      "beforeScore": "55.75",
+      "afterScore": "62.50",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 80,
+      "name": "RANGGA ANDRIAN",
+      "beforeScore": "59.36",
+      "afterScore": "72.11",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 267,
+      "name": "ADE TIRTA",
+      "beforeScore": "60.50",
+      "afterScore": "67.25",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 100,
+      "name": "HANDAYANI",
+      "beforeScore": "52.67",
+      "afterScore": "63.17",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 90,
+        "type": "Dv"
+      },
+      "msdtScore": 90
+    },
+    {
+      "id": 289,
+      "name": "NUR IKHSAN BASHORI",
+      "beforeScore": "48.13",
+      "afterScore": "60.13",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 70,
+      "name": "IWAN FIRMANSYAH",
+      "beforeScore": "48.11",
+      "afterScore": "54.86",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 55,
+        "type": "Mi"
+      },
+      "msdtScore": 55
+    },
+    {
+      "id": 83,
+      "name": "AWANG JONERI",
+      "beforeScore": "58.25",
+      "afterScore": "64.25",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 50,
+        "type": "Bu"
+      },
+      "msdtScore": 50
+    },
+    {
+      "id": 196,
+      "name": "IDUL SALDI TANJUNG",
+      "beforeScore": "48.83",
+      "afterScore": "60.83",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 38,
+      "name": "HELMI HASBI ASH SIDDIQI",
+      "beforeScore": "47.97",
+      "afterScore": "55.47",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 70,
+        "type": "Bu"
+      },
+      "msdtScore": 70
+    },
+    {
+      "id": 257,
+      "name": "LUQMANUL HAKIM",
+      "beforeScore": "60.81",
+      "afterScore": "67.56",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 74,
+      "name": "INA AMELIA",
+      "beforeScore": "52.67",
+      "afterScore": "65.42",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 262,
+      "name": "RAKHMAT",
+      "beforeScore": "55.83",
+      "afterScore": "55.83",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 302,
+      "name": "RAGIL HIDAYAT",
+      "beforeScore": "53.53",
+      "afterScore": "60.28",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 227,
+      "name": "SHERLY AULIA NURIZKY",
+      "beforeScore": "58.48",
+      "afterScore": "70.48",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 235,
+      "name": "LUPI NUGRAHA",
+      "beforeScore": "56.54",
+      "afterScore": "63.29",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 114,
+      "name": "ENUNG RISA FEBRIANTI",
+      "beforeScore": "57.52",
+      "afterScore": "63.52",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Mi"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 272,
+      "name": "BAGUS ILHAM MUTAKIN",
+      "beforeScore": "54.31",
+      "afterScore": "54.31",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 34,
+      "name": "DADAN KURNIAWAN",
+      "beforeScore": "53.22",
+      "afterScore": "53.22",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 29,
+      "name": "IRMA SUMIATI",
+      "beforeScore": "45.66",
+      "afterScore": "52.41",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 246,
+      "name": "IRA APRIATIN",
+      "beforeScore": "55.38",
+      "afterScore": "62.13",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    },
+    {
+      "id": 69,
+      "name": "CECEP DIAN GUSTIAWAN",
+      "beforeScore": "55.42",
+      "afterScore": "68.16",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 116,
+      "name": "MUHAMMAD FIKRI GHOZALI",
+      "beforeScore": "62.76",
+      "afterScore": "62.76",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 15,
+        "type": "Ds"
+      },
+      "msdtScore": 15
+    },
+    {
+      "id": 113,
+      "name": "KEVIN AKBAR PRAMADIVA",
+      "beforeScore": "54.38",
+      "afterScore": "66.38",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 71,
+      "name": "FAHRIZAL AMIR",
+      "beforeScore": "62.66",
+      "afterScore": "75.41",
+      "beforeStatus": "DIPERTIMBANGKAN",
+      "afterStatus": "DIPERTIMBANGKAN",
+      "msdtFit": {
+        "fit": 95,
+        "type": "Dv"
+      },
+      "msdtScore": 95
+    },
+    {
+      "id": 110,
+      "name": "GUNAWAN SUBAKTI",
+      "beforeScore": "47.26",
+      "afterScore": "54.01",
+      "beforeStatus": "TIDAK_DIREKOMENDASIKAN",
+      "afterStatus": "TIDAK_DIREKOMENDASIKAN",
+      "msdtFit": {
+        "fit": 60,
+        "type": "Bu"
+      },
+      "msdtScore": 60
+    }
+  ]
+}

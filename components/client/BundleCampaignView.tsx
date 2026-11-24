@@ -14,6 +14,12 @@ import {
   Search,
   Upload,
   UserCheck,
+  UserPlus,
+  BarChart3,
+  List,
+  Edit2,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { ActionPillLink, Button } from '@/components/ui/Button';
@@ -22,6 +28,9 @@ import { RecommendationBadge } from '@/components/ui/RecommendationBadge';
 import { EmployeeImportModal } from './EmployeeImportModal';
 import { OverrideStatusModal } from './OverrideStatusModal';
 import { ResetResultModal } from './ResetResultModal';
+import { ParticipantFormModal } from './ParticipantFormModal';
+import { ParticipantEditModal } from './ParticipantEditModal';
+import { ParticipantDeleteModal } from './ParticipantDeleteModal';
 
 interface BundleCampaignViewProps {
   campaignId: number;
@@ -69,6 +78,9 @@ export function BundleCampaignView({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<any>(null);
+  const [deletingParticipant, setDeletingParticipant] = useState<any>(null);
   const [resetTarget, setResetTarget] = useState<{ id: number; full_name: string } | 'ALL' | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<any>(null);
 
@@ -171,10 +183,17 @@ export function BundleCampaignView({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Button
+            onClick={() => setIsAddParticipantOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-xl shadow-sm"
+            icon={<UserPlus className="w-4 h-4" />}
+          >
+            Tambah Peserta
+          </Button>
           <Button
             onClick={() => setIsImportOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-xl shadow-sm"
             icon={<Upload className="w-4 h-4" />}
           >
             Impor Karyawan
@@ -227,24 +246,58 @@ export function BundleCampaignView({
                 </span>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative sm:w-72">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+              {/* Multifilter Search Input */}
+              <div className="relative sm:w-64">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Cari nama, jabatan, atau unit kerja..."
-                  className="pl-9 w-full py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Cari multi-kata (nama, jabatan, unit, NIK)..."
+                  className="pl-9 pr-8 w-full py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput('');
+                      setQ('');
+                      setPage(1);
+                    }}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+
+              {/* Status Rekomendasi Dropdown */}
               <select
+                aria-label="Filter status rekomendasi"
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                {STATUS_CHIPS.map((chip) => (
+                  <option key={chip.key} value={chip.key}>
+                    {chip.key === 'ALL' ? 'Semua Status Rekomendasi' : chip.label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Unit Kerja Dropdown */}
+              <select
+                aria-label="Filter unit kerja"
                 value={unit}
                 onChange={(e) => {
                   setUnit(e.target.value);
                   setPage(1);
                 }}
-                className="py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold"
+                className="py-2 px-3 text-xs border border-slate-300 rounded-xl bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
               >
                 <option value="">Semua Unit Kerja</option>
                 {units.map((u) => (
@@ -253,6 +306,7 @@ export function BundleCampaignView({
                   </option>
                 ))}
               </select>
+
               <ActionPillLink
                 href={exportUrl}
                 size="sm"
@@ -262,23 +316,6 @@ export function BundleCampaignView({
                 Unduh Rekap Excel
               </ActionPillLink>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {STATUS_CHIPS.map((chip) => (
-              <Button
-                key={chip.key}
-                type="button"
-                size="sm"
-                variant={status === chip.key ? 'primary' : 'outline'}
-                onClick={() => {
-                  setStatus(chip.key);
-                  setPage(1);
-                }}
-              >
-                {chip.label}
-              </Button>
-            ))}
           </div>
         </div>
 
@@ -361,10 +398,30 @@ export function BundleCampaignView({
                         </Button>
                       )}
                       {r.system_recommendation_status && (
-                        <Button type="button" size="sm" variant="outline" onClick={() => setOverrideTarget(r)}>
+                        <Button type="button" size="sm" variant="outline" className="mr-2" onClick={() => setOverrideTarget(r)}>
                           Override
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-500 hover:text-indigo-600 mr-1 p-1"
+                        title="Edit data peserta"
+                        onClick={() => setEditingParticipant(r)}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-400 hover:text-red-600 p-1"
+                        title="Hapus peserta"
+                        onClick={() => setDeletingParticipant({ id: Number(r.id), full_name: r.full_name })}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -405,6 +462,26 @@ export function BundleCampaignView({
         campaignId={campaignId}
         participant={overrideTarget}
         onSaved={() => mutate()}
+      />
+      <ParticipantFormModal
+        isOpen={isAddParticipantOpen}
+        onClose={() => setIsAddParticipantOpen(false)}
+        campaignId={campaignId}
+        onSuccess={() => mutate()}
+      />
+      <ParticipantEditModal
+        isOpen={editingParticipant !== null}
+        onClose={() => setEditingParticipant(null)}
+        campaignId={campaignId}
+        participant={editingParticipant}
+        onSuccess={() => mutate()}
+      />
+      <ParticipantDeleteModal
+        isOpen={deletingParticipant !== null}
+        onClose={() => setDeletingParticipant(null)}
+        campaignId={campaignId}
+        participant={deletingParticipant}
+        onSuccess={() => mutate()}
       />
     </div>
   );

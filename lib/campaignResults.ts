@@ -60,11 +60,14 @@ function buildWhere(campaignId: number, query: ResultsQuery) {
   const values: unknown[] = [campaignId];
 
   if (query.q) {
-    values.push(`%${escapeLike(query.q)}%`);
-    const i = values.length;
-    conditions.push(
-      `(p.full_name ILIKE $${i} OR p.position ILIKE $${i} OR p.unit_work ILIKE $${i} OR p.username ILIKE $${i} OR p.employee_id ILIKE $${i})`
-    );
+    const rawTokens = query.q.split(/\s+/).filter(Boolean);
+    for (const token of rawTokens) {
+      values.push(`%${escapeLike(token)}%`);
+      const i = values.length;
+      conditions.push(
+        `(p.full_name ILIKE $${i} OR p.position ILIKE $${i} OR p.unit_work ILIKE $${i} OR p.username ILIKE $${i} OR p.employee_id ILIKE $${i})`
+      );
+    }
   }
   if (query.unit) {
     values.push(query.unit);
@@ -130,8 +133,38 @@ export async function queryCampaignResults(campaignId: number, query: ResultsQue
     paging = `LIMIT $${pageValues.length - 1} OFFSET $${pageValues.length}`;
   }
 
+  // Optimized query: paginate the filtered participants FIRST, then LATERAL join test counts for the paginated slice
+  const fastQuery = `
+    SELECT
+      p.id, p.full_name, p.username, p.employee_id, p.position, p.unit_work, p.status,
+      p.job_level_code, p.scoring_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.recommendation_status END AS recommendation_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.system_recommendation_status END AS system_recommendation_status,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.recommendation_score END AS recommendation_score,
+      p.assessor_override, p.assessor_notes, p.completed_at,
+      CASE WHEN p.scoring_status = 'DONE' THEN p.score_breakdown->'tests' END AS tests,
+      COALESCE(tr_agg.done_count, 0)::int AS tests_done,
+      COALESCE(tr_agg.has_msdt, false) AS has_msdt_result
+    FROM (
+      SELECT *
+      FROM participants p
+      WHERE ${where}
+      ORDER BY ${orderBy}
+      ${paging}
+    ) p
+    LEFT JOIN LATERAL (
+      SELECT 
+        COUNT(DISTINCT tr.test_id) as done_count,
+        BOOL_OR(LOWER(mt.code) = 'msdt') as has_msdt
+      FROM test_results tr
+      JOIN campaign_tests ct ON ct.test_id = tr.test_id AND ct.campaign_id = p.campaign_id
+      JOIN master_tests mt ON mt.id = tr.test_id
+      WHERE tr.participant_id = p.id
+    ) tr_agg ON true
+  `;
+
   const [rows, totalRows, summaryRows, unitRows, testRows, campaignTestRows, context] = await Promise.all([
-    sql.query(`SELECT ${SELECT_COLUMNS} FROM participants p WHERE ${where} ORDER BY ${orderBy} ${paging}`, pageValues),
+    sql.query(fastQuery, pageValues),
     sql.query(`SELECT COUNT(*)::int AS total FROM participants p WHERE ${where}`, values),
     sql`
       SELECT
@@ -191,7 +224,12 @@ function toBuffer(rows: (string | number | null)[][], widths: number[], sheetNam
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
 }
 
-export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buffer {
+export function buildResultsWorkbook(
+  rows: ResultRow[],
+  totalTests: number,
+  options?: { hideRecommendation?: boolean }
+): Buffer {
+  const hideRecommendation = Boolean(options?.hideRecommendation);
   const header = [
     'No',
     'Nama',
@@ -203,7 +241,7 @@ export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buf
     'Skor PAPI',
     'Skor MSDT',
     'Skor Gabungan',
-    'Status Rekomendasi',
+    ...(hideRecommendation ? [] : ['Status Rekomendasi']),
     'Catatan Asesor',
     'Tanggal Selesai',
   ];
@@ -226,12 +264,15 @@ export function buildResultsWorkbook(rows: ResultRow[], totalTests: number): Buf
       t.papi?.score ?? '',
       t.msdt?.score ?? '',
       r.recommendation_score != null ? Number(r.recommendation_score) : '',
-      status,
+      ...(hideRecommendation ? [] : [status]),
       r.assessor_override ? r.assessor_notes || 'Override asesor' : r.assessor_notes || '',
       formatDate(r.completed_at),
     ];
   });
-  return toBuffer([header, ...body], [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 24, 40, 20], 'Rekap Hasil');
+  const widths = hideRecommendation
+    ? [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 40, 20]
+    : [6, 32, 40, 22, 11, 11, 13, 11, 11, 14, 24, 40, 20];
+  return toBuffer([header, ...body], widths, 'Rekap Hasil');
 }
 
 export interface CredentialRow {

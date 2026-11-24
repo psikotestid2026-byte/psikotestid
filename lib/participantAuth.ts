@@ -21,9 +21,9 @@ export function normalizeUsername(raw: string | null | undefined): string {
 }
 
 async function getRedis() {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try {
-    const { redis } = await import('@/lib/upstash');
+    const { redis, redisUrl, redisToken } = await import('@/lib/upstash');
+    if (!redisUrl || !redisToken) return null;
     return redis;
   } catch {
     return null;

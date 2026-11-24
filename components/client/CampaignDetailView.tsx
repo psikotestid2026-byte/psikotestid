@@ -21,6 +21,7 @@ import {
   Link as LinkIcon,
   Loader2,
   ExternalLink,
+  BarChart3,
 } from 'lucide-react';
 import { addCandidateToCampaign } from '@/app/(client)/clients/actions';
 import { BulkImportExcelModal } from './BulkImportExcelModal';

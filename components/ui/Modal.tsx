@@ -10,9 +10,10 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  maxWidthClassName?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, maxWidthClassName }: ModalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fadeUp">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
+      <div className={`bg-white rounded-2xl shadow-xl w-full ${maxWidthClassName || 'max-w-md'} overflow-hidden relative`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h3 className="font-display font-bold text-lg text-slate-900">{title}</h3>
           <Button type="button" size="sm" variant="ghost" onClick={onClose} aria-label="Tutup">
