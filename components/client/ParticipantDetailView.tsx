@@ -151,6 +151,17 @@ export function ParticipantDetailView({ participantData, participantId }: Partic
           >
             Download PDF Report Resmi
           </ActionPillLink>
+
+          <ActionPillLink
+            href={`/api/reports/participant/${candidate.id || participantId}/pdf?hideRecommendation=1`}
+            target="_blank"
+            rel="noreferrer"
+            size="sm"
+            variant="secondary"
+            icon={<Download className="w-4 h-4" />}
+          >
+            PDF tanpa rekomendasi
+          </ActionPillLink>
         </div>
       </div>
 

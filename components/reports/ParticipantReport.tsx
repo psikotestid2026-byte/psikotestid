@@ -448,10 +448,12 @@ export function UniversalPdfDocument({
   participant,
   results,
   discDictionary,
+  hideRecommendation = false,
 }: {
   participant: any;
   results: any[];
   discDictionary?: DiscReportDictionary | null;
+  hideRecommendation?: boolean;
 }) {
   const list = hydrateReportScores(Array.isArray(results) ? results : [], {
     papi: calculatePapiScore,
@@ -461,7 +463,7 @@ export function UniversalPdfDocument({
   const ordered = orderDetailResults(detail);
 
   const isBundle = participant?.campaign_mode === 'MANDATORY_BUNDLE';
-  const jobFit = isBundle ? buildJobFitReportData(participant) : null;
+  const jobFit = isBundle && !hideRecommendation ? buildJobFitReportData(participant) : null;
 
   return (
     <Document>
